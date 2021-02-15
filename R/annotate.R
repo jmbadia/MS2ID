@@ -115,7 +115,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(nature!="all")
         SQLwhere <- paste0(SQLwhere, "AND s.REFnature='", nature,"'")
 
-    browser()
+    #browser()
 
     rslt <- lapply(seq_along(QRY$Spectra$idspctra), function(idQspctr){
         mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
