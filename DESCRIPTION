@@ -1,0 +1,28 @@
+Package: MS2ID
+Type: Package
+Title: High-throughput MS/MS annotation using an unique in house database
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Josep M.",
+           family = "Badia Aparicio",
+           role = c("aut", "cre"),
+           email = "josepmaria.badia@urv.cat",
+           comment = c(ORCID = "0000-0002-5704-1124"))
+Maintainer: Josep M. Badia <josepmaria.badia@urv.cat>
+Description: MS2ID provides functionality to high-throughput MS/MS spectrum
+    annotation.  It is used a in house database spectra created using  
+    different sources. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Depends:
+    R (>= 3.4),
+    methods
+Imports: 
+    bigmemory,
+    DBI,
+    RSQLite,
+    mzR,
+    pbapply,
+    stats
