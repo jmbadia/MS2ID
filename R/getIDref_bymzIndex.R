@@ -12,10 +12,8 @@
     # peaks have at list a mzVector
     IDref <- unique(
         ms2idObj@mzIndexcon[unlist(mzPointers[seq_len(cmnTopPeaks)])])
+    allIDref <- ms2idObj@mzIndexcon[unlist(mzPointers)]
     #cmnPeaks restriction: Keep only idREF with common peaks > cmnPeaks
-    IDref <- IDref[vapply(IDref, function(x)
-        sum(ms2idObj@mzIndexcon[unlist(mzPointers)] == x) >= cmnPeaks,
-        FUN.VALUE=T)]
-
+    IDref <- which(tabulate(allIDref[allIDref %in% IDref]) >= cmnPeaks)
     return(IDref)
 }

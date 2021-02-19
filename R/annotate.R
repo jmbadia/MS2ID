@@ -116,7 +116,6 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         SQLwhere <- paste0(SQLwhere, "AND s.REFnature='", nature,"'")
 
     #browser()
-
     rslt <- lapply(seq_along(QRY$Spectra$idspctra), function(idQspctr){
         mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         idRef <- .getIDref_bymzIndex(mzVector=mzV,  ms2idObj=MS2ID,
@@ -147,11 +146,11 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
         idRef <- paste(unlist(idRef), collapse = ", ")
 
-        #TODO utilitza function
+        #TODO utilitza function que torni readPos
         spectraPTR <- DBI::dbGetQuery(MS2ID@dbcon,
                                paste("SELECT * FROM spectraPTR
                                WHERE id IN (", idRef,") "))
-        #import ALL spectra (on disk -> RAM) to avoid concurrence acces to disk
+        #import ALL spectra (on disk -> RAM) to avoid concurrent acces to disk
         readPos <- unlist(lapply(seq_len(nrow(spectraPTR)), function(x)
             seq_len(spectraPTR$numItems[x]) + spectraPTR$startPos[x]))
         refSpectra_thisQ <- MS2ID@spectracon[, readPos, drop=FALSE]
@@ -161,6 +160,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
         massm <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         intm <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
+
         cossim <-vapply(seq_along(spectraPTR$startPos), function(x) {
             a <- refSpectra_thisQ[, seq_along(spectraPTR$numItems[x])+
                                       spectraPTR$startPos[x],
