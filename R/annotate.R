@@ -83,13 +83,12 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     QRY <- .loadSpectra(dirPath=QRYdir, nsamples=nsamples, ...)
     #QRY <- .loadSpectra(dirPath=QRYdir, nsamples=1000)
 
-    #check if argument "cmnPolarity" can be applied
+    #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
         if(!all(QRY$Metadata$polarity %in% c(0,1)))
             stop("cmnPolarity=TRUE can not be applied because some query spectra
                  have unknown polarity (neither 1 (positive) nor 0 (negative))")
     }
-
     #remove invalid spectra
     QRY <- .pruneSpectra(QRY)
 
@@ -108,24 +107,39 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                                        dec2binFrag)
 
     # make up a SQL sentence according global restrictions (db, nature,
-    #  but no polarity...)
     SQLwhere <- ""
     if(db!="all")
-        SQLwhere <- paste0(SQLwhere, "AND s.REFID_db='", db,"'")
+        SQLwhere <- paste0(SQLwhere, " AND s.REFID_db='", db,"'")
     if(nature!="all")
-        SQLwhere <- paste0(SQLwhere, "AND s.REFnature='", nature,"'")
+        SQLwhere <- paste0(SQLwhere, " AND s.REFnature='", nature,"'")
 
-    #browser()
     rslt <- lapply(seq_along(QRY$Spectra$idspctra), function(idQspctr){
+        posMetadata <- which(QRY$Metadata$idspctra ==
+                                 QRY$Spectra$idspctra[idQspctr])
         mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         idRef <- .getIDref_bymzIndex(mzVector=mzV,  ms2idObj=MS2ID,
                                      cmnPeaks=cmnPeaks,
                                      cmnTopPeaks=cmnTopPeaks)
         idRef <- paste(idRef, collapse = ", ")
 
+        #apply polarity filter
+        if(cmnPolarity){
+            SQLwhere <- paste0(SQLwhere, " AND s.REFpolarity='",
+                               QRY$Metadata$polarity[posMetadata], "'")
+        }
+        #apply precursor mass filter
+        if(cmnPrecMass){
+            minPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
+                (1 - massErrThresh/10^6)
+            maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
+                (1 + massErrThresh/10^6)
+            SQLwhere <- paste0(SQLwhere, " AND s.REFprecursor_mz BETWEEN ",
+                               minPrecMass," AND ", maxPrecMass)
+        }
+
         if(!cmnNeutralMass){
             idRef <- DBI::dbGetQuery(MS2ID@dbcon,
-                                 paste("SELECT s.ID_spectra FROM metaSpectrum s
+                                 paste0("SELECT s.ID_spectra FROM metaSpectrum s
                                        WHERE ID_spectra IN (", idRef,")",
                                        SQLwhere
                                        ))
@@ -176,3 +190,5 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     })
     return(rslt)
 }
+#TODO: obtain result
+#TODO: check all filters
