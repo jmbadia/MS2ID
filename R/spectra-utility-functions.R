@@ -21,10 +21,10 @@
         stop("Database does not have valid spectra")
     } else if (any(invalidMatrx)){
         invalidMatrx <- which(invalidMatrx)
-        invalidSpctra <- DB$Spectra$idDBSpectra[invalidMatrx]
-        DB$Spectra$idDBSpectra <- DB$Spectra$idDBSpectra[-invalidMatrx]
+        invalidSpctra <- DB$Spectra$idspctra[invalidMatrx]
+        DB$Spectra$idspctra <- DB$Spectra$idspctra[-invalidMatrx]
         DB$Spectra$spectra <- DB$Spectra$spectra[-invalidMatrx]
-        DB$Metadata <- DB$Metadata[!DB$Metadata$idUNKSpectra %in% invalidSpctra]
+        DB$Metadata <- DB$Metadata[!DB$Metadata$idspctra %in% invalidSpctra,]
     }
 
     return(DB)
