@@ -2,31 +2,48 @@
 
 #' Remove invalid spectra
 #'
-#' '.pruneSpectra' checks all spectra matrices and remove the invalid ones from
-#' the list of matrices and metadata. A spectra matrix is considered valid if it
-#' is a matrix with two rows and at list one column.
+#' '.validateSpectra' checks all spectra matrices and remove the invalid
+#'  ones from the list of matrices and metadata. A spectra matrix is
+#'  considered valid if it is a matrix with two rows and at list one column.
 #'
 #' @param DB object with the structure of .loadSpectra() return
 #'
 #' @return The db object with any invalid spectra removed, from the metadata
 #' but also from the list of matrices
+#' @noRd
 
-.pruneSpectra <- function(DB){
-    invalidMatrx <- vapply(DB$Spectra$spectra, function(x) {
-        if(class(x)[1] == "matrix") nrow(x) != 2 | ncol(x) < 1
-        else TRUE
-    }, FUN.VALUE = T)
+.validateSpectra <- function(DB){
+  invalidMatrx <- vapply(DB$Spectra$spectra, function(x) {
+    if(class(x)[1] == "matrix") nrow(x) != 2 | ncol(x) < 1
+    else TRUE
+  }, FUN.VALUE = T)
 
-    if(all(invalidMatrx)){
-        stop("Database does not have valid spectra")
-    } else if (any(invalidMatrx)){
-        invalidMatrx <- which(invalidMatrx)
-        invalidSpctra <- DB$Spectra$idspctra[invalidMatrx]
-        DB$Spectra$idspctra <- DB$Spectra$idspctra[-invalidMatrx]
-        DB$Spectra$spectra <- DB$Spectra$spectra[-invalidMatrx]
-        DB$Metadata <- DB$Metadata[!DB$Metadata$idspctra %in% invalidSpctra,]
+  if(all(invalidMatrx)){
+    stop("Database does not have valid spectra")
+  } else if (any(invalidMatrx)){
+    DB <- .pruneSpectra(DB, DB$Spectra$idspctra[invalidMatrx])
     }
+  return(DB)
+}
 
+
+#' remove spectra from DB
+#'
+#' '.pruneSpectra' removes spectra based on its id from the metadata
+#' but also from the list of matrices
+#'
+#' @param DB object with the structure of .loadSpectra() return
+#' @param idSpectra2remove vector of spectrum identfiers (integers)
+#'  pointing out the spectra to be removed
+#'
+#' @noRd
+
+.pruneSpectra <- function(DB, idSpectra2remove){
+    DB$Metadata <- DB$Metadata[!DB$Metadata$idspctra %in% idSpectra2remove,]
+
+    posInvSpctra <- which(DB$Spectra$idspctra %in% idSpectra2remove)
+    DB$Spectra$idspctra <- DB$Spectra$idspctra[-posInvSpctra]
+    DB$Spectra$spectra <- DB$Spectra$spectra[-posInvSpctra]
     return(DB)
 }
 
