@@ -90,7 +90,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                  have unknown polarity (neither 1 (positive) nor 0 (negative))")
     }
     #remove invalid spectra
-    QRY <- .pruneSpectra(QRY)
+    QRY <- .validateSpectra(QRY)
 
     # Clean spectra. Remove fragments with intensity < 1% base peak
     # (considering noiseThresh=0.01)
@@ -105,27 +105,31 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     message("Binning query spectra ...")
     QRY$Spectra$spectra <- .binSpectra(spectra=QRY$Spectra$spectra,
                                        dec2binFrag)
-
     # make up a SQL sentence according global restrictions (db, nature,
-    SQLwhere <- ""
+    SQLwhereGen <- vector()
     if(db!="all")
-        SQLwhere <- paste0(SQLwhere, " AND s.REFID_db='", db,"'")
+        SQLwhereGen <- .appendSQLwhere("s.REFID_db", db,
+                                       whereVector=SQLwhereGen)
     if(nature!="all")
-        SQLwhere <- paste0(SQLwhere, " AND s.REFnature='", nature,"'")
-
-    rslt <- lapply(seq_along(QRY$Spectra$idspctra), function(idQspctr){
-        posMetadata <- which(QRY$Metadata$idspctra ==
-                                 QRY$Spectra$idspctra[idQspctr])
+        SQLwhereGen <- .appendSQLwhere("s.REFnature", nature,
+                                       whereVector=SQLwhereGen)
+    message("Calculating distance metrics between query and
+            reference spectra ...")
+    distances <- pbapply::pblapply(seq_along(QRY$Spectra$idSpectra),
+                                   function(idQspctr){
+        posMetadata <- which(QRY$Metadata$idSpectra ==
+                                 QRY$Spectra$idSpectra[idQspctr])
         mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         idRef <- .getIDref_bymzIndex(mzVector=mzV,  ms2idObj=MS2ID,
                                      cmnPeaks=cmnPeaks,
                                      cmnTopPeaks=cmnTopPeaks)
-        idRef <- paste(idRef, collapse = ", ")
 
+        SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
-            SQLwhere <- paste0(SQLwhere, " AND s.REFpolarity='",
-                               QRY$Metadata$polarity[posMetadata], "'")
+            SQLwhereIndv <- .appendSQLwhere("s.REFpolarity",
+                                            QRY$Metadata$polarity[posMetadata],
+                                            whereVector=SQLwhereIndv)
         }
         #apply precursor mass filter
         if(cmnPrecMass){
@@ -133,16 +137,18 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                 (1 - massErrThresh/10^6)
             maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
                 (1 + massErrThresh/10^6)
-            SQLwhere <- paste0(SQLwhere, " AND s.REFprecursor_mz BETWEEN ",
-                               minPrecMass," AND ", maxPrecMass)
+            SQLwhereIndv <- .appendSQLwhere("s.REFprecursor_mz",
+                                            c(minPrecMass, maxPrecMass),
+                                            mode="BETWEEN",
+                                            whereVector=SQLwhereIndv)
         }
 
+        SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
+                                        whereVector=SQLwhereIndv)
+
         if(!cmnNeutralMass){
-            idRef <- DBI::dbGetQuery(MS2ID@dbcon,
-                                 paste0("SELECT s.ID_spectra FROM metaSpectrum s
-                                       WHERE ID_spectra IN (", idRef,")",
-                                       SQLwhere
-                                       ))
+            idRef <- .getSQLrecords(MS2ID,"s.ID_spectra", "metaSpectrum s",
+                                    c(SQLwhereGen, SQLwhereIndv))
         }else{
             #TODO: MODIFY ACCORDING cmnNeutralMass requirements
             idRef <- DBI::dbGetQuery(MS2ID@dbcon,
@@ -155,15 +161,12 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                       AND s.REFID_db='Metlin'
                       "))
         }
-        #remove Query spectrum with no targeted spectra
-       if(nrow(idRef) == 0) return(NULL)
+        #return if query spectrum has no targeted db spectra
+       if(nrow(idRef) == 0) return(NA)
 
-        idRef <- paste(unlist(idRef), collapse = ", ")
+        SQLwhere <- .appendSQLwhere("id", idRef$ID_spectra, mode="IN")
+        spectraPTR <- .getSQLrecords(MS2ID,"*", "spectraPTR", SQLwhere)
 
-        #TODO utilitza function que torni readPos
-        spectraPTR <- DBI::dbGetQuery(MS2ID@dbcon,
-                               paste("SELECT * FROM spectraPTR
-                               WHERE id IN (", idRef,") "))
         #import ALL spectra (on disk -> RAM) to avoid concurrent acces to disk
         readPos <- unlist(lapply(seq_len(nrow(spectraPTR)), function(x)
             seq_len(spectraPTR$numItems[x]) + spectraPTR$startPos[x]))
@@ -175,7 +178,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         massm <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         intm <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
 
-        cossim <-vapply(seq_along(spectraPTR$startPos), function(x) {
+        distance <- vapply(seq_along(spectraPTR$startPos), function(x) {
             a <- refSpectra_thisQ[, seq_along(spectraPTR$numItems[x])+
                                       spectraPTR$startPos[x],
                                     drop=FALSE]
@@ -186,8 +189,48 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
             row2[is.na(row2)] <- 0
             lsa::cosine(row1, row2)
         }, FUN.VALUE=3.2)
-
+        return(data.frame(REF_idSpectra=spectraPTR$id, distance=distance))
     })
+
+    names(distances) <- QRY$Spectra$idSpectra
+
+    #remove query spectra with no successful results
+    distances <- distances[!is.na(distances)]
+    distances <- lapply(distances, function(x) x[x$distance >= cosSimThresh, ])
+    distances <- distances[vapply(distances, nrow, FUN.VALUE = 2) > 0]
+
+    if(length(distances) == 0){
+        stop("No query spectra have satisfactory results.")
+    }
+
+    #prepare the result
+    rslt <- list()
+    rslt$crossRef <-  do.call(rbind, distances)
+    rslt$crossRef$QRY_idSpectra <- rep(names(distances),
+                                       vapply(distances, nrow, FUN.VALUE = 3))
+
+    rslt$QRY_metadata <- QRY$Metadata[match(
+        unique(rslt$crossRef$QRY_idSpectra), QRY$Metadata$idSpectra),]
+    rslt$QRY_metadata <- dplyr::rename(rslt$QRY_metadata,
+                                       QRY_idSpectra=idSpectra)
+
+    relevantQRYSpectra <- which(QRY$Spectra$idSpectra %in%
+        unique(rslt$crossRef$QRY_idSpectra))
+    rslt$QRY_spectra$idSpectra <- QRY$Spectra$idSpectra[relevantQRYSpectra]
+    rslt$QRY_spectra$spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
+
+    SQLwhere <- .appendSQLwhere("ID_spectra",
+                                unique(rslt$crossRef$REF_idSpectra), mode="IN")
+    rslt$REF_metaSpectrum <- .getSQLrecords(MS2ID, "*", "metaSpectrum s",
+                                            SQLwhere)
+    rslt$REF_metaSpectrum <- dplyr::rename(rslt$REF_metaSpectrum,
+                                           REF_idSpectra=ID_spectra)
+
+    #rslt$REF_metaCompound
+
+    #rslt$REF_spectra$idSpectra
+    #rslt$REF_spectra$spectra
+
     return(rslt)
 }
 #TODO: obtain result
