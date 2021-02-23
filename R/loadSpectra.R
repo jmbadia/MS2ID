@@ -7,7 +7,7 @@
 #'  the identification process, the user can limit spectra to load to
 #'  'nsamples'. The spectra are chosen at random.
 #'
-#' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idspctra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idspctra' variable.
+#' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idSpectra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idSpectra' variable.
 #' @noRd
 
 .loadSpectra <- function(dirPath, msLevel=2L, nsamples){
@@ -57,8 +57,8 @@
   }
 
   # Apply same ID to metadata spectra and metadata matrix
-  mtdata <- cbind(idspctra=seq_len(nrow(mtdata)), mtdata)
-  spctra <- list(idspctra=seq_len(nrow(mtdata)), spectra=spctra)
+  mtdata <- cbind(idSpectra=seq_len(nrow(mtdata)), mtdata)
+  spctra <- list(idSpectra=seq_len(nrow(mtdata)), spectra=spctra)
 
   #subset to a number 'nsamples' of random samples.
   # In this part of the code in order to maintain id traceability
@@ -67,10 +67,10 @@
         message(paste("'nsamples' is larger than the number of spectra",
                       "available. All spectra will be loaded."))
     else{
-        spectra2subset <- sample(mtdata$idspctra, nsamples)
-        mtdata <- mtdata[mtdata$idspctra %in% spectra2subset, ]
-        which2subset <- which(spctra$idspctra %in% spectra2subset)
-        spctra$idspctra <- spctra$idspctra[which2subset]
+        spectra2subset <- sample(mtdata$idSpectra, nsamples)
+        mtdata <- mtdata[mtdata$idSpectra %in% spectra2subset, ]
+        which2subset <- which(spctra$idSpectra %in% spectra2subset)
+        spctra$idSpectra <- spctra$idSpectra[which2subset]
         spctra$spectra <- spctra$spectra[which2subset]
       }
   }

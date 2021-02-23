@@ -4,7 +4,7 @@
 #'
 #' '.validateSpectra' checks all spectra matrices and remove the invalid
 #'  ones from the list of matrices and metadata. A spectra matrix is
-#'  considered valid if it is a matrix with two rows and at list one column.
+#'  considered valid when it has two rows and at list one column.
 #'
 #' @param DB object with the structure of .loadSpectra() return
 #'
@@ -21,7 +21,7 @@
   if(all(invalidMatrx)){
     stop("Database does not have valid spectra")
   } else if (any(invalidMatrx)){
-    DB <- .pruneSpectra(DB, DB$Spectra$idspctra[invalidMatrx])
+    DB <- .pruneSpectra(DB, DB$Spectra$idSpectra[invalidMatrx])
     }
   return(DB)
 }
@@ -39,10 +39,10 @@
 #' @noRd
 
 .pruneSpectra <- function(DB, idSpectra2remove){
-    DB$Metadata <- DB$Metadata[!DB$Metadata$idspctra %in% idSpectra2remove,]
+    DB$Metadata <- DB$Metadata[!DB$Metadata$idSpectra %in% idSpectra2remove,]
 
-    posInvSpctra <- which(DB$Spectra$idspctra %in% idSpectra2remove)
-    DB$Spectra$idspctra <- DB$Spectra$idspctra[-posInvSpctra]
+    posInvSpctra <- which(DB$Spectra$idSpectra %in% idSpectra2remove)
+    DB$Spectra$idSpectra <- DB$Spectra$idSpectra[-posInvSpctra]
     DB$Spectra$spectra <- DB$Spectra$spectra[-posInvSpctra]
     return(DB)
 }
