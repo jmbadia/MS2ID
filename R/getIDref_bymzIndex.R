@@ -1,10 +1,8 @@
-.getIDref_bymzIndex <- function(mzVector, ms2idObj, cmnPeaks=2, cmnTopPeaks=5){
-    mzVector <- paste(mzVector, collapse = ", ")
+.queryMzIndex <- function(mzVector, ms2idObj, cmnPeaks=2, cmnTopPeaks=5){
     #for every mzIndex table, obtain positions of idREF to read
+    SQLwhere <- .appendSQLwhere("id", mzVector, mode="IN")
     mzPointers <- lapply(seq_along(MZINDEXPTR), function(i){
-        mzIndexPTR <- DBI::dbGetQuery(ms2idObj@dbcon,
-                                      paste("SELECT * FROM", MZINDEXPTR[i],
-                                            "WHERE id IN (", mzVector,")"))
+        mzIndexPTR <- .getSQLrecords(ms2idObj, "*", MZINDEXPTR[i], SQLwhere)
         unlist(lapply(seq_len(nrow(mzIndexPTR)), function(x)
             seq_len(mzIndexPTR$numItems[x]) + mzIndexPTR$startPos[x]))
     })

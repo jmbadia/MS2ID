@@ -120,9 +120,8 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         posMetadata <- which(QRY$Metadata$idSpectra ==
                                  QRY$Spectra$idSpectra[idQspctr])
         mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
-        idRef <- .getIDref_bymzIndex(mzVector=mzV,  ms2idObj=MS2ID,
-                                     cmnPeaks=cmnPeaks,
-                                     cmnTopPeaks=cmnTopPeaks)
+        idRef <- .queryMzIndex(mzVector=mzV, ms2idObj=MS2ID, cmnPeaks=cmnPeaks,
+                               cmnTopPeaks=cmnTopPeaks)
 
         SQLwhereIndv <- vector()
         #apply polarity filter
@@ -162,26 +161,16 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                       "))
         }
         #return if query spectrum has no targeted db spectra
-       if(nrow(idRef) == 0) return(NA)
+        if(nrow(idRef) == 0) return(NA)
 
-        SQLwhere <- .appendSQLwhere("id", idRef$ID_spectra, mode="IN")
-        spectraPTR <- .getSQLrecords(MS2ID,"*", "spectraPTR", SQLwhere)
-
-        #import ALL spectra (on disk -> RAM) to avoid concurrent acces to disk
-        readPos <- unlist(lapply(seq_len(nrow(spectraPTR)), function(x)
-            seq_len(spectraPTR$numItems[x]) + spectraPTR$startPos[x]))
-        refSpectra_thisQ <- MS2ID@spectracon[, readPos, drop=FALSE]
-
-        #recalculate startPos considering refSpectra_thisQ is a subset
-        spectraPTR$startPos <- c(0, cumsum(head(spectraPTR$numItems,-1)))
+        #get spectra from big memory
+        refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
 
         massm <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
         intm <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
 
-        distance <- vapply(seq_along(spectraPTR$startPos), function(x) {
-            a <- refSpectra_thisQ[, seq_along(spectraPTR$numItems[x])+
-                                      spectraPTR$startPos[x],
-                                    drop=FALSE]
+        distance <- vapply(seq_along(refSpectra$ptr$id), function(x) {
+            a <- .getSpectrum(refSpectra, x)
             row1<- unique(c(a["mass-charge",], massm))
             row2 <- a["intensity",][match(row1, a["mass-charge",])]
             row1 <- intm[match(row1, massm)]
@@ -189,7 +178,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
             row2[is.na(row2)] <- 0
             lsa::cosine(row1, row2)
         }, FUN.VALUE=3.2)
-        return(data.frame(REF_idSpectra=spectraPTR$id, distance=distance))
+        return(data.frame(REF_idSpectra=refSpectra$ptr$id, distance=distance))
     })
 
     names(distances) <- QRY$Spectra$idSpectra
