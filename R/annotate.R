@@ -115,12 +115,16 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                                        whereVector=SQLwhereGen)
     message("Calculating distance metrics between query and
             reference spectra ...")
+browser()
     distances <- pbapply::pblapply(seq_along(QRY$Spectra$idSpectra),
                                    function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
                                  QRY$Spectra$idSpectra[idQspctr])
-        mzV <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
-        idRef <- .queryMzIndex(mzVector=mzV, ms2idObj=MS2ID, cmnPeaks=cmnPeaks,
+
+        massQ <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
+        intQ <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
+
+        idRef <- .queryMzIndex(mzVector=massQ, ms2idObj=MS2ID, cmnPeaks=cmnPeaks,
                                cmnTopPeaks=cmnTopPeaks)
 
         SQLwhereIndv <- vector()
@@ -166,18 +170,16 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
 
-        massm <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
-        intm <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
-
         distance <- vapply(seq_along(refSpectra$ptr$id), function(x) {
             a <- .getSpectrum(refSpectra, x)
-            row1<- unique(c(a["mass-charge",], massm))
+            row1<- unique(c(a["mass-charge",], massQ))
             row2 <- a["intensity",][match(row1, a["mass-charge",])]
-            row1 <- intm[match(row1, massm)]
+            row1 <- intQ[match(row1, massQ)]
             row1[is.na(row1)] <- 0
             row2[is.na(row2)] <- 0
             lsa::cosine(row1, row2)
         }, FUN.VALUE=3.2)
+#TODO: put more metrics on the dataframe
         return(data.frame(REF_idSpectra=refSpectra$ptr$id, distance=distance))
     })
 
@@ -191,36 +193,65 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(length(distances) == 0){
         stop("No query spectra have satisfactory results.")
     }
-
+browser()
     #prepare the result
     rslt <- list()
+    # crossRef
     rslt$crossRef <-  do.call(rbind, distances)
-    rslt$crossRef$QRY_idSpectra <- rep(names(distances),
-                                       vapply(distances, nrow, FUN.VALUE = 3))
+    rslt$crossRef$QRY_idSpectra <- as.integer(rep(names(distances),
+                                       vapply(distances, nrow, FUN.VALUE = 3)))
 
+    SQLwhere <- .appendSQLwhere("ID_spectra",
+                                unique(rslt$crossRef$REF_idSpectra), mode="IN")
+    crossRef <- .getSQLrecords(MS2ID, "*", "crossRef_SpectrComp",
+                                            SQLwhere)
+    rslt$crossRef$REF_idCompound <- crossRef$ID_metabolite[
+        match(rslt$crossRef$REF_idSpectra, crossRef$ID_spectra)]
+
+    #QRY_metadata
     rslt$QRY_metadata <- QRY$Metadata[match(
         unique(rslt$crossRef$QRY_idSpectra), QRY$Metadata$idSpectra),]
     rslt$QRY_metadata <- dplyr::rename(rslt$QRY_metadata,
                                        QRY_idSpectra=idSpectra)
-
+    #QRY_spectra
     relevantQRYSpectra <- which(QRY$Spectra$idSpectra %in%
         unique(rslt$crossRef$QRY_idSpectra))
-    rslt$QRY_spectra$idSpectra <- QRY$Spectra$idSpectra[relevantQRYSpectra]
-    rslt$QRY_spectra$spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
+    rslt$QRY_spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
+    names(rslt$QRY_spectra) <- QRY$Spectra$idSpectra[relevantQRYSpectra]
 
+    #REF_metaSpectra
     SQLwhere <- .appendSQLwhere("ID_spectra",
                                 unique(rslt$crossRef$REF_idSpectra), mode="IN")
-    rslt$REF_metaSpectrum <- .getSQLrecords(MS2ID, "*", "metaSpectrum s",
+    rslt$REF_metaSpectra <- .getSQLrecords(MS2ID, "*", "metaSpectrum",
                                             SQLwhere)
-    rslt$REF_metaSpectrum <- dplyr::rename(rslt$REF_metaSpectrum,
+    rslt$REF_metaSpectra <- dplyr::rename(rslt$REF_metaSpectra,
                                            REF_idSpectra=ID_spectra)
 
-    #rslt$REF_metaCompound
+    #REF_spectra
+    refSpectra <- .bufferSpectra(MS2ID, unique(rslt$crossRef$REF_idSpectra))
 
-    #rslt$REF_spectra$idSpectra
-    #rslt$REF_spectra$spectra
 
-    return(rslt)
+    rslt$REF_spectra <- lapply(seq_along(refSpectra$ptr$id), function(x)
+        .getSpectrum(refSpectra, x))
+    names(rslt$REF_spectra) <- refSpectra$ptr$id
+
+    #REF_metaCompound
+    SQLwhere <- .appendSQLwhere("ID_metabolite",
+                                unique(rslt$crossRef$REF_idCompound), mode="IN")
+    rslt$REF_metaCompound <- .getSQLrecords(MS2ID, "*", "metaCompound",
+                                            SQLwhere)
+    rslt$REF_metaCompound <- dplyr::rename(rslt$REF_metaCompound,
+                                           REF_idCompound=ID_metabolite)
+
+    #obtain number of common masses
+    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x) {
+        a <- getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
+                          'mass-charge')
+        b <- getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
+                          'mass-charge')
+        sum(a %in% b)
+        }, FUN.VALUE = 3)
+        return(rslt)
 }
-#TODO: obtain result
+#TODO: obtain adducts
 #TODO: check all filters

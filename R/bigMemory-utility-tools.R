@@ -35,8 +35,14 @@
 #' @noRd
 
 .getSpectrum <- function(bufferedSpectra, position){
-    bufferedSpectra$spectra[, seq_along(bufferedSpectra$ptr$numItems[position])+
+
+    bufferedSpectra$spectra[, seq_len(bufferedSpectra$ptr$numItems[position])+
                                 bufferedSpectra$ptr$startPos[position],
                        drop=FALSE]
+}
+
+#considering a list of spectra, get an spectrum considering its idSpectra (integer)
+getFragments <- function(spectraList, idSpectra, rowName=""){
+    spectraList[[as.character(idSpectra)]][rowName,]
 }
 
