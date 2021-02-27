@@ -25,7 +25,7 @@
     return(list(spectra=spectra, ptr=spectraPTR))
 }
 
-#' Extract a reference spectrum
+#' Extract a spectrum from a buffered spectra
 #'
 #' @param bufferedSpectra list containing buffered spectra; results from the
 #' .bufferSpectra() function.
@@ -35,14 +35,9 @@
 #' @noRd
 
 .getSpectrum <- function(bufferedSpectra, position){
-
+    if(length(position)!=1) stop("Only a position is supported")
     bufferedSpectra$spectra[, seq_len(bufferedSpectra$ptr$numItems[position])+
                                 bufferedSpectra$ptr$startPos[position],
                        drop=FALSE]
-}
-
-#considering a list of spectra, get an spectrum considering its idSpectra (integer)
-getFragments <- function(spectraList, idSpectra, rowName=""){
-    spectraList[[as.character(idSpectra)]][rowName,]
 }
 

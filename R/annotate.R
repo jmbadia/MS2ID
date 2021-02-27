@@ -15,7 +15,7 @@
 #' @param cosSimThresh Numeric defining the minimum cosine similarity a
 #'  pair of spectra (query and reference) must have to be returned by the
 #'  function. (TODO: see link with the definition of cossim used)
-#' @param massErrThresh TODO
+#' @param massError TODO
 #' @param cmnPeaks -Reference spectra filter- Integer limiting reference
 #' spectra to whose with at least that number of peaks in common with the
 #' query spectrum.
@@ -48,7 +48,7 @@
 #' annotate(QRYdir=q, MS2ID=ms2idObject, cmnNeutralMass=FALSE, nsamples=10)
 
 annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
-                     massErrThresh=20, cmnPrecMass=FALSE, cmnNeutralMass=TRUE,
+                     massError=20, cmnPrecMass=FALSE, cmnNeutralMass=TRUE,
                      cmnPeaks=2, cmnTopPeaks=5, cmnPolarity= TRUE, db="all",
                      nature="all", nsamples, ...){
 
@@ -58,7 +58,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                     cmnTopPeaks="integer", db="character", nature="character",
                     cmnPolarity= "logical", cmnPrecMass="logical",
                     cmnNeutralMass="logical", cosSimThresh="numeric",
-                    massErrThresh="numeric")
+                    massError="numeric")
     .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
 
     #check values
@@ -74,8 +74,8 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         stop("'nature' is expected to be 'experimental', 'insilico' or 'all'")
     if(cosSimThresh < 0 | cosSimThresh > 1)
         stop("'cosSimThresh' is expected to be a number between 0 and 1")
-    if(massErrThresh < 0)
-        stop("'massErrThresh' is expected to be a positive number")
+    if(massError < 0)
+        stop("'massError' is expected to be a positive number")
 
     identDate = format(Sys.time(),"%Y%m%d_%H%M")
 
@@ -115,7 +115,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
                                        whereVector=SQLwhereGen)
     message("Calculating distance metrics between query and
             reference spectra ...")
-browser()
+
     distances <- pbapply::pblapply(seq_along(QRY$Spectra$idSpectra),
                                    function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
@@ -137,9 +137,9 @@ browser()
         #apply precursor mass filter
         if(cmnPrecMass){
             minPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
-                (1 - massErrThresh/10^6)
+                (1 - massError/10^6)
             maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
-                (1 + massErrThresh/10^6)
+                (1 + massError/10^6)
             SQLwhereIndv <- .appendSQLwhere("s.REFprecursor_mz",
                                             c(minPrecMass, maxPrecMass),
                                             mode="BETWEEN",
@@ -164,6 +164,9 @@ browser()
                       AND s.REFID_db='Metlin'
                       "))
         }
+
+
+
         #return if query spectrum has no targeted db spectra
         if(nrow(idRef) == 0) return(NA)
 
@@ -193,7 +196,7 @@ browser()
     if(length(distances) == 0){
         stop("No query spectra have satisfactory results.")
     }
-browser()
+
     #prepare the result
     rslt <- list()
     # crossRef
@@ -229,8 +232,6 @@ browser()
 
     #REF_spectra
     refSpectra <- .bufferSpectra(MS2ID, unique(rslt$crossRef$REF_idSpectra))
-
-
     rslt$REF_spectra <- lapply(seq_along(refSpectra$ptr$id), function(x)
         .getSpectrum(refSpectra, x))
     names(rslt$REF_spectra) <- refSpectra$ptr$id
@@ -244,14 +245,25 @@ browser()
                                            REF_idCompound=ID_metabolite)
 
     #obtain number of common masses
-    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x) {
-        a <- getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
+    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x)
+        {
+        a <- .getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
                           'mass-charge')
-        b <- getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
+        b <- .getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
                           'mass-charge')
         sum(a %in% b)
         }, FUN.VALUE = 3)
-        return(rslt)
+
+    #obtain possible adducts
+    ionizTable <- rslt$QRY_metadata[match(rslt$crossRef$QRY_idSpectra,
+                                          rslt$QRY_metadata$QRY_idSpectra),
+                                    c("precursorMZ", "polarity")]
+    ionizTable$REFMmi <- rslt$REF_metaCompound[match(
+        rslt$crossRef$REF_idCompound,
+        rslt$REF_metaCompound$REF_idCompound), "REFMmi"]
+    rslt$crossRef$propAdduct <- .getAdducts(ionizTable, massError)
+
+    return(rslt)
 }
 #TODO: obtain adducts
 #TODO: check all filters

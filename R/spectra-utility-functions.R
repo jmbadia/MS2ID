@@ -59,6 +59,7 @@
 #' @param decimals2bin integer or numeric indicating the number of decimal places to be used on the round.
 #'
 #' @return The spectra list binned
+#' @noRd
 
 .binSpectra <- function(spectra, decimals2bin){
     #check argument types
@@ -81,3 +82,22 @@
     })
     return(spectra)
 }
+
+
+#' Extract a spectrum from a spectra list
+#'
+#' @param spectraList spectra list. spectra id are in names(list)
+#' @param idSpectrum integer(1) or character(1) id of the spectrum to extract
+#' @param rowName character(1). Optionally, 'mass-charge' or 'intensity'
+#'  row can be selected
+#'
+#' @return
+#' @noRd
+.getFragments <- function(spectraList, idSpectrum, rowName=""){
+  if(length(idSpectrum)!=1) stop("Only a idSpectrum is supported")
+  spectraList[[as.character(idSpectrum)]][rowName,]
+}
+
+
+
+
