@@ -148,24 +148,36 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
                                         whereVector=SQLwhereIndv)
-
         if(!cmnNeutralMass){
             idRef <- .getSQLrecords(MS2ID,"s.ID_spectra", "metaSpectrum s",
                                     c(SQLwhereGen, SQLwhereIndv))
+
         }else{
-            #TODO: MODIFY ACCORDING cmnNeutralMass requirements
-            idRef <- DBI::dbGetQuery(MS2ID@dbcon,
-                            paste("SELECT sc.*, s.REFmzRangeEnd, c.REFname
-                      FROM crossRef_SpectrComp sc",
-                                  "JOIN metaSpectrum s USING(ID_spectra)",
-                                  "JOIN metaCompound c USING(ID_metabolite)
-                      WHERE s.ID_spectra IN (", idRef,")
-                      AND s.REFpolarity=1
-                      AND s.REFID_db='Metlin'
-                      "))
+            #TODO REMOVE THIS. SQL order is so slow that it takes 3 minutes
+            # prefiltering with cmnNeutralMass and 60 secons with no prefilter
+            # better always not prefilter and subset results
+            # when cmnNeutralMass=TRUE
+            #
+            QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
+                                QRY$Metadata$polarity[posMetadata])
+            QRYMmi_min <- QRYMmi * (1 - massError/10^6)
+            QRYMmi_max <- QRYMmi * (1 + massError/10^6)
+            subSQLwhere_OR <- vector()
+            for(i in seq_along(QRYMmi)){
+                subSQLwhere_OR <- .appendSQLwhere("c.REFMmi", c(QRYMmi_min[i],
+                                                                QRYMmi_max[i]),
+                                                  mode="BETWEEN",
+                                                  whereVector=subSQLwhere_OR)
+            }
+                subSQLwhere_OR <- paste("(", paste(subSQLwhere_OR,
+                                                   collapse = " OR "), ")")
+                idRef <- .getSQLrecords(MS2ID, select="sc.ID_spectra",
+                                        from="crossRef_SpectrComp sc",
+                                        where=c(SQLwhereGen,
+                                                SQLwhereIndv, subSQLwhere_OR),
+                                        join=c("metaSpectrum s USING(ID_spectra)",
+                                               "metaCompound c USING(ID_metabolite)"))
         }
-
-
 
         #return if query spectrum has no targeted db spectra
         if(nrow(idRef) == 0) return(NA)

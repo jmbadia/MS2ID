@@ -47,9 +47,11 @@
 #'
 #' @return Returns the result of the query as a data frame
 #' @noRd
-.getSQLrecords <- function(MS2ID, select, from, where){
+.getSQLrecords <- function(MS2ID, select, from, where, join){
     where <- ifelse(missing(where),
                     "", paste("WHERE", paste(where, collapse = " AND ")))
+    join <- ifelse(missing(join),
+                    "", paste(c("", join), collapse = " JOIN "))
     DBI::dbGetQuery(MS2ID@dbcon,
-                    paste("SELECT", select, "FROM", from, where))
+                    paste("SELECT", select, "FROM", from, join, where))
 }
