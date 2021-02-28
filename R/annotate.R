@@ -77,11 +77,14 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(massError < 0)
         stop("'massError' is expected to be a positive number")
 
-    identDate = format(Sys.time(),"%Y%m%d_%H%M")
+    annotTime = Sys.time()
+
+    workVar <- mget(names(formals()), sys.frame(sys.nframe()))
+    workVar$MS2ID <- dirname(MS2ID@dbcon@dbname)
+    workVar <- c(annotationTime=as.character(annotTime), workVar)
 
     message("Loading query spectra ...")
     QRY <- .loadSpectra(dirPath=QRYdir, nsamples=nsamples, ...)
-    #QRY <- .loadSpectra(dirPath=QRYdir, nsamples=1000)
 
     #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
@@ -105,7 +108,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     message("Binning query spectra ...")
     QRY$Spectra$spectra <- .binSpectra(spectra=QRY$Spectra$spectra,
                                        dec2binFrag)
-    # make up a SQL sentence according global restrictions (db, nature,
+    # SQL sentence according global restrictions (db, nature, ...
     SQLwhereGen <- vector()
     if(db!="all")
         SQLwhereGen <- .appendSQLwhere("s.REFID_db", db,
@@ -148,43 +151,15 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
                                         whereVector=SQLwhereIndv)
-        if(!cmnNeutralMass){
-            idRef <- .getSQLrecords(MS2ID,"s.ID_spectra", "metaSpectrum s",
-                                    c(SQLwhereGen, SQLwhereIndv))
-
-        }else{
-            #TODO REMOVE THIS. SQL order is so slow that it takes 3 minutes
-            # prefiltering with cmnNeutralMass and 60 secons with no prefilter
-            # better always not prefilter and subset results
-            # when cmnNeutralMass=TRUE
-            #
-            QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
-                                QRY$Metadata$polarity[posMetadata])
-            QRYMmi_min <- QRYMmi * (1 - massError/10^6)
-            QRYMmi_max <- QRYMmi * (1 + massError/10^6)
-            subSQLwhere_OR <- vector()
-            for(i in seq_along(QRYMmi)){
-                subSQLwhere_OR <- .appendSQLwhere("c.REFMmi", c(QRYMmi_min[i],
-                                                                QRYMmi_max[i]),
-                                                  mode="BETWEEN",
-                                                  whereVector=subSQLwhere_OR)
-            }
-                subSQLwhere_OR <- paste("(", paste(subSQLwhere_OR,
-                                                   collapse = " OR "), ")")
-                idRef <- .getSQLrecords(MS2ID, select="sc.ID_spectra",
-                                        from="crossRef_SpectrComp sc",
-                                        where=c(SQLwhereGen,
-                                                SQLwhereIndv, subSQLwhere_OR),
-                                        join=c("metaSpectrum s USING(ID_spectra)",
-                                               "metaCompound c USING(ID_metabolite)"))
-        }
+        idRef <- .getSQLrecords(MS2ID,"s.ID_spectra", "metaSpectrum s",
+                                c(SQLwhereGen, SQLwhereIndv))
 
         #return if query spectrum has no targeted db spectra
         if(nrow(idRef) == 0) return(NA)
 
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
-
+        #TODO: put more metrics on the dataframe
         distance <- vapply(seq_along(refSpectra$ptr$id), function(x) {
             a <- .getSpectrum(refSpectra, x)
             row1<- unique(c(a["mass-charge",], massQ))
@@ -194,16 +169,18 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
             row2[is.na(row2)] <- 0
             lsa::cosine(row1, row2)
         }, FUN.VALUE=3.2)
-#TODO: put more metrics on the dataframe
-        return(data.frame(REF_idSpectra=refSpectra$ptr$id, distance=distance))
+
+        hit <- distance >= cosSimThresh
+        if(any(hit))
+            return(data.frame(REF_idSpectra=refSpectra$ptr$id[hit],
+                              distance=distance[hit]))
+        else
+            return(NA)
     })
 
     names(distances) <- QRY$Spectra$idSpectra
-
-    #remove query spectra with no successful results
+    #remove query spectra with no hits
     distances <- distances[!is.na(distances)]
-    distances <- lapply(distances, function(x) x[x$distance >= cosSimThresh, ])
-    distances <- distances[vapply(distances, nrow, FUN.VALUE = 2) > 0]
 
     if(length(distances) == 0){
         stop("No query spectra have satisfactory results.")
@@ -256,16 +233,6 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     rslt$REF_metaCompound <- dplyr::rename(rslt$REF_metaCompound,
                                            REF_idCompound=ID_metabolite)
 
-    #obtain number of common masses
-    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x)
-        {
-        a <- .getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
-                          'mass-charge')
-        b <- .getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
-                          'mass-charge')
-        sum(a %in% b)
-        }, FUN.VALUE = 3)
-
     #obtain possible adducts
     ionizTable <- rslt$QRY_metadata[match(rslt$crossRef$QRY_idSpectra,
                                           rslt$QRY_metadata$QRY_idSpectra),
@@ -275,6 +242,38 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
         rslt$REF_metaCompound$REF_idCompound), "REFMmi"]
     rslt$crossRef$propAdduct <- .getAdducts(ionizTable, massError)
 
+    if(cmnNeutralMass){
+        cmnNM <- !is.na(rslt$crossRef$propAdduct)
+        if(!any(cmnNM)){
+            stop("No query spectra have satisfactory results.")
+        }
+        rslt$crossRef <- rslt$crossRef[cmnNM,]
+        rslt$QRY_metadata <- rslt$QRY_metadata[
+            rslt$QRY_metadata$QRY_idSpectra %in% rslt$crossRef$QRY_idSpectra,]
+        rslt$REF_metaSpectra <- rslt$REF_metaSpectra[
+            rslt$REF_metaSpectra$REF_idSpectra %in% rslt$crossRef$REF_idSpectra,]
+        rslt$REF_metaCompound <- rslt$REF_metaCompound[
+            rslt$REF_metaCompound$REF_idCompound %in%
+                rslt$crossRef$REF_idCompound,]
+        rslt$QRY_spectra <- rslt$QRY_spectra[
+            names(rslt$QRY_spectra) %in% rslt$crossRef$QRY_idSpectra]
+        rslt$REF_spectra <- rslt$REF_spectra[
+            names(rslt$REF_spectra) %in% rslt$crossRef$REF_idSpectra]
+    }
+
+    #obtain number of common masses
+    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x)
+    {
+        a <- .getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
+                           'mass-charge')
+        b <- .getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
+                           'mass-charge')
+        sum(a %in% b)
+    }, FUN.VALUE = 3)
+
+    runningTime <- round(as.numeric(Sys.time()-annotTime, units = "mins"), 2)
+    workVar$annotationDuration <-  paste(runningTime, "min")
+    rslt$workVar <- workVar
     return(rslt)
 }
 #TODO: obtain adducts
