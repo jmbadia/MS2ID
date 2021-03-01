@@ -6,14 +6,14 @@
 #'  ones from the list of matrices and metadata. A spectra matrix is
 #'  considered valid when it has two rows and at list one column.
 #'
-#' @param DB object with the structure of .loadSpectra() return
+#' @param QRY object with the structure of .loadSpectra() return
 #'
-#' @return The db object with any invalid spectra removed, from the metadata
+#' @return The QRY object with any invalid spectra removed, from the metadata
 #' but also from the list of matrices
 #' @noRd
 
-.validateSpectra <- function(DB){
-  invalidMatrx <- vapply(DB$Spectra$spectra, function(x) {
+.validateSpectra <- function(QRY){
+  invalidMatrx <- vapply(QRY$Spectra$spectra, function(x) {
     if(class(x)[1] == "matrix") nrow(x) != 2 | ncol(x) < 1
     else TRUE
   }, FUN.VALUE = T)
@@ -21,30 +21,30 @@
   if(all(invalidMatrx)){
     stop("Database does not have valid spectra")
   } else if (any(invalidMatrx)){
-    DB <- .pruneSpectra(DB, DB$Spectra$idSpectra[invalidMatrx])
+    QRY <- .pruneSpectra(QRY, QRY$Spectra$idSpectra[invalidMatrx])
     }
-  return(DB)
+  return(QRY)
 }
 
 
-#' remove spectra from DB
+#' remove spectra from QRY
 #'
 #' '.pruneSpectra' removes spectra based on its id from the metadata
 #' but also from the list of matrices
 #'
-#' @param DB object with the structure of .loadSpectra() return
+#' @param QRY object with the structure of .loadSpectra() return
 #' @param idSpectra2remove vector of spectrum identfiers (integers)
 #'  pointing out the spectra to be removed
 #'
 #' @noRd
 
-.pruneSpectra <- function(DB, idSpectra2remove){
-    DB$Metadata <- DB$Metadata[!DB$Metadata$idSpectra %in% idSpectra2remove,]
+.pruneSpectra <- function(QRY, idSpectra2remove){
+    QRY$Metadata <- QRY$Metadata[!QRY$Metadata$idSpectra %in% idSpectra2remove,]
 
-    posInvSpctra <- which(DB$Spectra$idSpectra %in% idSpectra2remove)
-    DB$Spectra$idSpectra <- DB$Spectra$idSpectra[-posInvSpctra]
-    DB$Spectra$spectra <- DB$Spectra$spectra[-posInvSpctra]
-    return(DB)
+    posInvSpctra <- which(QRY$Spectra$idSpectra %in% idSpectra2remove)
+    QRY$Spectra$idSpectra <- QRY$Spectra$idSpectra[-posInvSpctra]
+    QRY$Spectra$spectra <- QRY$Spectra$spectra[-posInvSpctra]
+    return(QRY)
 }
 
 #' Bin spectra
