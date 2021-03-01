@@ -97,7 +97,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
     # Clean spectra. Remove fragments with intensity < 1% base peak
     # (considering noiseThresh=0.01)
-    QRY$Spectra$spectra <- lapply(QRY$Spectra$spectra, function(x) {
+    QRY$Spectra <- lapply(QRY$Spectra, function(x) {
         x[,x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
     })
 
@@ -106,8 +106,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     # check if its consistent with MS2ID bin
     dec2binFrag=2
     message("Binning query spectra ...")
-    QRY$Spectra$spectra <- .binSpectra(spectra=QRY$Spectra$spectra,
-                                       dec2binFrag)
+    QRY$Spectra <- .binSpectra(spectra=QRY$Spectra, dec2binFrag)
     # SQL sentence according global restrictions (db, nature, ...
     SQLwhereGen <- vector()
     if(db!="all")
@@ -119,13 +118,12 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     message("Calculating distance metrics between query and
             reference spectra ...")
 
-    distances <- pbapply::pblapply(seq_along(QRY$Spectra$idSpectra),
-                                   function(idQspctr){
+    distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
-                                 QRY$Spectra$idSpectra[idQspctr])
+                                 names(QRY$Spectra[idQspctr]))
 
-        massQ <- QRY$Spectra$spectra[[idQspctr]]["mass-charge",]
-        intQ <- QRY$Spectra$spectra[[idQspctr]]["intensity",]
+        massQ <- QRY$Spectra[[idQspctr]]["mass-charge",]
+        intQ <- QRY$Spectra[[idQspctr]]["intensity",]
 
         idRef <- .queryMzIndex(mzVector=massQ, ms2idObj=MS2ID, cmnPeaks=cmnPeaks,
                                cmnTopPeaks=cmnTopPeaks)
@@ -178,7 +176,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
             return(NA)
     })
 
-    names(distances) <- QRY$Spectra$idSpectra
+    names(distances) <- names(QRY$Spectra)
     #remove query spectra with no hits
     distances <- distances[!is.na(distances)]
 
@@ -206,10 +204,9 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     rslt$QRY_metadata <- dplyr::rename(rslt$QRY_metadata,
                                        QRY_idSpectra=idSpectra)
     #QRY_spectra
-    relevantQRYSpectra <- which(QRY$Spectra$idSpectra %in%
-        unique(rslt$crossRef$QRY_idSpectra))
-    rslt$QRY_spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
-    names(rslt$QRY_spectra) <- QRY$Spectra$idSpectra[relevantQRYSpectra]
+    relevantQRYSpectra <- names(QRY$Spectra) %in% unique(rslt$crossRef$QRY_idSpectra)
+    rslt$QRY_spectra <- QRY$Spectra
+    rslt$QRY_spectra <- rslt$QRY_spectra[relevantQRYSpectra]
 
     #REF_metaSpectra
     SQLwhere <- .appendSQLwhere("ID_spectra",
@@ -276,5 +273,8 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     rslt$workVar <- workVar
     return(rslt)
 }
-#TODO: obtain adducts
-#TODO: check all filters
+#TODO: COMPARE RESULTS WITH PREVOIUS VERSION
+#TODO: CHECK MS2ID OBJECT
+#TODO: SHINY
+#TODO: CONSENSUS SPECTRA
+#TODO: INCLUDE MORE METRICS

@@ -56,9 +56,14 @@
     mzR::close(mzMLfile)
   }
 
+#rslt$QRY_spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
+#names(rslt$QRY_spectra) <- QRY$Spectra$idSpectra[relevantQRYSpectra]
+
   # Apply same ID to metadata spectra and metadata matrix
   mtdata <- cbind(idSpectra=seq_len(nrow(mtdata)), mtdata)
-  spctra <- list(idSpectra=seq_len(nrow(mtdata)), spectra=spctra)
+  names(spctra) <- seq_len(nrow(mtdata))
+
+  #spctra <- list(idSpectra=seq_len(nrow(mtdata)), spectra=spctra)
 
   #subset to a number 'nsamples' of random samples.
   # In this part of the code in order to maintain id traceability
@@ -67,11 +72,10 @@
         message(paste("'nsamples' is larger than the number of spectra",
                       "available. All spectra will be loaded."))
     else{
+      #set.seed(1)
         spectra2subset <- sample(mtdata$idSpectra, nsamples)
         mtdata <- mtdata[mtdata$idSpectra %in% spectra2subset, ]
-        which2subset <- which(spctra$idSpectra %in% spectra2subset)
-        spctra$idSpectra <- spctra$idSpectra[which2subset]
-        spctra$spectra <- spctra$spectra[which2subset]
+        spctra <- spctra[names(spctra) %in% spectra2subset]
       }
   }
 

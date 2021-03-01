@@ -13,15 +13,15 @@
 #' @noRd
 
 .validateSpectra <- function(QRY){
-  invalidMatrx <- vapply(QRY$Spectra$spectra, function(x) {
+  invalidMatrx <- vapply(QRY$Spectra, function(x) {
     if(class(x)[1] == "matrix") nrow(x) != 2 | ncol(x) < 1
     else TRUE
   }, FUN.VALUE = T)
 
   if(all(invalidMatrx)){
-    stop("Database does not have valid spectra")
+    stop("Query samples do not have valid spectra")
   } else if (any(invalidMatrx)){
-    QRY <- .pruneSpectra(QRY, QRY$Spectra$idSpectra[invalidMatrx])
+    QRY <- .pruneSpectra(QRY, names(QRY$Spectra)[invalidMatrx])
     }
   return(QRY)
 }
@@ -39,11 +39,11 @@
 #' @noRd
 
 .pruneSpectra <- function(QRY, idSpectra2remove){
-    QRY$Metadata <- QRY$Metadata[!QRY$Metadata$idSpectra %in% idSpectra2remove,]
+    QRY$Metadata <- QRY$Metadata[!(QRY$Metadata$idSpectra %in% idSpectra2remove)
+                                 , ]
 
-    posInvSpctra <- which(QRY$Spectra$idSpectra %in% idSpectra2remove)
-    QRY$Spectra$idSpectra <- QRY$Spectra$idSpectra[-posInvSpctra]
-    QRY$Spectra$spectra <- QRY$Spectra$spectra[-posInvSpctra]
+    keepSpctra <- !(names(QRY$Spectra) %in% idSpectra2remove)
+    QRY$Spectra <- QRY$Spectra[keepSpctra]
     return(QRY)
 }
 
@@ -52,16 +52,16 @@
 #' '.binSpectra' rounds mz masses of spectra and merge those with the same
 #' resulting value.
 #'
-#' @param spectra list where every item is a spectrum. Every spectrum is a
+#' @param spectraList list where every item is a spectrum. Every spectrum is a
 #' matrix with two rows (named 'mass-charge' and 'intensity') and a column
 #' for every mass.
 #'
 #' @param decimals2bin integer or numeric indicating the number of decimal places to be used on the round.
 #'
-#' @return The spectra list binned
+#' @return The spectraList list binned
 #' @noRd
 
-.binSpectra <- function(spectra, decimals2bin){
+.binSpectra <- function(spectraList, decimals2bin){
     #check argument types
     reqClasses <- c(decimals2bin="integer")
     .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
@@ -69,10 +69,10 @@
     if (decimals2bin < 0)
       stop("'decimals2bin' is expected to be a natural number")
 
-    rmbrNames<-rownames(spectra[[1]])
+    rmbrNames<-rownames(spectraList[[1]])
     # round spectral masses and sum their intensities up
     # if the resulting mass matches
-    spectra <- pbapply::pblapply(spectra, function(x){
+    spectraList <- pbapply::pblapply(spectraList, function(x){
         x["mass-charge", ]<-round(x["mass-charge", ], decimals2bin)
         a <- t(x)
         x <- t(stats::aggregate(a[ ,"intensity"],
@@ -80,7 +80,7 @@
         rownames(x) <- rmbrNames
         return(x)
     })
-    return(spectra)
+    return(spectraList)
 }
 
 
@@ -95,7 +95,7 @@
 #' @noRd
 .getFragments <- function(spectraList, idSpectrum, rowName=""){
   if(length(idSpectrum)!=1) stop("Only a idSpectrum is supported")
-  spectraList[[as.character(idSpectrum)]][rowName,]
+  spectraList[[as.character(idSpectrum)]][rowName, ]
 }
 
 
