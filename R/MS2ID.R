@@ -75,8 +75,6 @@ setValidity("MS2ID", function(object) {
     if (length(txt)) txt else TRUE
 }
 
-#x <- "/home/jmbadia/Insync/OneDrive/Projectes_R_actius/MS2ID/invisible2Git/sampleONDISKfiles"
-
 #' @export
 #'
 #' @importFrom DBI dbDriver
@@ -109,17 +107,3 @@ MS2ID <- function(x) {
     ms2idObj <- .MS2ID(dbcon=SQLx, spectracon= bigM_s, mzIndexcon= bigM_mzI)
     return(ms2idObj)
 }
-
-#' @importFrom methods is
-.mzIndex <- function(x) {
-    if (!is(x, "DBIConnection"))
-        x <- .dbconn(x)
-    dbGetQuery(x, "select * from peakReferences")
-}
-
-.dbconn <- function(x) {
-    x@dbcon
-}
-
-
-#TODO: adaptar les funcions que segueixen per fer sql de les databases quan inicies la identificacio i quan retornes resultats
