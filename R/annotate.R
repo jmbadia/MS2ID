@@ -77,11 +77,9 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(massError < 0)
         stop("'massError' is expected to be a positive number")
 
-    annotTime = Sys.time()
-
     workVar <- mget(names(formals()), sys.frame(sys.nframe()))
     workVar$MS2ID <- dirname(MS2ID@dbcon@dbname)
-    workVar <- c(annotationTime=as.character(annotTime), workVar)
+    workVar$annotationTime <- Sys.time()
 
     message("Loading query spectra ...")
     QRY <- .loadSpectra(dirPath=QRYdir, nsamples=nsamples, ...)
@@ -115,8 +113,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(nature!="all")
         SQLwhereGen <- .appendSQLwhere("s.REFnature", nature,
                                        whereVector=SQLwhereGen)
-    message("Calculating distance metrics between query and
-            reference spectra ...")
+    message("Solving distance metrics between query and reference spectra ...")
 
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
@@ -170,7 +167,7 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
 
         hit <- distance >= cosSimThresh
         if(any(hit))
-            return(data.frame(REF_idSpectra=refSpectra$ptr$id[hit],
+            return(data.frame(idREFspect=refSpectra$ptr$id[hit],
                               distance=distance[hit]))
         else
             return(NA)
@@ -183,94 +180,10 @@ annotate <- function(QRYdir, MS2ID, noiseThresh=0.01, cosSimThresh=0.8,
     if(length(distances) == 0){
         stop("No query spectra have satisfactory results.")
     }
-
-    #prepare the result
-    rslt <- list()
-    # crossRef
-    rslt$crossRef <-  do.call(rbind, distances)
-    rslt$crossRef$QRY_idSpectra <- as.integer(rep(names(distances),
-                                       vapply(distances, nrow, FUN.VALUE = 3)))
-
-    SQLwhere <- .appendSQLwhere("ID_spectra",
-                                unique(rslt$crossRef$REF_idSpectra), mode="IN")
-    crossRef <- .getSQLrecords(MS2ID, "*", "crossRef_SpectrComp",
-                                            SQLwhere)
-    rslt$crossRef$REF_idCompound <- crossRef$ID_metabolite[
-        match(rslt$crossRef$REF_idSpectra, crossRef$ID_spectra)]
-
-    #QRY_metadata
-    rslt$QRY_metadata <- QRY$Metadata[match(
-        unique(rslt$crossRef$QRY_idSpectra), QRY$Metadata$idSpectra),]
-    rslt$QRY_metadata <- dplyr::rename(rslt$QRY_metadata,
-                                       QRY_idSpectra=idSpectra)
-    #QRY_spectra
-    relevantQRYSpectra <- names(QRY$Spectra) %in% unique(rslt$crossRef$QRY_idSpectra)
-    rslt$QRY_spectra <- QRY$Spectra
-    rslt$QRY_spectra <- rslt$QRY_spectra[relevantQRYSpectra]
-
-    #REF_metaSpectra
-    SQLwhere <- .appendSQLwhere("ID_spectra",
-                                unique(rslt$crossRef$REF_idSpectra), mode="IN")
-    rslt$REF_metaSpectra <- .getSQLrecords(MS2ID, "*", "metaSpectrum",
-                                            SQLwhere)
-    rslt$REF_metaSpectra <- dplyr::rename(rslt$REF_metaSpectra,
-                                           REF_idSpectra=ID_spectra)
-
-    #REF_spectra
-    refSpectra <- .bufferSpectra(MS2ID, unique(rslt$crossRef$REF_idSpectra))
-    rslt$REF_spectra <- lapply(seq_along(refSpectra$ptr$id), function(x)
-        .getSpectrum(refSpectra, x))
-    names(rslt$REF_spectra) <- refSpectra$ptr$id
-
-    #REF_metaCompound
-    SQLwhere <- .appendSQLwhere("ID_metabolite",
-                                unique(rslt$crossRef$REF_idCompound), mode="IN")
-    rslt$REF_metaCompound <- .getSQLrecords(MS2ID, "*", "metaCompound",
-                                            SQLwhere)
-    rslt$REF_metaCompound <- dplyr::rename(rslt$REF_metaCompound,
-                                           REF_idCompound=ID_metabolite)
-
-    #obtain possible adducts
-    ionizTable <- rslt$QRY_metadata[match(rslt$crossRef$QRY_idSpectra,
-                                          rslt$QRY_metadata$QRY_idSpectra),
-                                    c("precursorMZ", "polarity")]
-    ionizTable$REFMmi <- rslt$REF_metaCompound[match(
-        rslt$crossRef$REF_idCompound,
-        rslt$REF_metaCompound$REF_idCompound), "REFMmi"]
-    rslt$crossRef$propAdduct <- .getAdducts(ionizTable, massError)
-
-    if(cmnNeutralMass){
-        cmnNM <- !is.na(rslt$crossRef$propAdduct)
-        if(!any(cmnNM)){
-            stop("No query spectra have satisfactory results.")
-        }
-        rslt$crossRef <- rslt$crossRef[cmnNM,]
-        rslt$QRY_metadata <- rslt$QRY_metadata[
-            rslt$QRY_metadata$QRY_idSpectra %in% rslt$crossRef$QRY_idSpectra,]
-        rslt$REF_metaSpectra <- rslt$REF_metaSpectra[
-            rslt$REF_metaSpectra$REF_idSpectra %in% rslt$crossRef$REF_idSpectra,]
-        rslt$REF_metaCompound <- rslt$REF_metaCompound[
-            rslt$REF_metaCompound$REF_idCompound %in%
-                rslt$crossRef$REF_idCompound,]
-        rslt$QRY_spectra <- rslt$QRY_spectra[
-            names(rslt$QRY_spectra) %in% rslt$crossRef$QRY_idSpectra]
-        rslt$REF_spectra <- rslt$REF_spectra[
-            names(rslt$REF_spectra) %in% rslt$crossRef$REF_idSpectra]
-    }
-
-    #obtain number of common masses
-    rslt$crossRef$cmnMasses <- vapply(seq_len(nrow(rslt$crossRef)), function(x)
-    {
-        a <- .getFragments(rslt$QRY_spectra, rslt$crossRef$QRY_idSpectra[x],
-                           'mass-charge')
-        b <- .getFragments(rslt$REF_spectra, rslt$crossRef$REF_idSpectra[x],
-                           'mass-charge')
-        sum(a %in% b)
-    }, FUN.VALUE = 3)
-
-    runningTime <- round(as.numeric(Sys.time()-annotTime, units = "mins"), 2)
-    workVar$annotationDuration <-  paste(runningTime, "min")
-    rslt$workVar <- workVar
+    message("Processing results obtained ...")
+    rslt <- .processAnnotation(dist = distances, ms2id = MS2ID , qry = QRY,
+                               mError = massError, cmnNtMass = cmnNeutralMass,
+                               workVar = workVar)
     return(rslt)
 }
 #TODO: COMPARE RESULTS WITH PREVOIUS VERSION
