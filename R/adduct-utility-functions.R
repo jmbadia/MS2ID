@@ -30,14 +30,14 @@
 #' @return character(1) with the proposed adducts (collapsed)
 #' @noRd
 .getAdducts <- function(ionizTable, massError){
-    avlblData <- which(!is.na(ionizTable$REFMmi) &
+    avlblData <- which(!is.na(ionizTable$Mmi) &
                            !is.na(ionizTable$precursorMZ))
     ionizTable$propAdduct <- NA_character_
     ionizTable$propAdduct[avlblData] <- vapply(avlblData, function(idRow){
         QRYMmi <- .propQMmi(ionizTable$precursorMZ[idRow],
                             ionizTable$polarity[idRow])
         p <- .posWhere(rawVect=sort(QRYMmi),
-                       queryVect=ionizTable$REFMmi[idRow],
+                       queryVect=ionizTable$Mmi[idRow],
                        massError=massError)
         if(length(p)!=0) {
             polMatch <- .getPolPos(ionizTable$polarity[idRow])
