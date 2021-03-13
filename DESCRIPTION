@@ -27,4 +27,23 @@ Imports:
     RSQLite,
     mzR,
     pbapply,
-    stats
+    stats,
+    Spectra,
+    dplyr,
+    utils,
+    philentropy
+Collate: 
+    'AllGenerics.R'
+    'AnnotdSpectra.R'
+    'AnnotdSpectra-methods.R'
+    'MS2ID.R'
+    'SQL-utility-tools.R'
+    'adduct-utility-functions.R'
+    'annotate.R'
+    'bigMemory-utility-tools.R'
+    'checkTypes.R'
+    'loadSpectra.R'
+    'processAnnotation.R'
+    'queryMzIndex.R'
+    'spectra-utility-functions.R'
+    'zzz.R'

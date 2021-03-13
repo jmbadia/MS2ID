@@ -5,34 +5,37 @@
 \alias{MS2ID}
 \title{High-throughput MS/MS annotation with an unique in house database}
 \usage{
-MS2ID(x)
+MS2ID(dir)
 }
 \arguments{
-\item{x}{For `MS2ID`: `character(1)` defining the directory path containing
-the MS2ID db files: 'metadataDB.db',}
+\item{x}{`character(1)` defining the directory path containing
+the MS2ID db files ('metadataDB.db' and bigmemory files)}
 }
 \description{
-`MS2ID` objects provide a structure to encapsulate ready-to-use MS2 spectra
-database along with its metadata.  This internal structure allows handling
-big spectra databases and annotating query spectra at high speed and low
-RAM requirement.
-The metadata are stored in a SQLite database, the spectra (i.e.
-peaks matrices) in bigmemory external files.
+`MS2ID` package provides a class (MS2ID) to encapsulate a MS2 spectra
+database along with its metadata. Its internal structure allows to annotate
+query spectra - with the 'annotate' function - using big spectra databases at
+high speed and low RAM requirements (typically 100 query spectra/min against
+a 1M5 spectra library).
+MS2ID class uses a SQLite database with the metadata
+and bigmemory files to  store the spectra (i.e. peaks matrices) and their
+mass-charge index.
 }
 \details{
-`MS2ID` objects should be created using the constructor function
-`MS2ID` providing any file name (with path) related to the database
-(i.e. SQL file name or any bigmemory file names)
+`MS2ID` objects should be created using the constructor function `MS2ID`
+providing any file name (with path) related to the database (i.e. SQL file
+name or any bigmemory file names)
 }
 \section{General functions}{
 
 
-- `MS2ID`: connect to a compound database.
+  - `MS2ID()`: Constructor of a MS2ID object
+  - `annotate()`: function to annotate query spectra against a MS2ID library
 }
 
 \seealso{
-[annotate()] for the function to annotate query spectra against the
- MS2ID database
+[annotate()] for the function to annotate query spectra against the MS2ID
+database
 }
 \author{
 Josep M. Badia

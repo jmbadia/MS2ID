@@ -2,37 +2,53 @@
 #'
 #' @description
 #'
-#' `MS2ID` objects provide a structure to encapsulate ready-to-use MS2 spectra
-#' database along with its metadata.  This internal structure allows handling
-#' big spectra databases and annotating query spectra at high speed and low
-#' RAM requirement.
-#' The metadata are stored in a SQLite database, the spectra (i.e.
-#' peaks matrices) in bigmemory external files.
+#' `MS2ID` package provides a class (MS2ID) to encapsulate a MS2 spectra
+#' database along with its metadata. Its internal structure allows to annotate
+#' query spectra - with the 'annotate' function - using big spectra databases at
+#' high speed and low RAM requirements (typically 100 query spectra/min against
+#' a 1M5 spectra library).
+#' MS2ID class uses a SQLite database with the metadata
+#' and bigmemory files to  store the spectra (i.e. peaks matrices) and their
+#' mass-charge index.
 #'
 #' @details
 #'
-#' `MS2ID` objects should be created using the constructor function
-#' `MS2ID` providing any file name (with path) related to the database
-#' (i.e. SQL file name or any bigmemory file names)
+#' `MS2ID` objects should be created using the constructor function `MS2ID`
+#' providing any file name (with path) related to the database (i.e. SQL file
+#' name or any bigmemory file names)
 #'
 #' @section General functions:
 #'
-#' - `MS2ID`: connect to a compound database.
-#'
-#' @param x For `MS2ID`: `character(1)` defining the directory path containing
-#' the MS2ID db files: 'metadataDB.db',
+#'   - `MS2ID()`: Constructor of a MS2ID object
+#'   - `annotate()`: function to annotate query spectra against a MS2ID library
 #'
 #' @author Josep M. Badia
 #'
 #' @seealso
 #'
-#' [annotate()] for the function to annotate query spectra against the
-#'  MS2ID database
+#' [annotate()] for the function to annotate query spectra against the MS2ID
+#' database
 #'
 #' @docType package
 #' @name MS2ID
 NULL
 
+#' S4 class containing a spectra library
+#'
+#' `MS2ID` objects provide a structure to encapsulate ready-to-use MS2 spectra
+#' database along with its metadata. This internal structure allows handling
+#' big spectra databases and annotating query spectra at high speed and low
+#' RAM requirement.
+#' The metadata are stored in a SQLite database; the spectra (i.e.
+#' peaks matrices) and a mz index in bigmemory external files.
+#'
+#' @slot dbcon DBIConnection to metadata and pointers to big.matrix
+#'   data
+#' @slot spectracon a big.matrix object containing spectra
+#' @slot mzIndexcon a big.matrix object containing a mass-charge index of the
+#'   spectra
+#' @slot .properties inner info
+#'
 #' @importFrom methods new
 #'
 #' @importClassesFrom bigmemory big.matrix
@@ -75,32 +91,34 @@ setValidity("MS2ID", function(object) {
     if (length(txt)) txt else TRUE
 }
 
+#' MS2ID constructor
+#'
+#' @param x `character(1)` defining the directory path containing
+#'   the MS2ID db files ('metadataDB.db' and bigmemory files)
+#'
 #' @export
 #'
 #' @importFrom DBI dbDriver
 #' @importFrom RSQLite dbConnect
-#'
-#' @rdname MS2ID
-MS2ID <- function(x) {
-    # x is the directory that contains db file + bigmemory files
-    if (missing(x))
-        stop("Argument 'x' is required")
-    if (!is.character(x))
-        stop("Argument 'x' must be a character")
-    if (!dir.exists(x))
-        stop(paste(basename(x), "is not a valid directory"))
+MS2ID <- function(dir) {
+    if (missing(dir))
+        stop("Argument 'dir' is required")
+    if (!is.character(dir))
+        stop("Argument 'dir' must be a character")
+    if (!dir.exists(dir))
+        stop(paste(basename(dir), "is not a valid directory"))
     dbFiles <- c("metadataDB.db", "mzIndex_body.bin", "mzIndex_body.desc",
                  "spectra_body.bin", "spectra_body.desc")
-    if (!all(file.exists(file.path(x, dbFiles))))
-        stop(paste0(basename(x),
+    if (!all(file.exists(file.path(dir, dbFiles))))
+        stop(paste0(basename(dir),
                     " does not contain all the necessary files (",
                     paste(dbFiles, collapse=", "), ")"))
 
     SQLx <- dbConnect(dbDriver("SQLite"),
-                      dbname = file.path(x, "metadataDB.db"))
+                      dbname = file.path(dir, "metadataDB.db"))
     bigM_mzI <- bigmemory::attach.big.matrix("mzIndex_body.desc",
-                                             backingpath=x)
-    bigM_s <- bigmemory::attach.big.matrix("spectra_body.desc", backingpath=x)
+                                             backingpath=dir)
+    bigM_s <- bigmemory::attach.big.matrix("spectra_body.desc", backingpath=dir)
     res <- .validMS2ID(db=SQLx, mzI=bigM_mzI, spctr=bigM_s)
     if (is.character(res))
         stop(res)

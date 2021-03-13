@@ -2,28 +2,29 @@
 #'
 #' @description
 #'
-#' `AnnotdSpectra` object provides a structure to encapsulate results
-#' of a query spectra annotation against a  reference spectra library.
-#' It must contain  reference spectra (with metadata) along with
-#' their reference compound metadata, the query spectra (with
-#' metadata), and a hits table linking all three items; the hits
-#' table also contains the distance metrics and other variables
-#' that may define a hit (e.g. adduct assumed on the query spectrum)
+#' `AnnotdSpectra` object provides a structure to the annotation results of a
+#' query spectra  against a  reference spectra library. It must contain
+#' reference spectra (with metadata) along with their reference compound
+#' metadata, the query spectra (with metadata), and a hits table linking all
+#' three items; the hits table also contains the distance metrics and other
+#' variables that may define a hit (e.g. adduct assumed on the query spectrum)
 #'
 #' @details
 #'
-#' `AnnotdSpectra` objects should be created using the constructor
-#'  function `AnnotdSpectra` providing required spectra as a spectra
-#'  object (TODO:Reference).
+#' `AnnotdSpectra` objects should be created using the constructor function
+#' `AnnotdSpectra` providing required spectra as a spectra object
+#' (TODO:Reference).
 #'
-#' @slot refCompound
-#' @slot qrySpectra
-#' @slot refSpectra
-#' @slot hits
-#' @slot .properties
+#' @slot hits cross-reference dataframe containing the hits along with their
+#'   proposed adducts and common masses
+#' @slot refCompound dataframe containing (reference) compound metadata
+#' @slot qrySpectra spectra(n) with the query spectra
+#' @slot refSpectra spectra(n) with reference spectra
+#' @slot .properties inner info
+#' @slot infoAnnotation variables used on the annotation process
 #'
 #' @importFrom methods new
-#' @importClassesFrom Spectra spectrum2
+#' @importClassesFrom Spectra Spectra
 #' @exportClass AnnotdSpectra
 .AnnotdSpectra <- setClass("AnnotdSpectra",
                     slots = c(refCompound = "data.frame",
@@ -54,7 +55,6 @@ setValidity("AnnotdSpectra", function(object) {
     txt <- character()
     if (length(txt)) txt else TRUE
 }
-
 
 AnnotdSpectra <- function(qrySpectra, refSpectra, refCompound, hits,
                               infoAnnotation) {

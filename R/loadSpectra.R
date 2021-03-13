@@ -72,7 +72,7 @@
         message(paste("'nsamples' is larger than the number of spectra",
                       "available. All spectra will be loaded."))
     else{
-      #set.seed(1)
+      set.seed(1)
         spectra2subset <- sample(mtdata$idSpectra, nsamples)
         mtdata <- mtdata[mtdata$idSpectra %in% spectra2subset, ]
         spctra <- spctra[names(spctra) %in% spectra2subset]

@@ -21,7 +21,7 @@
     spectra <- MS2ID@spectracon[, readPos, drop=FALSE]
 
     #recalculate startPos considering spectra is a subset
-    spectraPTR$startPos <- c(0, cumsum(head(spectraPTR$numItems,-1)))
+    spectraPTR$startPos <- c(0, cumsum(utils::head(spectraPTR$numItems,-1)))
     return(list(spectra=spectra, ptr=spectraPTR))
 }
 

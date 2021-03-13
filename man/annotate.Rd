@@ -7,9 +7,12 @@
 annotate(
   QRYdir,
   MS2ID,
+  metrics = "cosine",
+  metricsThresh = 0.8,
+  metricFUN,
+  metricFUNThresh,
   noiseThresh = 0.01,
-  cosSimThresh = 0.8,
-  massErrThresh = 20,
+  massError = 20,
   cmnPrecMass = FALSE,
   cmnNeutralMass = TRUE,
   cmnPeaks = 2,
@@ -17,6 +20,7 @@ annotate(
   cmnPolarity = TRUE,
   db = "all",
   nature = "all",
+  nsamples,
   ...
 )
 }
@@ -27,36 +31,50 @@ annotate(
 \item{MS2ID}{MS2ID object with the in-house database to use in the
 annotation.}
 
+\item{metrics}{character(n) defining the n distance metrics to measure
+simultaneously between query and reference spectra. Values are restricted
+to 'cosine', 'topsoe', 'fidelity' and 'squared_chord'.}
+
+\item{metricsThresh}{numeric(n) defining the n threshold values of the n
+metrics. A reference spectrum is considered a hit when at least one of the
+metrics measured fulfills its threshold. Recommended values to start with
+are cosine=0.8, topsoe=0.6, fidelity=0.6 and squared_chord=0.8.}
+
+\item{metricFUN}{function(1) user-made defining a new metric for annotation.
+The function must have the two spectra to be compared as arguments. Each of
+these spectra must be a matrix with its mass-charge and intensity in rows
+respectively. Finally, the function must return a numeric(1).}
+
+\item{metricFUNThresh}{numeric(1) threshold value of the metric defined by
+the 'metricFUN' function.}
+
 \item{noiseThresh}{A numeric defining the threshold used in the noise
-filtering of the query spectra, considered as \% intensity relative to
-base peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of
-less than 1\% of the base peak.}
+filtering of the query spectra, considered as \% intensity relative to base
+peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of less than
+1\% of the base peak.}
 
-\item{cosSimThresh}{Numeric defining the minimum cosine similarity a
-pair of spectra (query and reference) must have to be returned by the
-function. (TODO: see link with the definition of cossim used)}
-
-\item{massErrThresh}{TODO}
+\item{massError}{TODO}
 
 \item{cmnPrecMass}{-Reference spectra filter- Boolean, a TRUE value limits
 the reference spectra to those that have the same precursor mass as the
 query spectrum.}
 
-\item{cmnNeutralMass}{-Reference spectra filter- Boolean, a TRUE value
-limits the reference spectra to those that have a neutral mass that matches
-some of the plausible query neutral masses (considering the precursor
-query mass and all the possible adducts, TODO: see link).}
+\item{cmnNeutralMass}{-Reference spectra filter- Boolean, a TRUE value limits
+the reference spectra to those that have a neutral mass that matches some
+of the plausible query neutral masses (considering the precursor query mass
+and all the possible adducts, TODO: see link).}
 
-\item{cmnPeaks}{-Reference spectra filter- Integer limiting reference
-spectra to whose with at least that number of peaks in common with the
-query spectrum.}
+\item{cmnPeaks}{-Reference spectra filter- Integer limiting reference spectra
+to whose with at least that number of peaks in common with the query
+spectrum.}
 
-\item{cmnTopPeaks}{-Reference spectra filter- Integer limiting the
-annotation to reference spectra with at least one common peak -with the
-query spectrum- among their top n most intense peaks.}
+\item{cmnTopPeaks}{-Reference spectra filter- Integer limiting the annotation
+to reference spectra with at least one common peak -with the query
+spectrum- among their top n most intense peaks.}
 
 \item{cmnPolarity}{-Reference spectra filter- Boolean, a TRUE value limits
-the reference spectra to those with the same polarity as the query spectrum.}
+the reference spectra to those with the same polarity as the query
+spectrum.}
 
 \item{db}{-Reference spectra filter- Character filtering the reference
 spectra by its original database (e.g. HMDB).}
@@ -65,16 +83,39 @@ spectra by its original database (e.g. HMDB).}
 spectra by the spectra nature. Values are restricted to 'experimental',
 'insilico' or 'all'.}
 
+\item{nsamples}{integer(1) defines a subset of x random query spectra to work
+with. Useful for speeding up preliminary testing before definitive
+annotation.}
+
 \item{...}{Arguments to be passed to internal functions}
 }
 \value{
-
+an AnnotdSpectra object with the results of the annotation
 }
 \description{
 \code{annotate} returns, for every query spectrum, a list of compound
- candidates from a database by using different metrics to compare their
- spectra.
+candidates from a reference library. The criteria relies on compare every
+query spectrum with reference spectra using distance metrics.
 }
 \examples{
-
+\dontrun{
+fooFunction <- function(spectr1, spectr2){
+  mz1 <- spectr1[1, ]
+  int1 <- spectr1[2, ]
+  mz2 <- spectr2[1, ]
+  int2 <- spectr2[2, ]
+  row1<- unique(c(mz2, mz1))
+  row2 <- int2[match(row1, mz2)]
+  row1 <- int1[match(row1, mz1)]
+  row1[is.na(row1)] <- 0
+  row2[is.na(row2)] <- 0
+  rowdf <- rbind(row1, row2)
+  fooCos <- suppressMessages(philentropy::distance(rowdf, method = "cosine"))
+  return(fooCos+1)
+}
+result <- annotate(QRYdir = q, MS2ID = ms2idObject, nsamples=10,
+         metrics = c("fidelity", "cosine", "topsoe"),
+         metricsThresh = c(0.6, 0.8, 0.6),
+         metricFUN = fooFunction, metricFUNThresh = 1.8)
+}
 }

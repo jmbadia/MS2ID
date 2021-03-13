@@ -1,13 +1,16 @@
-# Generics
-setGeneric("refCompound", function(x) standardGeneric("refCompound"))
-setGeneric("qrySpectra", function(x) standardGeneric("qrySpectra"))
-setGeneric("refSpectra", function(x) standardGeneric("refSpectra"))
-setGeneric("hits", function(x) standardGeneric("hits"))
-setGeneric("infoAnnotation", function(x) standardGeneric("infoAnnotation"))
+#' @include AnnotdSpectra.R
 
-#accesors
+#' @export
 setMethod("refCompound", "AnnotdSpectra", function(x) x@refCompound)
+
+#' @export
 setMethod("qrySpectra", "AnnotdSpectra", function(x) x@qrySpectra)
+
+#' @export
 setMethod("refSpectra", "AnnotdSpectra", function(x) x@refSpectra)
+
+#' @export
 setMethod("hits", "AnnotdSpectra", function(x) x@hits)
+
+#' @export
 setMethod("infoAnnotation", "AnnotdSpectra", function(x) x@infoAnnotation)
