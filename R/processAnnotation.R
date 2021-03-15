@@ -24,8 +24,17 @@
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
                                 mode="IN")
     crossRef <- .getSQLrecords(ms2id, "*", "crossRef_SpectrComp", SQLwhere)
-    hits$idREFcomp <- crossRef$ID_metabolite[match(hits$idREFspect,
-                                                   crossRef$ID_spectra)]
+
+    # Check if idREFspect is related to more than one metabolite. In that
+    # case replicate n times the row with that idREFspect in order to assign
+    #  a idREFcomp to each row
+    cmpndSpctrum <- lapply(hits$idREFspect, function(x)
+        crossRef[crossRef$ID_spectra == x, "ID_metabolite"])
+    #copy n times the row where n is the number of metabolites per REF spectrum
+    hits <- hits[rep(seq_along(cmpndSpctrum),
+                      vapply(cmpndSpctrum, length, FUN.VALUE = 1)),]
+    hits$idREFcomp <- unlist(cmpndSpctrum)
+
     #compound Metadata
     SQLwhere <- .appendSQLwhere("ID_metabolite", unique(crossRef$ID_metabolite),
                                 mode="IN")
