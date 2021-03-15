@@ -1,13 +1,14 @@
-#' Annotate spectra against an in-house database
+#' Annotate spectra against a MS2ID library
 #'
 #' \code{annotate} returns, for every query spectrum, a list of compound
-#' candidates from a reference library. The criteria relies on compare every
-#' query spectrum with reference spectra using distance metrics.
+#' candidates from a reference library (\linkS4class{MS2ID} object). The
+#' criteria relies on compare every query spectrum with reference spectra using
+#' distance metrics.
 #'
 #' @param QRYdir character(1). Path of the folder containing the mzML files
 #'   (query spectra) to annotate.
-#' @param MS2ID MS2ID object with the in-house database to use in the
-#'   annotation.
+#' @param MS2ID \linkS4class{MS2ID} object with the in-house database to use in
+#'   the annotation.
 #' @param noiseThresh A numeric defining the threshold used in the noise
 #'   filtering of the query spectra, considered as \% intensity relative to base
 #'   peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of less than
@@ -50,9 +51,9 @@
 #' @param nsamples integer(1) defines a subset of x random query spectra to work
 #'   with. Useful for speeding up preliminary testing before definitive
 #'   annotation.
-#' @param ... Arguments to be passed to internal functions
 #'
-#' @return an AnnotdSpectra object with the results of the annotation
+#' @return an \linkS4class{AnnotdSpectra} object with the results of the
+#'   annotation
 #' @export
 #' @examples
 #' \dontrun{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/annotate.R
 \name{annotate}
 \alias{annotate}
-\title{Annotate spectra against an in-house database}
+\title{Annotate spectra against a MS2ID library}
 \usage{
 annotate(
   QRYdir,
@@ -28,8 +28,8 @@ annotate(
 \item{QRYdir}{character(1). Path of the folder containing the mzML files
 (query spectra) to annotate.}
 
-\item{MS2ID}{MS2ID object with the in-house database to use in the
-annotation.}
+\item{MS2ID}{\linkS4class{MS2ID} object with the in-house database to use in
+the annotation.}
 
 \item{metrics}{character(n) defining the n distance metrics to measure
 simultaneously between query and reference spectra. Values are restricted
@@ -86,16 +86,16 @@ spectra by the spectra nature. Values are restricted to 'experimental',
 \item{nsamples}{integer(1) defines a subset of x random query spectra to work
 with. Useful for speeding up preliminary testing before definitive
 annotation.}
-
-\item{...}{Arguments to be passed to internal functions}
 }
 \value{
-an AnnotdSpectra object with the results of the annotation
+an \linkS4class{AnnotdSpectra} object with the results of the
+  annotation
 }
 \description{
 \code{annotate} returns, for every query spectrum, a list of compound
-candidates from a reference library. The criteria relies on compare every
-query spectrum with reference spectra using distance metrics.
+candidates from a reference library (\linkS4class{MS2ID} object). The
+criteria relies on compare every query spectrum with reference spectra using
+distance metrics.
 }
 \examples{
 \dontrun{

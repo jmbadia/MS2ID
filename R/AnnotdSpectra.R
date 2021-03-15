@@ -1,28 +1,31 @@
-#' @title Class container of results obtained by spectra annotation
+#' @name AnnotdSpectra
+#'
+#' @title S4 class containing annotation results
+#'
+#' @aliases AnnotdSpectra-class
 #'
 #' @description
 #'
-#' `AnnotdSpectra` object provides a structure to the annotation results of a
-#' query spectra  against a  reference spectra library. It must contain
+#' `AnnotdSpectra` object structures the annotation results. It must contain
 #' reference spectra (with metadata) along with their reference compound
 #' metadata, the query spectra (with metadata), and a hits table linking all
 #' three items; the hits table also contains the distance metrics and other
 #' variables that may define a hit (e.g. adduct assumed on the query spectrum)
 #'
-#' @details
-#'
-#' `AnnotdSpectra` objects should be created using the constructor function
-#' `AnnotdSpectra` providing required spectra as a spectra object
-#' (TODO:Reference).
-#'
-#' @slot hits cross-reference dataframe containing the hits along with their
-#'   proposed adducts and common masses
-#' @slot refCompound dataframe containing (reference) compound metadata
-#' @slot qrySpectra spectra(n) with the query spectra
-#' @slot refSpectra spectra(n) with reference spectra
-#' @slot .properties inner info
-#' @slot infoAnnotation variables used on the annotation process
-#'
+#' @section Getters: To obtain the content of any AnnotdSpectra's slot, please
+#'   use the following methods \itemize{ \item hits(object): returns a
+#'   cross-reference dataframe containing the hits along with their proposed
+#'   adducts and common masses. \item qrySpectra(object): returns a
+#'   \code{\link[Spectra]{Spectra}} object (see
+#'   \href{https://www.bioconductor.org/packages/release/bioc/html/Spectra.html}{Spectra
+#'    package}) containing the query spectra with hits. \item
+#'   refSpectra(object): returns a \code{\link[Spectra]{Spectra}} object with
+#'   successful reference spectra. \item refCompound(object): returns a
+#'   dataframe containing (reference) compound metadata of successful reference
+#'   spectra. \item infoAnnotation(object): returns the variables used on the
+#'   annotation process }
+NULL
+
 #' @importFrom methods new
 #' @importClassesFrom Spectra Spectra
 #' @exportClass AnnotdSpectra
@@ -55,6 +58,7 @@ setValidity("AnnotdSpectra", function(object) {
     txt <- character()
     if (length(txt)) txt else TRUE
 }
+
 
 AnnotdSpectra <- function(qrySpectra, refSpectra, refCompound, hits,
                               infoAnnotation) {
