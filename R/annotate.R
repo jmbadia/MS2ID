@@ -52,7 +52,7 @@
 #'   with. Useful for speeding up preliminary testing before definitive
 #'   annotation.
 #'
-#' @return an \linkS4class{AnnotdSpectra} object with the results of the
+#' @return an \linkS4class{Annot} object with the results of the
 #'   annotation
 #' @export
 #' @examples

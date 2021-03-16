@@ -3,7 +3,7 @@
 #' On the basis of the annotation results, the '.processAnnotation()' function
 #'  adds metadata, calculates proposed adducts and common masses for every
 #'  hit (i.e. every pair query - reference spectrum with satisfactory
-#'  distance metrics) and packs altogether into an AnnotdSpectra object.
+#'  distance metrics) and packs altogether into an Annot object.
 #'
 #' @param dist annotation results
 #' @param ms2id ms2id object with the reference library used
@@ -13,7 +13,7 @@
 #'  proposed adducts explaining the hit
 #' @param workVar arguments specified by the user in the annotate function.
 #'
-#' @return an AnnotdSpectra object with the results of the annotation
+#' @return an Annot object with the results of the annotation
 #' @noRd
 .processAnnotation<- function(dist, ms2id, qry, mError, cmnNtMass, workVar) {
     hits <- do.call(rbind, dist)
@@ -101,7 +101,7 @@
     workVar$annotationDuration <-  paste(runningTime, "min")
     workVar$annotationTime <- as.character(workVar$annotationTime)
 
-    rslt <- AnnotdSpectra(qrySpectra = QRYspect, refSpectra = REFspect,
+    rslt <- Annot(qrySpectra = QRYspect, refSpectra = REFspect,
                           refCompound = REFcomp, hits = hits,
                           infoAnnotation = workVar)
     return(rslt)

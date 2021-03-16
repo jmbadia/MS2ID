@@ -2,7 +2,7 @@
 
 export(MS2ID)
 export(annotate)
-exportClasses(AnnotdSpectra)
+exportClasses(Annot)
 exportClasses(MS2ID)
 exportMethods(hits)
 exportMethods(infoAnnotation)

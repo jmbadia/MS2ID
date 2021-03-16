@@ -34,8 +34,8 @@ Imports:
     philentropy
 Collate: 
     'AllGenerics.R'
-    'AnnotdSpectra.R'
-    'AnnotdSpectra-methods.R'
+    'Annot.R'
+    'Annot-methods.R'
     'MS2ID.R'
     'SQL-utility-tools.R'
     'adduct-utility-functions.R'

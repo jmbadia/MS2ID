@@ -1,18 +1,18 @@
-#' @name AnnotdSpectra
+#' @name Annot
 #'
 #' @title S4 class containing annotation results
 #'
-#' @aliases AnnotdSpectra-class
+#' @aliases Annot-class
 #'
 #' @description
 #'
-#' `AnnotdSpectra` object structures the annotation results. It must contain
+#' `Annot` object structures the annotation results. It must contain
 #' reference spectra (with metadata) along with their reference compound
 #' metadata, the query spectra (with metadata), and a hits table linking all
 #' three items; the hits table also contains the distance metrics and other
 #' variables that may define a hit (e.g. adduct assumed on the query spectrum)
 #'
-#' @section Getters: To obtain the content of any AnnotdSpectra's slot, please
+#' @section Getters: To obtain the content of any Annot's slot, please
 #'   use the following methods \itemize{ \item hits(object): returns a
 #'   cross-reference dataframe containing the hits along with their proposed
 #'   adducts and common masses. \item qrySpectra(object): returns a
@@ -28,8 +28,8 @@ NULL
 
 #' @importFrom methods new
 #' @importClassesFrom Spectra Spectra
-#' @exportClass AnnotdSpectra
-.AnnotdSpectra <- setClass("AnnotdSpectra",
+#' @exportClass Annot
+.Annot <- setClass("Annot",
                     slots = c(refCompound = "data.frame",
                               qrySpectra = "Spectra",
                               refSpectra = "Spectra",
@@ -45,22 +45,22 @@ NULL
                                      ))
 
 #' @importFrom methods validObject
-setValidity("AnnotdSpectra", function(object) {
+setValidity("Annot", function(object) {
     slotN <- slotNames(object)
     nullV <- vapply(slotN, function(x) is.null(slot(object, x)), FUN.VALUE = T)
     if (!any(nullV))
-        .validAnnotdSpectra(object@dbcon, object@spectracon, object@mzIndexcon)
+        .validAnnot(object@dbcon, object@spectracon, object@mzIndexcon)
     else TRUE
 })
 
 #TODO: check structural integrity (required coliumns, ...)
-.validAnnotdSpectra <- function(q, rs, rf, h, i){
+.validAnnot <- function(q, rs, rf, h, i){
     txt <- character()
     if (length(txt)) txt else TRUE
 }
 
 
-AnnotdSpectra <- function(qrySpectra, refSpectra, refCompound, hits,
+Annot <- function(qrySpectra, refSpectra, refCompound, hits,
                               infoAnnotation) {
     #check if any missing arg
     argsDef <- ls()
@@ -70,11 +70,11 @@ AnnotdSpectra <- function(qrySpectra, refSpectra, refCompound, hits,
         stop(paste("Argument/s", paste(setdiff(argsDef, argsDeclr),
                                        collapse=", "),"is/are required"))
 
-    res <- .validAnnotdSpectra(q = qrySpectra, rs= refSpectra, rf = refCompound,
+    res <- .validAnnot(q = qrySpectra, rs= refSpectra, rf = refCompound,
                                h = hits, i = infoAnnotation)
     if (is.character(res))
         stop(res)
-    finalObj <- .AnnotdSpectra(qrySpectra = qrySpectra, refSpectra= refSpectra,
+    finalObj <- .Annot(qrySpectra = qrySpectra, refSpectra= refSpectra,
                                refCompound = refCompound, hits = hits,
                                infoAnnotation = infoAnnotation)
     return(finalObj)
