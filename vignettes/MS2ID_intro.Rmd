@@ -1,0 +1,91 @@
+---
+title: "Introduction to MS2ID"
+author: "Josep M. Badia"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Installation
+
+You can download the development version from GitHub with:
+
+```{r installation, eval = FALSE}
+if(!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("jmbadia/MS2ID")
+```
+
+## Simple annotation of query spectra
+First, load into a MS2ID object your reference library; the only argument need it is a path to the db files (see #section on how to obtain those files from open database repositories).
+```{r setup}
+library(MS2ID)
+libraryDir <- "/home/jmbadia/Insync/OneDrive/Projectes_R_actius/MS2ID/invisible2Git/resources/MS2ID_B2R_20201113_083214"
+refLibrary <- MS2ID(libraryDir)
+```
+
+A simple annotation only requires a MS2ID object like the former and the location of the query spectra. However, for preliminary attempts, it is also advised to limit the annotation to a number of randomized scans with the nsamples `argument`.
+```{r SimpleAnnotation, eval = FALSE}
+library(MS2ID)
+queryDir <- "../ID11A19_MS2identification/invisible2Git/MS2ID_Identifications/20201117_MBermudoPOS/rawData"
+annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100)
+```
+
+The resulting variable (e.g. `annotResult`) is an AnnotatSpectra object (see  [proper section](#annotdspectra-object)).
+
+## Annotation with different metrics
+As a default, annotate function use cosine similarity as a metric to compare two spectra; also, its default threshold value to beat in order to consider the comparison a hit is 0.8.  
+The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered successful when at least one of the metrics exceeds its threshold value.
+```{r diffMetrics, eval = FALSE}
+annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100,
+                        metrics = c("fidelity", "cosine", "topsoe"),
+                        metricsThresh = c(0.6, 0.8, 0.6))
+```
+Note that *to beat* a threshold value has a different meaning depending on the metric. *Topsoe* and *squared_chord* metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value will be lower than its threshold. 
+
+Moreover, the user can define its own metric by including a function as an argument along with its threshold value.
+```{r fooAnnotation, eval = FALSE}
+cosinePlusOne <- function(spectr1, spectr2){
+  mz1 <- spectr1[1, ]
+  int1 <- spectr1[2, ]
+  mz2 <- spectr2[1, ]
+  int2 <- spectr2[2, ]
+  row1<- unique(c(mz2, mz1))
+  row2 <- int2[match(row1, mz2)]
+  row1 <- int1[match(row1, mz1)]
+  row1[is.na(row1)] <- 0
+  row2[is.na(row2)] <- 0
+  rowdf <- rbind(row1, row2)
+  fooCos <- suppressMessages(philentropy::distance(rowdf, method = "cosine"))
+  return(fooCos+1)
+}
+annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples=100,
+                        metrics = c("fidelity", "topsoe"), 
+                        metricsThresh = c(0.6, 0.6),
+                        metricFUN = cosinePlusOne, 
+                        metricFUNThresh = 1.8)
+```
+
+## AnnotdSpectra object
+This object compacts the annotation results so we can extract particular content by appplyng them *getters* (custom functions to *get* the info) or save the whole object for further analysis (use saveRDS() and loadRDS()).
+
+### Getters:    
+* **hits()**: returns a cross-reference dataframe containing the hits along with their proposed adducts and common masses.
+* **qrySpectra()**: returns an Spectra object (see [Spectra](https://www.bioconductor.org/packages/release/bioc/html/Spectra.html) package) containing the query spectra with hits.
+* **refSpectra()**: returns an Spectra object with the successful reference spectra.
+* **refCompound()**: returns a dataframe containing (reference) compound metadata of successful reference spectra.
+* **infoAnnotation()**: returns the variables used on the annotation process.
+
+## Build an in-house MS2 spectra library
+TODO
+
