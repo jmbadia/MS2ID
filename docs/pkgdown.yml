@@ -3,9 +3,5 @@ pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   MS2ID_intro: MS2ID_intro.html
-<<<<<<< HEAD
-last_built: 2021-03-16T16:22Z
-=======
-last_built: 2021-03-16T15:57Z
->>>>>>> efac1ee686c05f64aeacddd8171ad49af281a10d
+last_built: 2021-03-16T16:25Z
 
