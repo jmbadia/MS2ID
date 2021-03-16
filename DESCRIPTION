@@ -13,7 +13,7 @@ Description: MS2ID provides functionality to high-throughput MS/MS spectrum
     annotation.  It is used a in house database spectra created using  
     different sources. 
 License: MIT + file LICENSE
-URL: https://github.com/jmbadia/MS2ID
+URL: https://jmbadia.github.io/MS2ID/index.html
 BugReports: https://github.com/jmbadia/MS2ID/issues
 Encoding: UTF-8
 LazyData: true
