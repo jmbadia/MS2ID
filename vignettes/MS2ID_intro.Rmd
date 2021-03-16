@@ -23,7 +23,7 @@ You can download the development version from GitHub with:
 ```{r installation, eval = FALSE}
 if(!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("jmbadia/MS2ID")
+devtools::install_github("jmbadia/MS2ID", build_vignettes = TRUE, force=T)
 ```
 
 ## Simple annotation of query spectra
