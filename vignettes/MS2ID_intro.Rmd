@@ -4,7 +4,7 @@ author: "Josep M. Badia"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{my-vignette}
+  %\VignetteIndexEntry{Introduction to MS2ID}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -28,20 +28,20 @@ devtools::install_github("jmbadia/MS2ID")
 
 ## Simple annotation of query spectra
 First, load into a MS2ID object your reference library; the only argument need it is a path to the db files (see #section on how to obtain those files from open database repositories).
-```{r setup}
+```{r setup, eval = FALSE}
 library(MS2ID)
-libraryDir <- "/home/jmbadia/Insync/OneDrive/Projectes_R_actius/MS2ID/invisible2Git/resources/MS2ID_B2R_20201113_083214"
+libraryDir <- "resources/MS2ID_B2R_20201113_083214"
 refLibrary <- MS2ID(libraryDir)
 ```
 
 A simple annotation only requires a MS2ID object like the former and the location of the query spectra. However, for preliminary attempts, it is also advised to limit the annotation to a number of randomized scans with the nsamples `argument`.
 ```{r SimpleAnnotation, eval = FALSE}
 library(MS2ID)
-queryDir <- "../ID11A19_MS2identification/invisible2Git/MS2ID_Identifications/20201117_MBermudoPOS/rawData"
+queryDir <- "MS2ID_Identifications/rawData"
 annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100)
 ```
 
-The resulting variable (e.g. `annotResult`) is an AnnotatSpectra object (see  [proper section](#annotdspectra-object)).
+The resulting variable (e.g. `annotResult`) is an Annot object (see  [proper section](#annot-object)).
 
 ## Annotation with different metrics
 As a default, annotate function use cosine similarity as a metric to compare two spectra; also, its default threshold value to beat in order to consider the comparison a hit is 0.8.  
@@ -76,8 +76,8 @@ annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples=100,
                         metricFUNThresh = 1.8)
 ```
 
-## AnnotdSpectra object
-This object compacts the annotation results so we can extract particular content by appplyng them *getters* (custom functions to *get* the info) or save the whole object for further analysis (use saveRDS() and loadRDS()).
+## Annot object
+This object stores the annotation results so we can extract particular content by appplyng them *getters* (custom functions to *get* the info) or save the whole object for further analysis (use saveRDS() and loadRDS()).
 
 ### Getters:    
 * **hits()**: returns a cross-reference dataframe containing the hits along with their proposed adducts and common masses.
