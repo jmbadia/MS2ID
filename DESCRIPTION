@@ -47,3 +47,7 @@ Collate:
     'queryMzIndex.R'
     'spectra-utility-functions.R'
     'zzz.R'
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
