@@ -1,52 +1,26 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# MS2ID
-
-<!-- badges: start -->
-
-<!-- badges: end -->
-
-The goal of MS2ID is to …
-
 ## Installation
 
-You can install the released version of MS2ID from
-[CRAN](https://CRAN.R-project.org) with:
+You can download the development version from GitHub with:
 
 ``` r
-install.packages("MS2ID")
+if(!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("jmbadia/MS2ID")
 ```
 
-## Example
+## Introduction
 
-This is a basic example which shows you how to solve a common problem:
+This package annotates MS2 query spectra by using an in-house database.
+The creation of such database from (mostly publicly) available resources
+(HMDB, ChEBI, PubChem…) relies on the use of the
+[Compound](https://github.com/EuracBiomedicalResearch/CompoundDb)
+package developed by J. Stanstrup and J. Rainer.
 
-``` r
-library(MS2ID)
-## basic example code
-```
+For more information visit the package
+[website](https://jmbadia/MS2ID/index.html) or [vignette.]()
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub\!
+Discussions and suggestions are welcome:
+<https://github.com/jmbadia/MS2ID/issues>
