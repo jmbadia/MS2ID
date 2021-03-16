@@ -107,14 +107,24 @@
 <p>First, load into a MS2ID object your reference library; the only argument need it is a path to the db files (see #section on how to obtain those files from open database repositories).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jmbadia/MS2ID">MS2ID</a></span><span class="op">)</span>
+<<<<<<< HEAD
 <span class="va">libraryDir</span> <span class="op">&lt;-</span> <span class="st">"resources/MS2ID_B2R_20201113_083214"</span>
+=======
+<span class="va">libraryDir</span> <span class="op">&lt;-</span> <span class="st">"/home/jmbadia/Insync/OneDrive/Projectes_R_actius/MS2ID/invisible2Git/resources/MS2ID_B2R_20201113_083214"</span>
+>>>>>>> efac1ee686c05f64aeacddd8171ad49af281a10d
 <span class="va">refLibrary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/MS2ID.html">MS2ID</a></span><span class="op">(</span><span class="va">libraryDir</span><span class="op">)</span></code></pre></div>
 <p>A simple annotation only requires a MS2ID object like the former and the location of the query spectra. However, for preliminary attempts, it is also advised to limit the annotation to a number of randomized scans with the nsamples <code>argument</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jmbadia/MS2ID">MS2ID</a></span><span class="op">)</span>
+<<<<<<< HEAD
 <span class="va">queryDir</span> <span class="op">&lt;-</span> <span class="st">"MS2ID_Identifications/rawData"</span>
 <span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdir <span class="op">=</span> <span class="va">queryDir</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span>, nsamples <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></code></pre></div>
 <p>The resulting variable (e.g. <code>annotResult</code>) is an Annot object (see <a href="#annot-object">proper section</a>).</p>
+=======
+<span class="va">queryDir</span> <span class="op">&lt;-</span> <span class="st">"../ID11A19_MS2identification/invisible2Git/MS2ID_Identifications/20201117_MBermudoPOS/rawData"</span>
+<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdir <span class="op">=</span> <span class="va">queryDir</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span>, nsamples <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></code></pre></div>
+<p>The resulting variable (e.g. <code>annotResult</code>) is an AnnotatSpectra object (see <a href="#annotdspectra-object">proper section</a>).</p>
+>>>>>>> efac1ee686c05f64aeacddd8171ad49af281a10d
 </div>
 <div id="annotation-with-different-metrics" class="section level2">
 <h2 class="hasAnchor">
@@ -148,9 +158,15 @@ The function also allows the simultaneous calculation of different metrics. In t
                         metricFUN <span class="op">=</span> <span class="va">cosinePlusOne</span>, 
                         metricFUNThresh <span class="op">=</span> <span class="fl">1.8</span><span class="op">)</span></code></pre></div>
 </div>
+<<<<<<< HEAD
 <div id="annot-object" class="section level2">
 <h2 class="hasAnchor">
 <a href="#annot-object" class="anchor"></a>Annot object</h2>
+=======
+<div id="annotdspectra-object" class="section level2">
+<h2 class="hasAnchor">
+<a href="#annotdspectra-object" class="anchor"></a>AnnotdSpectra object</h2>
+>>>>>>> efac1ee686c05f64aeacddd8171ad49af281a10d
 <p>This object compacts the annotation results so we can extract particular content by appplyng them <em>getters</em> (custom functions to <em>get</em> the info) or save the whole object for further analysis (use saveRDS() and loadRDS()).</p>
 <div id="getters" class="section level3">
 <h3 class="hasAnchor">
