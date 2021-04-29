@@ -93,6 +93,7 @@
         sum(unlist(a) %in% unlist(b))
     }, FUN.VALUE = 3)
 
+    #Convert to spectra object
     REFspect <- Spectra::Spectra(REFspect)
     QRYspect <- Spectra::Spectra(QRYspect)
 

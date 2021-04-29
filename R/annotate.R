@@ -185,8 +185,7 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
         SQLwhereGen <- .appendSQLwhere("REFnature", nature,
                                        whereVector = SQLwhereGen)
     message("Solving distance metrics between query and reference spectra ...")
-    #browser()
-    #if(cmnNeutralMass) idRefMmi <- .getSQLrecords(MS2ID, select="ID_metabolite, REFMmi", from="metaCompound")
+
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
                                  names(QRY$Spectra[idQspctr]))

@@ -1,8 +1,8 @@
 #' Export an annotation as xlsx file
 #'
 #' @param anRslt Annot object with the results to be exporte
-#' @param noCmnNeutralMassCos numeric(1) with a cosine threshold. Non common neutral mass results will be subsetted according to this threshold
-#' @param file char(1) name (with path) of the resulting file
+#' @param noCmnNeutralMassCos numeric(1) with a cosine threshold to subset Non common neutral mass results.
+#' @param file char(1) name (with path) of the exported file
 #' @param overwrite boolean(1) If TRUE, overwrite any existing file.
 export2xlsx <- function(anRslt, noCmnNeutralMassCos, ...){
     #TODO CHECK ARGUMENTS

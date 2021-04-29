@@ -36,7 +36,6 @@ refLibrary <- MS2ID(libraryDir)
 
 A simple annotation only requires a MS2ID object like the former and the location of the query spectra. However, for preliminary attempts, it is also advised to limit the annotation to a number of randomized scans with the nsamples `argument`.
 ```{r SimpleAnnotation, eval = FALSE}
-library(MS2ID)
 queryDir <- "MS2ID_Identifications/rawData"
 annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100)
 ```

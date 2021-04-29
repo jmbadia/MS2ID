@@ -21,6 +21,10 @@ annotate(
   db = "all",
   nature = "all",
   nsamples,
+  consens = T,
+  consCos = 0.8,
+  consComm = 2/3,
+  consME = 20,
   ...
 )
 }
@@ -88,7 +92,7 @@ with. Useful for speeding up preliminary testing before definitive
 annotation.}
 }
 \value{
-an \linkS4class{AnnotdSpectra} object with the results of the
+an \linkS4class{Annot} object with the results of the
   annotation
 }
 \description{
