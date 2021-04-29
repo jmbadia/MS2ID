@@ -31,7 +31,9 @@ Imports:
     Spectra,
     dplyr,
     utils,
-    philentropy
+    philentropy,
+    magrittr,
+    openxlsx
 Collate: 
     'AllGenerics.R'
     'Annot.R'
@@ -42,10 +44,12 @@ Collate:
     'annotate.R'
     'bigMemory-utility-tools.R'
     'checkTypes.R'
+    'consensus.R'
     'loadSpectra.R'
     'processAnnotation.R'
     'queryMzIndex.R'
     'spectra-utility-functions.R'
+    'utils-pipe.R'
     'zzz.R'
 Suggests: 
     knitr,
