@@ -80,8 +80,9 @@
 annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh, noiseThresh=0.01, massError=20,
                      cmnPrecMass=FALSE, cmnNeutralMass=TRUE, cmnPeaks=2,
-                     cmnTopPeaks=5, cmnPolarity= TRUE, db="all",
-                     nature="all", nsamples, ...){
+                     cmnTopPeaks=5, cmnPolarity= TRUE, db="all", nature="all",
+                     nsamples, consens=T, consCos=0.8, consComm=2/3, consME=20,
+                     ...){
     argmnts <- c(as.list(environment()), list(...))
     #check argument types
     reqClasses <- c(QRYdir="character", MS2ID="MS2ID", metricsThresh="numeric",
@@ -158,15 +159,34 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
     dec2binFrag=2
     message("Binning query spectra ...")
     QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
+
+    if(consens){
+      message("Obtaining consensus spectra ...")
+      #cluster spectra to consens them
+      QRY <- .cluster2Consens(QRY, consCos, massErrorPrec = consME)
+      #consens spectra
+      QRY <- .consens(QRY, consME, consComm)
+      #keep only consensus spectra (to annotate them)
+      isConsSpectra <- vapply(QRY$Metadata$primalSpctra, function(primals){
+        !is.null(primals) & !identical(primals,0)
+      }, FUN.VALUE = T)
+      if(sum(isConsSpectra)==0) stop("Not even one consensus spectrum obtained")
+      QRY$Metadata <- QRY$Metadata[isConsSpectra,]
+      QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
+      QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
+    }
+
     # SQL sentence according global restrictions (db, nature, ...
     SQLwhereGen <- vector()
     if(db!="all")
-        SQLwhereGen <- .appendSQLwhere("s.REFID_db", db,
+        SQLwhereGen <- .appendSQLwhere("REFID_db", db,
                                        whereVector=SQLwhereGen)
     if(nature!="all")
-        SQLwhereGen <- .appendSQLwhere("s.REFnature", nature,
+        SQLwhereGen <- .appendSQLwhere("REFnature", nature,
                                        whereVector = SQLwhereGen)
     message("Solving distance metrics between query and reference spectra ...")
+    #browser()
+    #if(cmnNeutralMass) idRefMmi <- .getSQLrecords(MS2ID, select="ID_metabolite, REFMmi", from="metaCompound")
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
         posMetadata <- which(QRY$Metadata$idSpectra ==
                                  names(QRY$Spectra[idQspctr]))
@@ -180,7 +200,7 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
         SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
-            SQLwhereIndv <- .appendSQLwhere("s.REFpolarity",
+            SQLwhereIndv <- .appendSQLwhere("REFpolarity",
                                             QRY$Metadata$polarity[posMetadata],
                                             whereVector=SQLwhereIndv)
         }
@@ -190,15 +210,37 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
                 (1 - massError/10^6)
             maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
                 (1 + massError/10^6)
-            SQLwhereIndv <- .appendSQLwhere("s.REFprecursor_mz",
+            SQLwhereIndv <- .appendSQLwhere("REFprecursor_mz",
                                             c(minPrecMass, maxPrecMass),
                                             mode="BETWEEN",
                                             whereVector=SQLwhereIndv)
         }
 
+        if(cmnNeutralMass){
+          QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
+                              QRY$Metadata$polarity[posMetadata])
+          QRYMmi_min <- QRYMmi * (1 - massError/10^6)
+          QRYMmi_max <- QRYMmi * (1 + massError/10^6)
+
+          subSQLwhereMmi <- .appendSQLwhere("REFMmi",
+                                            c(min(QRYMmi_min), max(QRYMmi_max)),
+                                            mode="BETWEEN")
+          idRefMmi <- .getSQLrecords(MS2ID, select="ID_metabolite, REFMmi",
+                                     from="metaCompound",where=subSQLwhereMmi)
+          idRefMeta <- idRefMmi$ID_metabolite[vapply(idRefMmi$REFMmi, function(ix)
+            any(ix > QRYMmi_min & ix < QRYMmi_max), FUN.VALUE = T)]
+          #idRefMeta <- idRefMmi$ID_metabolite[idRefMmi$REFMmi %in% REFMmi_r]
+          subSQLwhereMmi <- .appendSQLwhere("ID_metabolite", idRefMeta,
+                                            mode="IN")
+          #subSQLwhereMmi <- .appendSQLwhere("ID_metabolite", "234263", mode="IN")
+          idRefMmi <- .getSQLrecords(MS2ID, select="ID_spectra",
+                                     from="crossRef_SpectrComp",
+                                     where=subSQLwhereMmi)
+          idRef <- intersect(idRef, unlist(idRefMmi))
+        }
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
                                         whereVector=SQLwhereIndv)
-        idRef <- .getSQLrecords(MS2ID,"s.ID_spectra", "metaSpectrum s",
+        idRef <- .getSQLrecords(MS2ID,"ID_spectra", "metaSpectrum",
                                 c(SQLwhereGen, SQLwhereIndv))
 
         #return if query spectrum has no targeted db spectra
@@ -252,7 +294,5 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
                                workVar = workVar)
     return(rslt)
 }
-#TODO: COMPARE RESULTS WITH PREVOIUS VERSION
-#TODO: CHECK MS2ID OBJECT
 #TODO: SHINY
 #TODO: CONSENSUS SPECTRA
