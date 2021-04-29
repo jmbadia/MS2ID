@@ -53,7 +53,7 @@ setValidity("Annot", function(object) {
     else TRUE
 })
 
-#TODO: check structural integrity (required coliumns, ...)
+#TODO: check structural integrity (required columns, ...)
 .validAnnot <- function(q, rs, rf, h, i){
     txt <- character()
     if (length(txt)) txt else TRUE
