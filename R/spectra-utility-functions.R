@@ -83,7 +83,6 @@
     return(spectraList)
 }
 
-
 #' Extract a spectrum from a spectra list
 #'
 #' @param spectraList spectra list. spectra id are in names(list)
@@ -91,11 +90,14 @@
 #' @param rowName character(1). Optionally, 'mass-charge' or 'intensity'
 #'  row can be selected
 #'
-#' @return
 #' @noRd
-.getFragments <- function(spectraList, idSpectrum, rowName=""){
+.getFragments <- function(spectraList, idSpectrum, rowName){
   if(length(idSpectrum)!=1) stop("Only a idSpectrum is supported")
-  spectraList[[as.character(idSpectrum)]][rowName, ]
+  if(missing(rowName)){
+    spectraList[[as.character(idSpectrum)]]
+  }else{
+    spectraList[[as.character(idSpectrum)]][rowName, ]
+  }
 }
 
 
