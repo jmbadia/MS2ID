@@ -96,13 +96,13 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
     .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
 
     #type of metric (incrm. or decremental)
-    decrMetrics <- c("topsoe", "squared_chord")
-    decrMet <- metrics %in% decrMetrics
+    decrMet <- metrics %in% DECRMETRIC
 
+    metOK <- c(INCRMETRIC,DECRMETRIC)[c(INCRMETRIC,DECRMETRIC)!='metricFunc']
     #check values
-    if(!all(metrics %in% c("cosine", "topsoe", "fidelity", "squared_chord")))
-      stop(paste("'metrics' is expected to be one of the following characters:",
-                 "'cosine', 'topsoe', 'fidelity', 'squared_chord'"))
+    if(!all(metrics %in% metOK))
+      stop(paste("'metrics' is expected to be one of the following:",
+                 paste(metOK, collapse = ", ")))
     if(length(metrics) != length(metricsThresh))
       stop("'metricsThresh' must contain a value for every metric included
              in the argument 'metrics'")

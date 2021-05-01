@@ -33,7 +33,12 @@ Imports:
     utils,
     philentropy,
     magrittr,
-    openxlsx
+    openxlsx,
+    shiny,
+    plotly,
+    DT,
+    RColorBrewer,
+    ggplot2
 Collate: 
     'AllGenerics.R'
     'Annot.R'
@@ -42,9 +47,12 @@ Collate:
     'SQL-utility-tools.R'
     'adduct-utility-functions.R'
     'annotate.R'
+    'app.R'
     'bigMemory-utility-tools.R'
     'checkTypes.R'
     'consensus.R'
+    'export2df.R'
+    'export2xlsx.R'
     'loadSpectra.R'
     'processAnnotation.R'
     'queryMzIndex.R'

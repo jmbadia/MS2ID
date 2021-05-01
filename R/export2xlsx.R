@@ -1,56 +1,27 @@
-#' Export an annotation as xlsx file
+#' Export an annotation object as xlsx file
 #'
-#' @param anRslt Annot object with the results to be exporte
-#' @param noCmnNeutralMassCos numeric(1) with a cosine threshold to subset Non common neutral mass results.
+#' @param anRslt Annot object with the results to be exported
+#' @param noCmnNeutralMassDist numeric(1) with a distance threshold to subset Non common neutral mass results.
+#' @param metric char(1) with the name of the metric that must subset (according to the distance threshold) and order the identifications.
 #' @param file char(1) name (with path) of the exported file
 #' @param overwrite boolean(1) If TRUE, overwrite any existing file.
-export2xlsx <- function(anRslt, noCmnNeutralMassCos, ...){
+export2xlsx <- function(anRslt, ...){
     #TODO CHECK ARGUMENTS
-    hits <- hits(anRslt)
-    if(!missing(noCmnNeutralMassCos)){
-        filtVal <- hits$cosine >= cosNOcmnNeutralMass | !is.na(hits$propAdduct)
-        hits <- hits[valuableResult,]
-    }
-    #TODO adapt for others methods than cosine
-    decreasMethod <- "cosine" %in% c("topsoe", "fidelity", "squared_chord")
-    hits <- hits %>% group_by(idQRYspect, idREFcomp) %>%
-        top_n(ifelse(decreasMethod, -1, 1), cosine) %>%
-        distinct(idQRYspect, idREFcomp, .keep_all = T) %>%
-        arrange(idQRYspect, -cosine)
-    REFmetaC <- refCompound(anRslt) %>% rename_with( ~ paste0("REF", .x))
-    REFmetaS <- refSpectra(anRslt) %>% Spectra::spectraData() %>%
-        as.data.frame() %>% rename_with( ~ paste0("REF", .x))
-    REFmetaS$REFmassNum <- vapply(mz(refSpectra(anRslt)), length, FUN.VALUE = 2)
-    QRYmetaS <- qrySpectra(anRslt) %>% Spectra::spectraData() %>%
-        as.data.frame() %>% rename_with( ~ paste0("QRY", .x))
-    QRYmetaS$QRYmassNum <- vapply(mz(qrySpectra(anRslt)), length, FUN.VALUE = 2)
-    anRslt <- hits %>%
-        merge(REFmetaC, by.x="idREFcomp", by.y="REFid", all.y=F) %>%
-        merge(REFmetaS, by.x="idREFspect", by.y="REFid", all.y=F,
-              suffixes = c(".comp",".spectra")) %>%
-        merge(QRYmetaS, by.x="idQRYspect", by.y="QRYid", all.y=F)
-
-    anRslt <- arrange(anRslt, QRYdataOrigin, QRYrtime, QRYprecursorMZ, -cosine)
-
-    #ORDER & SUBSET columns
-    mainVar <- c("QRYprecursorMZ", "QRYrtime", "QRYacquisitionNum", "QRYacquisitionNum_CONS", "REFMmi","propAdduct","REFadduct","REFprecursorMz","cosine","REFname","REFformula","REFinchikey","REFcasNum","QRYmassNum","cmnMasses","REFmassNum","QRYcollisionEnergy","REFCE","QRYpolarity","REFpolarity","QRYprecursorCharge","QRYprecInt","REFnature","REFinstrument","REFinstrumentType", "REFionSource","QRYmsLevel","idQRYspect","idREFspect","idREFcomp","REFID_db.comp","REFID_db.spect","QRYdataOrigin")
-    anRslt <- dplyr::select(anRslt,
-                            c(mainVar[mainVar %in% names(anRslt)],
-                              names(anRslt)[!names(anRslt) %in% mainVar]))
-
-    #collpse "QRYmassNum","cmnMasses","REFmassNum" in just one column
-    massNum_var <- c("QRYmassNum","cmnMasses","REFmassNum")
-    anRslt$QRY_CMN_REF_massNum <- vapply(seq_len(nrow(anRslt)), function(nr){
-        paste(anRslt[nr, massNum_var], collapse = "/")
-    }, FUN.VALUE = "rita")
-    anRslt <- dplyr::relocate(anRslt, QRY_CMN_REF_massNum, .before=QRYmassNum)
-    anRslt <- dplyr::select(anRslt, !massNum_var)
-
+    anRslt <- .export2df(anRslt, ...)
     #Save xlsx file
     .create_xlsx(data = anRslt, ...)
 }
 
-.create_xlsx <- function(data, ...){
+#' @importFrom openxlsx createStyle createWorkbook addWorksheet writeData addStyle writeFormula
+.create_xlsx <- function(data, metric="cosine", ...){
+
+    if(length(metric)!=1){
+        stop("'metric' must contain ONE string")
+    }else if(!(metric %in% c(INCRMETRIC, DECRMETRIC))){
+        stop(paste("'metric' must contain ONE the following options:",
+                   paste(c(INCRMETRIC, DECRMETRIC), collapse = ", ")))
+    }
+
     #remove empty columns
     data <- data[ , !vapply(data, function(col){
         all(is.na(col))
@@ -80,9 +51,9 @@ export2xlsx <- function(anRslt, noCmnNeutralMassCos, ...){
     StyleB2 <- createStyle(border="TopBottom", fgFill = "#79a8a9")
 
     lengCol <- seq_len(ncol(data))
-    cossimCol <- which(colnames(data) %in% c("cosine", "cossim", "distance"))
-    nameCol <- which(colnames(data)=="REFname")
-    inchikeyCol <- which(colnames(data)=="REFinchikey")
+    cossimCol <- which(colnames(data) == metric)
+    nameCol <- which(colnames(data) == "REFname")
+    inchikeyCol <- which(colnames(data) == "REFinchikey")
 
     ## Create a new workbook
     wb <- createWorkbook(creator = "jmbadia", title="My name here")
