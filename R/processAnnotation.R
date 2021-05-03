@@ -19,7 +19,6 @@
     hits <- do.call(rbind, dist)
     hits$idQRYspect <- as.numeric(rep(names(dist),
                                       vapply(dist, nrow, FUN.VALUE = 3)))
-
     #crossRef (REF spectra vs REF compound)
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
                                 mode="IN")
@@ -95,6 +94,7 @@
 
     #Convert to spectra object
     REFspect <- Spectra::Spectra(REFspect)
+    QRYspect <- dplyr::rename(QRYspect, precursorMz="precursorMZ")
     QRYspect <- Spectra::Spectra(QRYspect)
 
     runningTime <- round(as.numeric(Sys.time() - workVar$annotationTime,

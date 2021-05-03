@@ -8,6 +8,7 @@
 export2xlsx <- function(anRslt, ...){
     #TODO CHECK ARGUMENTS
     anRslt <- .export2df(anRslt, ...)
+
     #Save xlsx file
     .create_xlsx(data = anRslt, ...)
 }
@@ -21,6 +22,14 @@ export2xlsx <- function(anRslt, ...){
         stop(paste("'metric' must contain ONE the following options:",
                    paste(c(INCRMETRIC, DECRMETRIC), collapse = ", ")))
     }
+
+    #collpse "QRYmassNum","cmnMasses","REFmassNum" in just one column
+    massNum_var <- c("QRYmassNum","cmnMasses","REFmassNum")
+    data$QRY_CMN_REF_massNum <- vapply(seq_len(nrow(data)), function(nr){
+        paste(data[nr, massNum_var], collapse = "/")
+    }, FUN.VALUE = "rita")
+    data <- dplyr::relocate(data, QRY_CMN_REF_massNum, .before=QRYmassNum)
+    data <- dplyr::select(data, !massNum_var)
 
     #remove empty columns
     data <- data[ , !vapply(data, function(col){
@@ -73,15 +82,15 @@ export2xlsx <- function(anRslt, ...){
         idFile <- substr(idFile, start = 1, stop = min(30,nchar(idFile)))
 
         #for every precMass, which has the best cossim
-        bst_cossim <- unlist(lapply(unique(tmp$QRYprecursorMZ), function(x) {
-            maxValue <- max(tmp[tmp$QRYprecursorMZ==x, cossimCol])
-            which(tmp$QRYprecursorMZ==x & tmp[,cossimCol] == maxValue)
+        bst_cossim <- unlist(lapply(unique(tmp$QRYprecursorMz), function(x) {
+            maxValue <- max(tmp[tmp$QRYprecursorMz==x, cossimCol])
+            which(tmp$QRYprecursorMz==x & tmp[,cossimCol] == maxValue)
         }))
         #for every precMass, which is the most repeated name
-        bst_name <- unlist(lapply(unique(tmp$QRYprecursorMZ), function(x) {
-            mRepN <- names(sort(table(tmp[tmp$QRYprecursorMZ == x, "REFname"]),
+        bst_name <- unlist(lapply(unique(tmp$QRYprecursorMz), function(x) {
+            mRepN <- names(sort(table(tmp[tmp$QRYprecursorMz == x, "REFname"]),
                               decreasing=TRUE)[1])
-            which(tmp$REFname == mRepN & tmp$QRYprecursorMZ == x)
+            which(tmp$REFname == mRepN & tmp$QRYprecursorMz == x)
         }))
 
         ## Add a worksheet
@@ -90,14 +99,14 @@ export2xlsx <- function(anRslt, ...){
         ##write data to worksheet 1
         writeData(wb, sheet = idFile, tmp)
         #makeHyperlinkString(sheet = idFile, row = 1, col = 1, text = "NULL")
-        colorA <- unique(tmp$QRYprecursorMZ)[c(TRUE, FALSE)]
-        colorB <- unique(tmp$QRYprecursorMZ)[c(FALSE, TRUE)]
+        colorA <- unique(tmp$QRYprecursorMz)[c(TRUE, FALSE)]
+        colorB <- unique(tmp$QRYprecursorMz)[c(FALSE, TRUE)]
 
         color1 <- unique(tmp$idQRYspect)[c(TRUE, FALSE)]
         color2 <- unique(tmp$idQRYspect)[c(FALSE, TRUE)]
 
-        clA <- tmp$QRYprecursorMZ %in% colorA
-        clB <- tmp$QRYprecursorMZ %in% colorB
+        clA <- tmp$QRYprecursorMz %in% colorA
+        clB <- tmp$QRYprecursorMz %in% colorB
         cl1 <- tmp$idQRYspect %in% color1
         cl2 <- tmp$idQRYspect %in% color2
 
