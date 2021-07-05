@@ -5,6 +5,7 @@
 #' @param metric char(1) with the name of the metric that must subset (according to the distance threshold) and order the identifications.
 #' @param file char(1) name (with path) of the exported file
 #' @param overwrite boolean(1) If TRUE, overwrite any existing file.
+#' @export
 export2xlsx <- function(anRslt, ...){
     #TODO CHECK ARGUMENTS
     anRslt <- .export2df(anRslt, ...)
