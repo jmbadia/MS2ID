@@ -5,7 +5,7 @@
 \alias{MS2ID-class}
 \title{In-house database for high-throughput MS/MS annotation}
 \usage{
-MS2ID(dir)
+MS2ID(ms2idFile)
 }
 \description{
 The `MS2ID` class encapsulates a MS2 spectra database along with its metadata.

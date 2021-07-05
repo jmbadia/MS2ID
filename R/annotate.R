@@ -5,8 +5,7 @@
 #' criteria relies on compare every query spectrum with reference spectra using
 #' distance metrics.
 #'
-#' @param QRYdir character(1). Path of the folder containing the mzML files
-#'   (query spectra) to annotate.
+#' @param QRYdata character(n) defining either the directory containing the mzML files, or the files themselves.
 #' @param MS2ID \linkS4class{MS2ID} object with the in-house database to use in
 #'   the annotation.
 #' @param noiseThresh A numeric defining the threshold used in the noise
@@ -71,25 +70,40 @@
 #'   fooCos <- suppressMessages(philentropy::distance(rowdf, method = "cosine"))
 #'   return(fooCos+1)
 #' }
-#' result <- annotate(QRYdir = q, MS2ID = ms2idObject, nsamples=10,
+#' result <- annotate(QRYdata = q, MS2ID = ms2idObject, nsamples=10,
 #'          metrics = c("fidelity", "cosine", "topsoe"),
 #'          metricsThresh = c(0.6, 0.8, 0.6),
 #'          metricFUN = fooFunction, metricFUNThresh = 1.8)
 #' }
 
-annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
+annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh, noiseThresh=0.01, massError=20,
                      cmnPrecMass=FALSE, cmnNeutralMass=TRUE, cmnPeaks=2,
                      cmnTopPeaks=5, cmnPolarity= TRUE, db="all", nature="all",
                      nsamples, consens=T, consCos=0.8, consComm=2/3, consME=20,
                      ...){
-    argmnts <- c(as.list(environment()), list(...))
+
+  if(FALSE){# Create a Progress object
+  progress <- shiny::Progress$new()
+  # Make sure it closes when we exit this reactive, even if there's an error
+  on.exit(progress$close())
+  # Number of times we'll go through the loop
+  progress$set(message = "Making plot", value = 0)
+  n <- 10
+  for(i in 1:n){
+    progress$inc(1/n, detail = paste("Doing part", i))
+    # Pause for 0.1 seconds to simulate a long computation.
+    Sys.sleep(0.1)
+  }
+  }
+
+  argmnts <- c(as.list(environment()), list(...))
     #check argument types
-    reqClasses <- c(QRYdir="character", MS2ID="MS2ID", metricsThresh="numeric",
+    reqClasses <- c(QRYdata="character", MS2ID="MS2ID", metricsThresh="numeric",
                     metricFUNThresh="numeric", nsamples="integer",
                     noiseThresh="numeric", cmnPeaks="integer",
                     cmnTopPeaks="integer", db="character", nature="character",
-                    cmnPolarity= "logical", cmnPrecMass="logical",
+                    cmnPolarity= "logical", cmnPrecMass= "logical",
                     cmnNeutralMass="logical", massError="numeric")
 
     reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
@@ -118,8 +132,8 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
       decrMet <- c(decrMet, F)
       } else metFun <- FALSE
 
-    if (missing(QRYdir))
-        stop("'QRYdir' is a mandatory argument")
+    if (missing(QRYdata))
+        stop("'QRYdata' is a mandatory argument")
     if(noiseThresh < 0 | noiseThresh > 1)
         stop("'noiseThresh' is expected to be a number between 0 and 1")
     if (cmnPeaks < 1)
@@ -136,7 +150,7 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
     workVar$annotationTime <- Sys.time()
 
     message("Loading query spectra ...")
-    QRY <- .loadSpectra(dirPath=QRYdir, nsamples=nsamples, ...)
+    QRY <- .loadSpectra(mzmlData = QRYdata, nsamples=nsamples, ...)
 
     #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
@@ -166,12 +180,16 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
       QRY <- .cluster2Consens(QRY, consCos, massErrorPrec = consME)
       #consens spectra
       QRY <- .consens(QRY, consME, consComm)
-      #keep only consensus spectra (to annotate them)
-      isConsSpectra <- vapply(QRY$Metadata$primalSpctra, function(primals){
-        !is.null(primals) & !identical(primals,0)
+      #keep only consensus spectra (to annotate only consensus)
+      isConsSpectra <- vapply(QRY$Metadata$sourceSpect, function(srcs){
+        !is.null(srcs) & !identical(srcs , 0)
       }, FUN.VALUE = T)
       if(sum(isConsSpectra)==0) stop("Not even one consensus spectrum obtained")
-      QRY$Metadata <- QRY$Metadata[isConsSpectra,]
+      #leftovers
+      LFT <- QRY
+      LFT$Metadata <- QRY$Metadata[!isConsSpectra, ]
+      LFT$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% LFT$Metadata$idSpectra]
+      QRY$Metadata <- QRY$Metadata[isConsSpectra, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
       QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
     }
@@ -239,7 +257,7 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
         }
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
                                         whereVector=SQLwhereIndv)
-        idRef <- .getSQLrecords(MS2ID,"ID_spectra", "metaSpectrum",
+        idRef <- .getSQLrecords(MS2ID, "ID_spectra", "metaSpectrum",
                                 c(SQLwhereGen, SQLwhereIndv))
 
         #return if query spectrum has no targeted db spectra
@@ -289,9 +307,8 @@ annotate <- function(QRYdir, MS2ID, metrics="cosine", metricsThresh= 0.8,
     }
     message("Processing results obtained ...")
     rslt <- .processAnnotation(dist = distances, ms2id = MS2ID , qry = QRY,
-                               mError = massError, cmnNtMass = cmnNeutralMass,
-                               workVar = workVar)
+                               lft = ifelse(consens, LFT, NA),
+                               mError = massError,
+                               cmnNtMass = cmnNeutralMass, workVar = workVar)
     return(rslt)
 }
-#TODO: SHINY
-#TODO: CONSENSUS SPECTRA

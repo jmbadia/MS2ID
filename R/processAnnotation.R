@@ -15,7 +15,7 @@
 #'
 #' @return an Annot object with the results of the annotation
 #' @noRd
-.processAnnotation<- function(dist, ms2id, qry, mError, cmnNtMass, workVar) {
+.processAnnotation<- function(dist, ms2id, qry, lft, mError, cmnNtMass, workVar) {
     hits <- do.call(rbind, dist)
     hits$idQRYspect <- as.numeric(rep(names(dist),
                                       vapply(dist, nrow, FUN.VALUE = 3)))
@@ -54,15 +54,37 @@
     }
 
     #QRYspect
-    QRYspect <- qry$Metadata[qry$Metadata$idSpectra %in% hits$idQRYspect,]
-    QRYspect <- dplyr::rename(QRYspect, id = 'idSpectra', dataOrigin = 'file',
-                              rtime = 'retentionTime')
+    idCONShits <- unique(hits$idQRYspect)
+    idSRCShits <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits,
+                               "sourceSpect"]
+    idSRCShits <- unique(unlist(idSRCShits))
+
+    QRYspect <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits, ]
     orderSpectra <- match(QRYspect$id, names(qry$Spectra))
 
     QRYspect$mz <- lapply(orderSpectra, function(x)
         qry$Spectra[[x]]['mass-charge',])
     QRYspect$intensity <- lapply(orderSpectra, function(x)
         qry$Spectra[[x]]['intensity',])
+
+    if(!is.na(lft)){
+        LFTspect <- lft$Metadata[lft$Metadata$idSpectra %in% idSRCShits, ]
+        orderSpectra <- match(LFTspect$id, names(lft$Spectra))
+
+        LFTspect$mz <- lapply(orderSpectra, function(x)
+            lft$Spectra[[x]]['mass-charge',])
+        LFTspect$intensity <- lapply(orderSpectra, function(x)
+            lft$Spectra[[x]]['intensity',])
+
+        QRYspect <- rbind(QRYspect, LFTspect)
+    }
+
+
+    QRYspect <- rename(QRYspect, id = 'idSpectra', dataOrigin = 'file',
+                       rtime = 'retentionTime', CE = "collisionEnergy",
+                       precScanNum = "precursorScanNum",
+                       precursorMz ="precursorMZ",
+                       isolationWindowTargetMz = "isolationWindowTargetMZ")
 
     #REFspect
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
@@ -92,10 +114,16 @@
         sum(unlist(a) %in% unlist(b))
     }, FUN.VALUE = 3)
 
+
+    #remove NA columns
+    QRYspect <- QRYspect[, !vapply(QRYspect, function(col) all(is.na(col)),
+                              FUN.VALUE = T)]
+    REFspect <- REFspect[, !vapply(REFspect, function(col) all(is.na(col)),
+                                   FUN.VALUE = T)]
+
     #Convert to spectra object
-    REFspect <- Spectra::Spectra(REFspect)
-    QRYspect <- dplyr::rename(QRYspect, precursorMz="precursorMZ")
     QRYspect <- Spectra::Spectra(QRYspect)
+    REFspect <- Spectra::Spectra(REFspect)
 
     runningTime <- round(as.numeric(Sys.time() - workVar$annotationTime,
                                     units = "mins"), 2)
