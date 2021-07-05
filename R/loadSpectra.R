@@ -1,6 +1,6 @@
 #' Load query spectra
 #'
-#' @param dirPath `character` defining the location of the mzml files.
+#' @param mzmlData `character` defining either the directory containing the mzML files, or the files themselves.
 #' @param msLevel `integer` or `numeric`, but a natural number. It subsets the
 #'  spectra to be loaded to those with such msLevel. By default, msLevel=2L
 #' @param nsamples `integer` or `numeric`, but a natural number. To speed up
@@ -10,42 +10,48 @@
 #' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idSpectra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idSpectra' variable.
 #' @noRd
 
-.loadSpectra <- function(dirPath, msLevel=2L, nsamples){
+.loadSpectra <- function(mzmlData, msLevel=2L, nsamples){
     #check types
-    reqClasses <- c(dirPath="character", msLevel="integer", nsamples="integer")
+    reqClasses <- c(mzmlData="character", msLevel="integer", nsamples="integer")
     .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
-
     if (msLevel < 2)
         stop("'msLevel' is expected to be a natural number > 1")
     if (!missing(nsamples))
         if (nsamples < 1)
             stop("'nsamples' is expected to be a natural number > 0")
-
-    #load files
-    mzml_files <- dir(path = dirPath, pattern="*\\.mzml$",
-                    ignore.case=TRUE, full.names = FALSE)
+    if(identical(file_test("-d", mzmlData), T)){# one char and is dir
+      #load files
+      mzml_files <- dir(path = mzmlData, pattern="*\\.mzml$",
+                        ignore.case=TRUE, full.names = T)
+    }else{ #all char must be .mzml chars
+      ismzml <- grepl("\\.mzml$", mzmlData, ignore.case = T)
+      if(!all(ismzml))
+        warning(paste("The following non mzML file/s will be ignored:",
+                      paste(mzmlData[!ismzml], collapse=", ")))
+      mzml_files <- mzmlData[ismzml]
+    }
     if(length(mzml_files) < 1)
-        stop("No mzml files found in 'dirPath' path")
+        stop("No valid mzML files found")
 
   # Take and merge metadata & spectralMatrix from MS2 spectra
   mtdata <- data.frame()
   spctra <- list()
 
-  #Capture spectra info from all mzmlfiles
-  for(id_file in seq_along(mzml_files)){
-    mzMLfile <- mzR::openMSfile(file.path(dirPath, mzml_files[id_file]))
-    temp <- mzR::header(mzMLfile)
+  #Capture spectra info from all mzmlfiles #TODO: use lapply and do.call
+  for(file in mzml_files){
+    mzRobj <- mzR::openMSfile(file)
+    temp <- mzR::header(mzRobj)
     #positions to catch
-    pos2Catch <- temp$msLevel==msLevel
+    pos2Catch <- temp$msLevel == msLevel
     #not an scan to read, jump to next file
     if(!any(pos2Catch)) next
 
     #load metadata & filename. Append filename to spectra metadata
-    temp <- cbind(file= mzml_files[id_file], temp[pos2Catch,])
+    temp <- cbind(file = basename(file), temp[pos2Catch,])
 
     # load spectra matrix
     temp_spctra <- lapply(which(pos2Catch), function(x) {
-      m <- t(mzR::peaks(mzMLfile,x))
+      m <- t(mzR::peaks(mzRobj,x))
       rownames(m) <- c("mass-charge","intensity")
       return(m)
     })
@@ -53,7 +59,7 @@
     #merge info
     spctra <- c(temp_spctra, spctra)
     mtdata <- rbind(temp,mtdata)
-    mzR::close(mzMLfile)
+    mzR::close(mzRobj)
   }
 
 #rslt$QRY_spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
