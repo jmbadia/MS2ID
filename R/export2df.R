@@ -24,7 +24,7 @@
     if(!missing(noCmnNeutralMassDist)){
         filtVal <- hits[, metric] >= noCmnNeutralMassDist |
             !is.na(hits$propAdduct)
-        hits <- hits[valuableResult,]
+        hits <- hits[filtVal,]
     }
 
     sgnMetric <- ifelse(metric %in% DECRMETRIC, -1, 1)

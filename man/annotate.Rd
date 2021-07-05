@@ -5,7 +5,7 @@
 \title{Annotate spectra against a MS2ID library}
 \usage{
 annotate(
-  QRYdir,
+  QRYdata,
   MS2ID,
   metrics = "cosine",
   metricsThresh = 0.8,
@@ -29,8 +29,7 @@ annotate(
 )
 }
 \arguments{
-\item{QRYdir}{character(1). Path of the folder containing the mzML files
-(query spectra) to annotate.}
+\item{QRYdata}{character(n) defining either the directory containing the mzML files, or the files themselves.}
 
 \item{MS2ID}{\linkS4class{MS2ID} object with the in-house database to use in
 the annotation.}
@@ -117,7 +116,7 @@ fooFunction <- function(spectr1, spectr2){
   fooCos <- suppressMessages(philentropy::distance(rowdf, method = "cosine"))
   return(fooCos+1)
 }
-result <- annotate(QRYdir = q, MS2ID = ms2idObject, nsamples=10,
+result <- annotate(QRYdata = q, MS2ID = ms2idObject, nsamples=10,
          metrics = c("fidelity", "cosine", "topsoe"),
          metricsThresh = c(0.6, 0.8, 0.6),
          metricFUN = fooFunction, metricFUNThresh = 1.8)
