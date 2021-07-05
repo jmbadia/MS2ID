@@ -38,7 +38,8 @@ Imports:
     plotly,
     DT,
     RColorBrewer,
-    ggplot2
+    ggplot2,
+    shinyFiles
 Collate: 
     'AllGenerics.R'
     'Annot.R'
