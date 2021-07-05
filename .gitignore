@@ -29,3 +29,16 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 inst/doc
+20210405.RDS
+CONS_CMNNeut_NEG.xlsx
+CONS_CMNNeut_POS.xlsx
+ESBORRA_20210501_1.RDS
+ESBORRA_20210504_1.RDS
+ESBORRA_20210504_2.RDS
+Kkk.xlsx
+Only5_SaraMarti_SerumPOS_NOTconsYESNeutr.RDS
+Only5_SaraMarti_SerumPOS_YESconsNOTNeutr.RDS
+Only5_SaraMarti_SerumPOS_YESconsYesNeutr.RDS
+Only5_SaraMarti_esputPOS_YESconsNOTNeutr.RDS
+SaraMarti_SerumPositiu_1.RDS
+esborra.xlsx
