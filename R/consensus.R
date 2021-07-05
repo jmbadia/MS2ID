@@ -20,23 +20,23 @@
 #' @param s list with spectra and metadata
 #' @param consCosThres numeric(1) with  the minimum cosine similarity two contiguous spectra must have to consens a spectrum.
 #'
-#' @return s with a new column in the metadata dataframe named 'primalSpctra'.
-#'   If the row corresponds to: a consensus spectrum, primalSpctra contains a
+#' @return s with a new column in the metadata dataframe named 'sourceSpect'.
+#'   If the row corresponds to: a consensus spectrum, sourceSpect contains a
 #'   idSpectra list of the spectra used to consens the spectrum. a primal
-#'   spectrum used for a consensus spectrum, primalSpctra is NULL a primal
-#'   spectrum non used for a consensus spectrum, primalSpctra is 0
+#'   spectrum used for a consensus spectrum, sourceSpect is NULL a primal
+#'   spectrum non used for a consensus spectrum, sourceSpect is 0
 #'
 #' @noRd
 
 .cluster2Consens <- function(s, consCosThres=0.8, massErrorPrec){
    # group spectra by mzprecuros
-   s$Metadata$precGroup <- .groupmz(s$Metadata$precursorMZ,
-                                      s$Metadata$precursorIntensity,
-                                      massErrorPrec)
    mdataSplited <- s$Metadata
+   mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
+                                      mdataSplited$precursorIntensity,
+                                      massErrorPrec)
    mdataSplited$still <- T #still not avaluated?
    mdataSplited <- mdataSplited %>%
-      dplyr::group_split(collisionEnergy, file, precGroup, polarity)#divide in groups
+      group_split(collisionEnergy, file, precGroup, polarity) #divide in groups
 
    #cluster spectra
    spctraClust <- lapply(mdataSplited, function(x){ #for every spectra group
@@ -72,13 +72,13 @@
    noClust <- vapply(spctraClust, function(x) length(x) < 3 , FUN.VALUE = T)
 
    #dataframe with the consensus spectra METADATA
-   tmp <- data.frame(idSpectra=seq_len(sum(!noClust)) +
+   tmp <- data.frame(idSpectra = seq_len(sum(!noClust)) +
                         max(s$Metadata$idSpectra))
-   tmp$primalSpctra <- spctraClust[!noClust]
+   tmp$sourceSpect <- spctraClust[!noClust]
    refCols <- c("seqNum" , "acquisitionNum" , "spectrumId")
    refCols <- refCols[refCols %in% names(s$Metadata)]
    for(idRow in seq_len(nrow(tmp))){
-      consensdSpectra <- s$Metadata$idSpectra %in% unlist(tmp$primalSpctra[idRow])
+      consensdSpectra <- s$Metadata$idSpectra %in% unlist(tmp$sourceSpect[idRow])
       for(idCol in seq_len(ncol(s$Metadata))){
          differentVal <- unique(s$Metadata[consensdSpectra, idCol])
          if(length(differentVal) == 1)
@@ -100,14 +100,14 @@
    #Add consensus metadata to metadata dataframe
    s$Metadata <- dplyr::bind_rows(tmp, s$Metadata)
    #assign 0 value to spectra used as primal spectra
-   s$Metadata$primalSpctra[s$Metadata$idSpectra %in%
+   s$Metadata$sourceSpect[s$Metadata$idSpectra %in%
                                 unlist(spctraClust[noClust])] <- 0
    return(s)
 }
 
 #' Consens spectra
 #'
-#' @param #' @param s list with spectra and metadata
+#' @param s list with spectra and metadata
 #' @param massErrorFrag
 #' @param minComm numeric(1) minimum ratio of mz presence in order to be present in the final consensus spectrum
 #'
@@ -115,11 +115,11 @@
 #' @noRd
 .consens <- function(s, massErrorFrag, minComm = 2/3){
    #consensus spectra to be calculated
-   toConsens <- vapply(s$Metadata$primalSpctra, function(primals){
+   toConsens <- vapply(s$Metadata$sourceSpect, function(primals){
       !is.null(primals) & !identical(primals,0)
    }, FUN.VALUE = T)
    spectraRows <- rownames(s$Spectra[[1]])
-   consSpectra <- lapply(s$Metadata$primalSpctra[toConsens], function(s2cons){
+   consSpectra <- lapply(s$Metadata$sourceSpect[toConsens], function(s2cons){
       #First consens inner mode every spectrum
       spct2cns <- lapply(s2cons, function(x) .getFragments(s$Spectra, x))
       spct2cns <- lapply(spct2cns, function(spct){
