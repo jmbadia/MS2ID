@@ -8,4 +8,54 @@
     assign("DECRMETRIC", decrMetric, envir = asNamespace(pkgname))
     incrMetric <- c("cosine", "fidelity", "metricFunc")
     assign("INCRMETRIC", incrMetric, envir = asNamespace(pkgname))
+
+    #Variables to parse and its name in MS2ID or CompoundDB DB ---
+    mtbolVar_MS2ID <- c("idmetabolitoriginal", "character",
+                        "nommetabolit", "character",
+                        "monoisotopic_molecular_weight", "numeric",
+                        "ExactMass", "numeric",
+                        "inchikey", "character",
+                        "smiles", "character",
+                        "formula", "character",
+                        "casNum", "character",
+                        "PubchemCID", "numeric",
+                        "PubchemSID", "numeric",
+                        "Chebi", "numeric",
+                        "Kegg", "character")
+    mtbolVar_CompoundDB <- c("-", "name", "exactmass", "-", "inchikey",
+                             "smiles", "formula", "cas", "-", "-", "-", "-")
+    spctraVar_MS2ID <- c("idespectreoriginal", "character",
+                         "energia", "character",
+                         "instrument", "character",
+                         "instrumentType", "character",
+                         "resolution",  "character",
+                         "msLevel",  "character",
+                         "splash", "character",
+                         "fragmentationMode", "character",
+                         "polaritat", "character",
+                         "precursor_mass", "numeric",
+                         "precursorMassPath",  "character",
+                         "adduct", "character",
+                         "ionsource",  "character",
+                         "naturalesa", "character")
+    spctraVar_CompoundDB <- c(
+        "original_spectrum_id", "collision_energy", "instrument",
+        "instrument_type", "-", "ms_level", "splash", "-", "polarity",
+        "precursor_mz", "-", "adduct","-", "predicted")
+    vars2parse <- data.frame(
+        MS2IDname = c(mtbolVar_MS2ID, spctraVar_MS2ID)[c(TRUE, FALSE)],
+        CompoundDBname = c(mtbolVar_CompoundDB, spctraVar_CompoundDB),
+        originalNames = NA,
+        MS2IDdataType = c(mtbolVar_MS2ID, spctraVar_MS2ID)[c(FALSE, TRUE)],
+        type = c(
+            rep("metaboliteVar", length(mtbolVar_MS2ID)/2),
+            rep("spectraVar", length(spctraVar_MS2ID)/2)
+            ),
+        row.names = c(mtbolVar_MS2ID, spctraVar_MS2ID)[c(TRUE, FALSE)]
+        )
+    assign("VARS2PARSE", vars2parse, envir = asNamespace(pkgname))
+    #Variables espectrals distintives: Eliminem els espectres identics  sempre i quan tinguin les V.E.D. (q definim aqui) iguals. PQ? Exemple:Si un espectre esta repetit amb E=20v i E=30v i eliminem el de 30v quan  cerca espectral per E=30v no sortira
+    distSpectralVars <- c("energia", "polaritat", "naturalesa",
+                              "fragmentationMode")
+    assign("DISTSPECTRALVARS", distSpectralVars, envir = asNamespace(pkgname))
 }
