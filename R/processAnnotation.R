@@ -92,8 +92,6 @@
     REFspect <- .getSQLrecords(ms2id, "*", "metaSpectrum", SQLwhere)
     REFspect <- dplyr::rename_with(REFspect,
                                    ~ gsub("REF", "", .x, fixed = TRUE))
-    REFspect$msLevel <- as.integer(gsub("MS", "", REFspect$msLevel,
-                                        fixed = TRUE))
     REFspect <- dplyr::rename(REFspect, id = 'ID_spectra',
                               precursorMz = 'precursor_mz')
     refSpectra <- .bufferSpectra(ms2id, unique(hits$idREFspect))
