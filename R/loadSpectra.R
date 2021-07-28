@@ -7,12 +7,14 @@
 #'  the identification process, the user can limit spectra to load to
 #'  'nsamples'. The spectra are chosen at random.
 #'
+#' @param acquisitionNum vector of`integer` or `numeric`. The user can limit spectra based on their acquisitionNum
+#'
 #' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idSpectra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idSpectra' variable.
 #' @noRd
 
-.loadSpectra <- function(mzmlData, msLevel=2L, nsamples){
+.loadSpectra <- function(mzmlData, msLevel = 2L, nsamples, acquisitionNum){
     #check types
-    reqClasses <- c(mzmlData="character", msLevel="integer", nsamples="integer")
+    reqClasses <- c(mzmlData="character", msLevel="integer", nsamples="integer", acquisitionNum = "integer")
     .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
     if (msLevel < 2)
         stop("'msLevel' is expected to be a natural number > 1")
@@ -43,6 +45,9 @@
     temp <- mzR::header(mzRobj)
     #positions to catch
     pos2Catch <- temp$msLevel == msLevel
+    if(!missing(acquisitionNum)){
+      pos2Catch <- pos2Catch & temp$acquisitionNum %in% acquisitionNum
+    }
     #not an scan to read, jump to next file
     if(!any(pos2Catch)) next
 
@@ -61,7 +66,6 @@
     mtdata <- rbind(temp,mtdata)
     mzR::close(mzRobj)
   }
-
 #rslt$QRY_spectra <- QRY$Spectra$spectra[relevantQRYSpectra]
 #names(rslt$QRY_spectra) <- QRY$Spectra$idSpectra[relevantQRYSpectra]
 
