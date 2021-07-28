@@ -2,7 +2,7 @@
 
 export("%>%")
 export(MS2ID)
-export(MS2ID_gui)
+export(MS2IDgui)
 export(annotate)
 export(export2xlsx)
 exportClasses(Annot)
