@@ -28,23 +28,23 @@
     # case replicate n times the row with that idREFspect in order to assign
     #  a idREFcomp to each row
     cmpndSpctrum <- lapply(hits$idREFspect, function(x)
-        crossRef[crossRef$ID_spectra == x, "ID_metabolite"])
+        crossRef[crossRef$ID_spectra == x, "ID_compound"])
     #copy n times the row where n is the number of metabolites per REF spectrum
     hits <- hits[rep(seq_along(cmpndSpctrum),
                       vapply(cmpndSpctrum, length, FUN.VALUE = 1)),]
     hits$idREFcomp <- unlist(cmpndSpctrum)
 
     #compound Metadata
-    SQLwhere <- .appendSQLwhere("ID_metabolite", unique(crossRef$ID_metabolite),
+    SQLwhere <- .appendSQLwhere("ID_compound", unique(crossRef$ID_compound),
                                 mode="IN")
     REFcomp <- .getSQLrecords(ms2id, "*", "metaCompound", SQLwhere)
     REFcomp <- dplyr::rename_with(REFcomp, ~ gsub("REF", "", .x, fixed = TRUE))
-    REFcomp <- dplyr::rename(REFcomp, id = 'ID_metabolite')
+    REFcomp <- dplyr::rename(REFcomp, id = 'ID_compound')
 
     #obtain possible adducts
     ionizTable <- qry$Metadata[match(hits$idQRYspect, qry$Metadata$idSpectra),
                                c("precursorMZ", "polarity")]
-    ionizTable$Mmi <- REFcomp[match(hits$idREFcomp, REFcomp$id), "Mmi"]
+    ionizTable$Mmi <- REFcomp[match(hits$idREFcomp, REFcomp$id), "exactmass"]
     hits$propAdduct <- .getAdducts(ionizTable, mError)
 
     if(cmnNtMass){
@@ -66,8 +66,7 @@
         qry$Spectra[[x]]['mass-charge',])
     QRYspect$intensity <- lapply(orderSpectra, function(x)
         qry$Spectra[[x]]['intensity',])
-
-    if(!is.na(lft)){
+    if(!anyNA(lft, recursive=FALSE)){
         LFTspect <- lft$Metadata[lft$Metadata$idSpectra %in% idSRCShits, ]
         orderSpectra <- match(LFTspect$id, names(lft$Spectra))
 
@@ -81,7 +80,7 @@
 
 
     QRYspect <- rename(QRYspect, id = 'idSpectra', dataOrigin = 'file',
-                       rtime = 'retentionTime', CE = "collisionEnergy",
+                       rtime = 'retentionTime',# CE = "collisionEnergy",
                        precScanNum = "precursorScanNum",
                        precursorMz ="precursorMZ",
                        isolationWindowTargetMz = "isolationWindowTargetMZ")
@@ -92,8 +91,8 @@
     REFspect <- .getSQLrecords(ms2id, "*", "metaSpectrum", SQLwhere)
     REFspect <- dplyr::rename_with(REFspect,
                                    ~ gsub("REF", "", .x, fixed = TRUE))
-    REFspect <- dplyr::rename(REFspect, id = 'ID_spectra',
-                              precursorMz = 'precursor_mz')
+    REFspect <- dplyr::rename(REFspect, id = 'ID_spectra'#, precursorMz = 'precursor_mz'
+                              )
     refSpectra <- .bufferSpectra(ms2id, unique(hits$idREFspect))
     REFspect$mz <- lapply(REFspect$id, function(x){
         .getSpectrum(refSpectra, which(refSpectra$ptr$id==x))['mass-charge',]
@@ -119,6 +118,12 @@
     REFspect <- REFspect[, !vapply(REFspect, function(col) all(is.na(col)),
                                    FUN.VALUE = T)]
 
+
+    #Spectra package only admits numeric CollisionEnergy values
+    QRYspect$collisionEnergy <- as.numeric(QRYspect$collisionEnergy)
+    REFspect$collisionEnergy_txt <-  REFspect$collisionEnergy
+    REFspect$collisionEnergy <- suppressWarnings(
+        as.numeric(REFspect$collisionEnergy))
     #Convert to spectra object
     QRYspect <- Spectra::Spectra(QRYspect)
     REFspect <- Spectra::Spectra(REFspect)
