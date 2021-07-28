@@ -38,7 +38,7 @@
                             ionizTable$polarity[idRow])
         p <- .posWhere(rawVect=sort(QRYMmi),
                        queryVect=ionizTable$Mmi[idRow],
-                       massError=massError)
+                       massError = massError)
         if(length(p)!=0) {
             polMatch <- .getPolPos(ionizTable$polarity[idRow])
             adductName <- paste(adducts$Name[polMatch][order(QRYMmi)][p],
