@@ -6,9 +6,9 @@
 #' @param file char(1) name (with path) of the exported file
 #' @param overwrite boolean(1) If TRUE, overwrite any existing file.
 #' @export
-export2xlsx <- function(anRslt, ...){
+export2xlsx <- function(anRslt, summarizeHits, ...){
     #TODO CHECK ARGUMENTS
-    anRslt <- .export2df(anRslt, ...)
+    anRslt <- .export2df(anRslt, summarizeHits = summarizeHits, ...)
 
     #Save xlsx file
     .create_xlsx(data = anRslt, ...)
@@ -16,7 +16,6 @@ export2xlsx <- function(anRslt, ...){
 
 #' @importFrom openxlsx createStyle createWorkbook addWorksheet writeData addStyle writeFormula
 .create_xlsx <- function(data, metric="cosine", ...){
-
     if(length(metric)!=1){
         stop("'metric' must contain ONE string")
     }else if(!(metric %in% c(INCRMETRIC, DECRMETRIC))){
@@ -67,18 +66,9 @@ export2xlsx <- function(anRslt, ...){
 
     ## Create a new workbook
     wb <- createWorkbook(creator = "jmbadia", title="My name here")
-
-    noInchikey <- is.na(data$REFinchikey)
-    baselink <- 'HYPERLINK("https://www.ncbi.nlm.nih.gov/pccompound?term=%22'
-    data$REFinchikey[!noInchikey] <- paste0(baselink,
-                                            data$REFinchikey[!noInchikey],
-                                            '%22[InChIKey]", "',
-                                            data$REFinchikey[!noInchikey],'")')
-
     for(idFile in unique(data$QRYdataOrigin)) {
         #select data
         tmp <- data[data$QRYdataOrigin==idFile,]
-
         #only first 30 characters of the filename
         idFile <- substr(idFile, start = 1, stop = min(30,nchar(idFile)))
 
@@ -99,7 +89,6 @@ export2xlsx <- function(anRslt, ...){
 
         ##write data to worksheet 1
         writeData(wb, sheet = idFile, tmp)
-        #makeHyperlinkString(sheet = idFile, row = 1, col = 1, text = "NULL")
         colorA <- unique(tmp$QRYprecursorMz)[c(TRUE, FALSE)]
         colorB <- unique(tmp$QRYprecursorMz)[c(FALSE, TRUE)]
 
@@ -132,8 +121,19 @@ export2xlsx <- function(anRslt, ...){
                  stack = TRUE)
 
         #add link
-        writeFormula(wb, sheet =idFile, startRow = 2, startCol = inchikeyCol,
-                     x = tmp$REFinchikey)
+        noInchikey <- is.na(tmp$REFinchikey)
+        nameLinks <- unlist(tmp$REFinchikey[!noInchikey])
+        baselink <- 'https://www.ncbi.nlm.nih.gov/pccompound?term=%22'
+        tmp$REFinchikey[!noInchikey] <- paste0(baselink,
+                                               tmp$REFinchikey[!noInchikey],
+                                               '%22[InChIKey]')
+        xx <- unlist(tmp$REFinchikey)
+        names(xx)[noInchikey] <- "NA"
+        names(xx)[!noInchikey] <- nameLinks
+        names(xx) <- rep("dd",length(xx))
+        class(xx) <- "hyperlink"
+        writeData(wb, sheet = idFile, x = xx, startRow = 2, startCol = inchikeyCol)
+        #writeFormula(wb, sheet =idFile, startRow = 2, startCol = inchikeyCol, x = tmp$REFinchikey)
 
     }
     openxlsx::saveWorkbook(wb, ...)
