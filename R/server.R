@@ -12,14 +12,14 @@
         consens = glue::glue("
         <br><font color=\"#00786C\"><b>This query consensus spectrum</b> \\
         ({varList[[1]]})</font> has been obtained from query spectra with the \\
-        following acquisition number: {varList[[2]]}.
+        acquisition numbers {varList[[2]]}.
                           "),
         compare = glue::glue("
         <div style=\"text-align:center;\"><font color=\"#333333\"><br>cosine= \\
         {varList[[1]]}, massNum= {varList[[2]]}<br></font> </div><font \\
-        color=\"#00786C\"><font size=4><b>QRY</b></font><br><b>propAdduct</b>=\\
-        {varList[[3]]}, <b>precursor</b>= {varList[[4]]}</font><br><font \\
-        color=\"#d64c1d\"><font size=4><b>REF</b><br></font>{varList[[5]]}<a \\
+        color=\"#00786C\"><font size=4><b>QueRY spectra</b></font>\\
+        <br><b>propAdduct</b>={varList[[3]]}, <b>precursor</b>= {varList[[4]]}\\             </font><br><font color=\"#d64c1d\"><font size=4><b>\\
+        REFerence spectra</b><br></font>{varList[[5]]}<a \\
         href=\"https://www.ncbi.nlm.nih.gov/pccompound?term=%22{varList[[6]]}\\
         %22[InChIKey]\" title=\"link to Pubchem using REFinchiKey as search \\
         word\" target=\"_blank\"> (PubChem)</a><br><b>Mmi</b>= {varList[[7]]},\\
@@ -40,8 +40,11 @@
     return(data.frame(x = Sp_mz, y = Sp_i))
 }
 
-.get_gl <- function(df, up = TRUE){
+.get_gl <- function(df, up = TRUE, hit = FALSE){
     a <- ifelse(up, -1, 1)
+    colour <- ifelse(hit,
+                     ifelse(up, "#b40000", "#00786C"),
+                     ifelse(up, "#ff6464", "#00c6b2"))
     geom_linerange(
         data = df,
         aes(
@@ -50,7 +53,8 @@
             ymin = 0,
             text = paste('</br>m/z: ', x ,'</br>i: ', round(y , 2))
         ),
-        colour = ifelse(up, "#d64c1d", "#00786C"))
+        colour = colour
+        )
 }
 
 .draw_precursor <- function(df, mtdt, mtdtShw, nature = "qry"){
@@ -85,4 +89,10 @@
     }else{
         geom_point()
     }
+}
+.customColor <- function(txt, type){
+    initFont <- switch(type,
+                       qry = '<font color=\"#b40000\">',
+                       ref = '<font color=\"#00786C\">')
+    paste0(initFont, txt, '</font>')
 }

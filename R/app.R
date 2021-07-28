@@ -1,16 +1,17 @@
 #' @import ggplot2
 #' @import shiny
+#' @import shinyjs
 #' @export
-#prova amb el boto a executar un annotation amb els arxius query i ms2id.db
-MS2ID_gui <- function(){
+MS2IDgui <- function(){
     ui <- navbarPage(
         "MS2ID GUI",
         id = "tabs",
         theme = bslib::bs_theme(version = 4, bootswatch = "flatly"),
-        tabPanel("Home"),
+        #tabPanel("Home"),
         #insert here ui side of tabPanelIdentification.R, (in invisible2git)
         tabPanel(
             "Results",
+            shinyjs::useShinyjs(),
             fluidPage(
                 title = 'MS2ID GUI',
                 fluidRow(
@@ -28,28 +29,40 @@ MS2ID_gui <- function(){
                                 fileInput("lotFile", "Upload a results file",
                                           multiple = FALSE, accept = c(".rds")
                                           ),
-                                selectInput('ffile', 'mzML file', NULL),
-                                selectInput('UNKprec', 'QRY precursor MZ ',
-                                            NULL),
-                                checkboxInput(
-                                    'reduntID',
-                                    'Show redundant identifications ',
-                                    value = FALSE),
                                 ),
                             tabPanel(
                                 "QRY/REF", br(),
-                                h4("QRY/REF MS2 spectra"),
+                                h4(HTML(paste0(
+                                    .customColor("QRY", "qry"), "/",
+                                    .customColor("REF", "ref"), " MSn spectra")
+                                    )),
+                                shinyjs::hidden(
+                                    div(
+                                        id = "hiddenQRYREF",
+                                        #content to show/hide
+                                        HTML("<b><font color=\"#DF0054\">Pick a
+                                             row to show the plot.</font></b>"))
+                                ),
                                 plotly::plotlyOutput('plotId'), br(),
                                 htmlOutput("infoTabId")
                                 ),
                             tabPanel(
                                 "Cons", br(),
                                 h4('QRY consensus formation'),
+                                shinyjs::hidden(
+                                    div(
+                                        id = "hiddenCons",
+                                        #content to show/hide
+                                        HTML("<b><font color=\"#DF0054\">Pick a row to show the plot.</font></b>"))
+                                ),
                                 plotly::plotlyOutput('plotCons'),
                                 htmlOutput("infoTabCons")
                                 ),
                             tabPanel(
-                                "", htmlOutput("infoTab"),
+                                "", br(),
+                                h4("Annotation arguments"),
+
+                                htmlOutput("infoTab"),
                                 icon = icon("info", lib = "font-awesome")
                                 )
                             ),
@@ -59,14 +72,31 @@ MS2ID_gui <- function(){
                         8,
                         htmlOutput("subheaderTable"),
                         tags$hr(),
+                        fluidRow(
+                            column(4, selectInput('ffile', 'mzML file', NULL)),
+                            column(2, selectInput('UNKprec', 'precursor MZ ',
+                                                  NULL, width=120)),
+                            column(6, br(), br(),
+                                   checkboxInput('reduntID',
+                                                 'Redundant annotations ',
+                                                 value = FALSE))
+                        ),
                         DT::DTOutput('tbl'),
                         ),
                     ),
                 )
-            )
+            ),
+        tabPanel("About")
         )
 
     server <- function(input, output, session) {
+        observe({
+            shinyjs::toggle(id = c("hiddenQRYREF"),
+                            condition = !length(input$tbl_rows_selected))
+            shinyjs::toggle(id = c("hiddenCons"),
+                            condition = !length(input$tbl_rows_selected))
+        })
+
         options(shiny.maxRequestSize=30*1024^2)
         #parent environment values
         colVisibles <- NA
@@ -78,24 +108,23 @@ MS2ID_gui <- function(){
             req(input$lotFile)
             lot <- readRDS(input$lotFile$datapath)
             dt <- list(
-                mtdt = .export2df(lot), refSpctr = refSpectra(lot),
+                mtdt = .export2df(lot, summarizeHits = !input$reduntID),
+                refSpctr = refSpectra(lot),
                 qrySpctr = qrySpectra(lot),
                 infoAnnot = infoAnnotation(lot)
                 )
-            #html colors for QRY and REF
-            fcQ <- '<font color=\"#00786C\">'
-            fcR <- '<font color=\"#d64c1d\">'
-            ef <- '</font>'
             dt$mtdt$massNum <- paste0(
-                fcQ, dt$mtdt$QRYmassNum, ef, '/', dt$mtdt$cmnMasses, '/', fcR,
-                dt$mtdt$REFmassNum, ef
+                .customColor(dt$mtdt$QRYmassNum, "qry"), '/', dt$mtdt$cmnMasses,
+                '/', .customColor(dt$mtdt$REFmassNum, "ref")
                 )
             dt$mtdt$polarity <- paste0(
-                fcQ, dt$mtdt$QRYpolarity, ef, '/', fcR,
-                dt$mtdt$REFpolarity, ef
+                .customColor(dt$mtdt$QRYpolarity, "qry"), '/',
+                .customColor(dt$mtdt$REFpolarity, "ref")
                 )
-            dt$mtdt$CE <- paste0(
-                fcQ, dt$mtdt$QRYCE, ef, '/', fcR, dt$mtdt$REFCE, ef)
+            dt$mtdt$collisionEnergy <- paste0(
+                .customColor(dt$mtdt$QRYcollisionEnergy, "qry"), '/',
+                .customColor(dt$mtdt$REFcollisionEnergy_txt, "ref")
+            )
             if(all(is.na(dt$mtdt$QRYacquisitionNum))){
                 dt$mtdt$QRYacquisitionNum <- dt$mtdt$QRYacquisitionNum_CONS
                 }
@@ -105,7 +134,7 @@ MS2ID_gui <- function(){
             dt$mtdt <- dt$mtdt %>%
                 select(-QRYacquisitionNum_CONS, -QRYmassNum, -cmnMasses,
                        -REFmassNum) %>%
-                relocate(CE, .after=QRYrtime) %>%
+                relocate(collisionEnergy, .after=QRYrtime) %>%
                 relocate(massNum, .after=REFformula) %>%
                 relocate(QRYacquisitionNum, .before=QRYrtime) %>%
                 relocate(idQRYspect, .before=QRYacquisitionNum) %>%
@@ -114,13 +143,17 @@ MS2ID_gui <- function(){
 
             #ORDER & SUBSET VISIBLE columns
             visiblVar <- c(
-                "idQRYspect", "QRYrtime", "REFMmi", "propAdduct", "REFadduct",
-                "REFprecursorMz", INCRMETRIC, DECRMETRIC, "REFname",
-                "REFformula", "massNum", "CE", "QRYprecInt", "REFnature",
-                "REFinstrument", "idREFspect","idREFcomp", "REFID_db.comp",
-                "REFID_db.spect")
-
+                "idQRYspect", "idREFspect","idREFcomp",
+                INCRMETRIC, DECRMETRIC, "massNum", "propAdduct",
+                "REFname", "REFformula",
+                "collisionEnergy", "REFexactmass", "REFadduct",
+                "QRYrtime", "REFpredicted", "REFinstrument",
+                "REFID_db.comp", "REFID_db.spectra"
+                )
             #set columns visibility default
+            dt$mtdt <- dplyr::relocate(dt$mtdt,
+                                       visiblVar[visiblVar %in% names(dt$mtdt)]
+                )
             colVisibles <<- names(dt$mtdt) %in% visiblVar
             return(dt)
         })
@@ -136,17 +169,8 @@ MS2ID_gui <- function(){
                     rdmetadata$QRYprecursorMz==input$UNKprec,]
             #select QRYacq according if they are consensus or not
 
-            #if NOT checked keep only the best score of every scan-REFmetabolite
-            if(!input$reduntID){
-                rdmetadata <- rdmetadata %>%
-                    group_by(idQRYspect, idREFcomp) %>%
-                    top_n(1, cosine) %>%
-                    distinct(idQRYspect, idREFcomp, .keep_all = T) %>%
-                    ungroup() %>% arrange(QRYprecursorMz, idQRYspect) %>%
-                    as.data.frame()
-            }
             #round leftovers
-            rdmetadata$REFMmi <- round(rdmetadata$REFMmi, 4)
+            rdmetadata$REFexactmass <- round(rdmetadata$REFexactmass, 4)
             rdmetadata$QRYrtime <- round(rdmetadata$QRYrtime, 2)
             rdmetadata$QRYacquisitionNum <- paste0(
                 "<font size=1>", rdmetadata$QRYacquisitionNum,"</font>")
@@ -209,7 +233,7 @@ MS2ID_gui <- function(){
             )
 
         output$subheaderTable <- renderText(
-            paste(h3(paste("Identifications in", input$lotFile$name)))
+            paste(h3(paste("Annotations in", input$lotFile$name)))
         )
 
         output$infoTabId <- renderText({
@@ -219,8 +243,8 @@ MS2ID_gui <- function(){
                        idQRYspect == mtdtShw$idQRYspect,
                        idREFcomp == mtdtShw$idREFcomp) %>%
                 select(cosine, massNum, propAdduct, QRYprecursorMz, REFname,
-                       REFinchikey, REFMmi, REFadduct, REFprecursorMz,
-                       REFnature, REFID_db.comp)
+                       REFinchikey, REFexactmass, REFadduct, REFprecursorMz,
+                       REFpredicted, REFID_db.comp)
             .getFormText("compare", as.list(rd))
             #changed metadataShowed$REFinchikey[rowSelected] for metadata$REFinchikey
         })
@@ -228,6 +252,15 @@ MS2ID_gui <- function(){
         output$infoTab <- renderText({
             rdInfoAnnot <- rawdata()$infoAnnot
             rdInfoAnnot$QRYdir <- rdInfoAnnot$... <- NULL
+            rdInfoAnnot[rdInfoAnnot==""] <- "default"
+            maxCharact <- 40
+            toTrim <- rdInfoAnnot$QRYdata
+            if(nchar(toTrim) > maxCharact + 3){
+                rdInfoAnnot$QRYdata <- paste0(
+                    "...",
+                    substr(toTrim,
+                           nchar(toTrim) - maxCharact + 1, nchar(toTrim)))
+            }
             rdInfoAnnot$MS2ID <- basename(rdInfoAnnot$MS2ID)
             for(idArg in seq_along(rdInfoAnnot)){
                 rdInfoAnnot$summ[[idArg]] <-
@@ -239,7 +272,9 @@ MS2ID_gui <- function(){
 
         output$infoTabCons <- renderText({
             mtdtShow <- getSelId()
-            .getFormText("consens", as.list(mtdtShow))
+            .getFormText("consens",
+                         list(idQRY= mtdtShow$idQRYspect,
+                              acqNum = mtdtShow$QRYacquisitionNum))
         })
 
         output$plotId <- plotly::renderPlotly({
@@ -247,15 +282,24 @@ MS2ID_gui <- function(){
             rd <- rawdata()
             df1 <- .getSpectra2plot(rd$refSpctr, mtdtShow$idREFspect)
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
+            #datfarmes only with hits
+            df1h <- df1[df1$x %in% df2$x,]
+            df2h <- df2[df2$x %in% df1$x,]
+            df1 <- df1[!df1$x %in% df2$x,]
+            df2 <- df2[!df2$x %in% df1$x,]
             suppressWarnings(
                 p <- ggplot() +
                     .get_gl(df1) +
                     coord_cartesian(ylim = c(-100, 100)) +
-                    .get_gl(df2, F) +
+                    .get_gl(df2, up = FALSE) +
+                    .get_gl(df1h, up = TRUE, hit=TRUE) +
+                    .get_gl(df2h, up = FALSE, hit=TRUE) +
                     labs(x = "m/z", y = "% intensity") +
                     theme_bw() + #black & white theme
                     .draw_precursor(df2, rd$mtdt, mtdtShow, nature = "qry") +
-                    .draw_precursor(df1, rd$mtdt, mtdtShow, nature = "ref")
+                    .draw_precursor(df2h, rd$mtdt, mtdtShow, nature = "qry") +
+                    .draw_precursor(df1, rd$mtdt, mtdtShow, nature = "ref") +
+                    .draw_precursor(df1h, rd$mtdt, mtdtShow, nature = "ref")
                 )
             plotly::ggplotly(p, tooltip = c("text"))
         })
@@ -264,8 +308,7 @@ MS2ID_gui <- function(){
             mtdtShow <- getSelId()
             rd <- rawdata()
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
-
-            srcId <- unlist(unkSpectra$sourceSpect)
+srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
             vsd <- rd$qrySpctr[rd$qrySpctr$id %in% srcId]
             if("basePeakIntensity" %in% Spectra::spectraVariables(vsd)){
                 vsdOrdr <- order(vsd$basePeakIntensity, decreasing = F)
