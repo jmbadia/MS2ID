@@ -37,9 +37,8 @@
 #'   spectrum.
 #' @param db -Reference spectra filter- Character filtering the reference
 #'   spectra by its original database (e.g. HMDB).
-#' @param nature -Reference spectra filter- Character filtering the reference
-#'   spectra by the spectra nature. Values are restricted to 'experimental',
-#'   'insilico' or 'all'.
+#' @param predicted -Reference spectra filter- Character filtering the reference
+#'   spectra by the spectra nature. Default is no filtering
 #' @param cmnPrecMass -Reference spectra filter- Boolean, a TRUE value limits
 #'   the reference spectra to those that have the same precursor mass as the
 #'   query spectrum.
@@ -79,10 +78,9 @@
 annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh, noiseThresh=0.01, massError=20,
                      cmnPrecMass=FALSE, cmnNeutralMass=TRUE, cmnPeaks=2,
-                     cmnTopPeaks=5, cmnPolarity= TRUE, db="all", nature="all",
+                     cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3, consME=20,
                      ...){
-
   if(FALSE){# Create a Progress object
   progress <- shiny::Progress$new()
   # Make sure it closes when we exit this reactive, even if there's an error
@@ -102,7 +100,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     reqClasses <- c(QRYdata="character", MS2ID="MS2ID", metricsThresh="numeric",
                     metricFUNThresh="numeric", nsamples="integer",
                     noiseThresh="numeric", cmnPeaks="integer",
-                    cmnTopPeaks="integer", db="character", nature="character",
+                    cmnTopPeaks="integer", db="character", predicted="logical",
                     cmnPolarity= "logical", cmnPrecMass= "logical",
                     cmnNeutralMass="logical", massError="numeric")
 
@@ -140,8 +138,6 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
         stop("'cmnPeaks' is expected to be a natural number")
     if (!cmnTopPeaks %in% 1:6 )
         stop("'cmnTopPeaks' is expected to be a natural number between 1 and 6")
-    if (!nature %in% c("experimental", "insilico", "all"))
-        stop("'nature' is expected to be 'experimental', 'insilico' or 'all'")
     if(massError < 0)
         stop("'massError' is expected to be a positive number")
 
@@ -170,10 +166,10 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     # bin spectra
     #TODO: Make this cte a variable (dependent of the mz index resolution) and
     # check if its consistent with MS2ID bin
-    dec2binFrag=2
+    dec2binFrag = 2
     message("Binning query spectra ...")
     QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
-
+    LFT <- NA
     if(consens){
       message("Obtaining consensus spectra ...")
       #cluster spectra to consens them
@@ -193,21 +189,21 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
       QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
     }
-
-    # SQL sentence according global restrictions (db, nature, ...
+    # SQL sentence according global restrictions (db, predicted, ...
     SQLwhereGen <- vector()
     if(db!="all")
-        SQLwhereGen <- .appendSQLwhere("REFID_db", db,
+        SQLwhereGen <- .appendSQLwhere("ID_db", db,
                                        whereVector=SQLwhereGen)
-    if(nature!="all")
-        SQLwhereGen <- .appendSQLwhere("REFnature", nature,
-                                       whereVector = SQLwhereGen)
+    if(!missing(predicted)){
+      predicted <- ifelse(predicted, 1, 0)
+      SQLwhereGen <- .appendSQLwhere("predicted", predicted,
+                                     whereVector = SQLwhereGen)
+    }
     message("Solving distance metrics between query and reference spectra ...")
 
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
-        posMetadata <- which(QRY$Metadata$idSpectra ==
+      posMetadata <- which(QRY$Metadata$idSpectra ==
                                  names(QRY$Spectra[idQspctr]))
-
         massQ <- QRY$Spectra[[idQspctr]]["mass-charge",]
         intQ <- QRY$Spectra[[idQspctr]]["intensity",]
 
@@ -217,7 +213,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
         SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
-            SQLwhereIndv <- .appendSQLwhere("REFpolarity",
+            SQLwhereIndv <- .appendSQLwhere("polarity",
                                             QRY$Metadata$polarity[posMetadata],
                                             whereVector=SQLwhereIndv)
         }
@@ -227,7 +223,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                 (1 - massError/10^6)
             maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
                 (1 + massError/10^6)
-            SQLwhereIndv <- .appendSQLwhere("REFprecursor_mz",
+            SQLwhereIndv <- .appendSQLwhere("precursorMz",
                                             c(minPrecMass, maxPrecMass),
                                             mode="BETWEEN",
                                             whereVector=SQLwhereIndv)
@@ -238,21 +234,22 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                               QRY$Metadata$polarity[posMetadata])
           QRYMmi_min <- QRYMmi * (1 - massError/10^6)
           QRYMmi_max <- QRYMmi * (1 + massError/10^6)
-
-          subSQLwhereMmi <- .appendSQLwhere("REFMmi",
+          subSQLwhereMmi <- .appendSQLwhere("exactmass",
                                             c(min(QRYMmi_min), max(QRYMmi_max)),
                                             mode="BETWEEN")
-          idRefMmi <- .getSQLrecords(MS2ID, select="ID_metabolite, REFMmi",
-                                     from="metaCompound",where=subSQLwhereMmi)
-          idRefMeta <- idRefMmi$ID_metabolite[vapply(idRefMmi$REFMmi, function(ix)
+          idRefMmi <- .getSQLrecords(MS2ID,
+                                     select="ID_compound, exactmass",
+                                     from="metaCompound",
+                                     where = subSQLwhereMmi)
+          idRefMeta <- idRefMmi$ID_compound[vapply(idRefMmi$exactmass, function(ix)
             any(ix > QRYMmi_min & ix < QRYMmi_max), FUN.VALUE = T)]
-          #idRefMeta <- idRefMmi$ID_metabolite[idRefMmi$REFMmi %in% REFMmi_r]
-          subSQLwhereMmi <- .appendSQLwhere("ID_metabolite", idRefMeta,
+          #idRefMeta <- idRefMmi$ID_compound[idRefMmi$exactmass %in% exactmass_r]
+          subSQLwhereMmi <- .appendSQLwhere("ID_compound", idRefMeta,
                                             mode="IN")
-          #subSQLwhereMmi <- .appendSQLwhere("ID_metabolite", "234263", mode="IN")
+          #subSQLwhereMmi <- .appendSQLwhere("ID_compound", "234263", mode="IN")
           idRefMmi <- .getSQLrecords(MS2ID, select="ID_spectra",
-                                     from="crossRef_SpectrComp",
-                                     where=subSQLwhereMmi)
+                                     from = "crossRef_SpectrComp",
+                                     where = subSQLwhereMmi)
           idRef <- intersect(idRef, unlist(idRefMmi))
         }
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
@@ -303,11 +300,12 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     distances <- distances[!is.na(distances)]
 
     if(length(distances) == 0){
-        stop("No query spectra with hits found.")
+        message("No query spectra with hits found.")
+        return()
     }
     message("Processing results obtained ...")
     rslt <- .processAnnotation(dist = distances, ms2id = MS2ID , qry = QRY,
-                               lft = ifelse(consens, LFT, NA),
+                               lft = LFT,
                                mError = massError,
                                cmnNtMass = cmnNeutralMass, workVar = workVar)
     return(rslt)
