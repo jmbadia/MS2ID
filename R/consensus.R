@@ -56,7 +56,7 @@
                idAdj <- x$idSpectra[adj]
                cos <- .cosine(s$Spectra[[as.character(idAp)]],
                               s$Spectra[[as.character(idAdj)]])
-               n <- n+1
+               n <- n + 1
             }
             if(n > 2) keepid <- c(keepid, x$idSpectra[apex+i*seq_len(n-2)])
          }
@@ -84,18 +84,14 @@
          if(length(differentVal) == 1)
             tmp[idRow, names(s$Metadata)[idCol]] <- differentVal
       }
+      tmp$precursorMZ[idRow] <- mean(s$Metadata$precursorMZ[consensdSpectra])
       tmp$retentionTime[idRow] <- mean(s$Metadata$retentionTime[consensdSpectra])
       #collpase reference columns into one
       for(nameCol in refCols){
-         #browser()
-         #print(paste(idRow, nameCol, paste(which(consensdSpectra), collapse=", ")))
          newNameCol <- paste0(nameCol,"_CONS")
          tmp[idRow, newNameCol] <- paste(s$Metadata[consensdSpectra, nameCol],
                                       collapse=", ")
       }
-   }
-   for(nameCol in refCols){
-      #s$Metadata[, nameCol] <- as.character(s$Metadata[, nameCol])
    }
    #Add consensus metadata to metadata dataframe
    s$Metadata <- dplyr::bind_rows(tmp, s$Metadata)
