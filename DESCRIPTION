@@ -39,11 +39,13 @@ Imports:
     DT,
     RColorBrewer,
     ggplot2,
-    shinyFiles
+    shinyFiles,
+    shinyjs
 Collate: 
     'AllGenerics.R'
     'Annot.R'
     'Annot-methods.R'
+    'CdDb2MS2ID.R'
     'MS2ID.R'
     'SQL-utility-tools.R'
     'adduct-utility-functions.R'
@@ -55,8 +57,11 @@ Collate:
     'export2df.R'
     'export2xlsx.R'
     'loadSpectra.R'
+    'mzIdx.R'
     'processAnnotation.R'
     'queryMzIndex.R'
+    'server.R'
+    'setMS2IDbackend.R'
     'spectra-utility-functions.R'
     'utils-pipe.R'
     'zzz.R'

@@ -1,6 +1,6 @@
 #' @import ggplot2
 #' @import shiny
-#' @import shinyjs
+#' @importFrom shinyjs useShinyjs hidden toggle
 #' @export
 MS2IDgui <- function(){
     ui <- navbarPage(

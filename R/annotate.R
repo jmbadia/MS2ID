@@ -1,4 +1,7 @@
-#' Annotate spectra against a MS2ID library
+#'
+#'@name Annotate
+#'
+#'@title Annotate spectra against a MS2ID library
 #'
 #' \code{annotate} returns, for every query spectrum, a list of compound
 #' candidates from a reference library (\linkS4class{MS2ID} object). The

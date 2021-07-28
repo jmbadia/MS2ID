@@ -4,7 +4,7 @@
 \alias{export2xlsx}
 \title{Export an annotation object as xlsx file}
 \usage{
-export2xlsx(anRslt, ...)
+export2xlsx(anRslt, summarizeHits, ...)
 }
 \arguments{
 \item{anRslt}{Annot object with the results to be exported}
