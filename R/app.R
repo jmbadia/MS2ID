@@ -364,5 +364,5 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
                 )}
         })
         }
-    shinyApp(ui,server)
+    shinyApp(ui,server,  options = list(launch.browser = TRUE))
 }
