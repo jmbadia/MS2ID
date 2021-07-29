@@ -283,23 +283,19 @@ MS2IDgui <- function(){
             df1 <- .getSpectra2plot(rd$refSpctr, mtdtShow$idREFspect)
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
             #datfarmes only with hits
-            df1h <- df1[df1$x %in% df2$x,]
-            df2h <- df2[df2$x %in% df1$x,]
-            df1 <- df1[!df1$x %in% df2$x,]
-            df2 <- df2[!df2$x %in% df1$x,]
+            hits1 <- df1$x %in% df2$x
+            hits2 <- df2$x %in% df1$x
             suppressWarnings(
                 p <- ggplot() +
-                    .get_gl(df1) +
+                    .get_gl(df1[!hits1,]) +
                     coord_cartesian(ylim = c(-100, 100)) +
-                    .get_gl(df2, up = FALSE) +
-                    .get_gl(df1h, up = TRUE, hit=TRUE) +
-                    .get_gl(df2h, up = FALSE, hit=TRUE) +
+                    .get_gl(df2[!hits2,], up = FALSE) +
+                    .get_gl(df1[hits1,], up = TRUE, hit=TRUE) +
+                    .get_gl(df2[hits2,], up = FALSE, hit=TRUE) +
                     labs(x = "m/z", y = "% intensity") +
                     theme_bw() + #black & white theme
                     .draw_precursor(df2, rd$mtdt, mtdtShow, nature = "qry") +
-                    .draw_precursor(df2h, rd$mtdt, mtdtShow, nature = "qry") +
-                    .draw_precursor(df1, rd$mtdt, mtdtShow, nature = "ref") +
-                    .draw_precursor(df1h, rd$mtdt, mtdtShow, nature = "ref")
+                    .draw_precursor(df1, rd$mtdt, mtdtShow, nature = "ref")
                 )
             plotly::ggplotly(p, tooltip = c("text"))
         })

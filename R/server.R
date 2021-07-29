@@ -41,10 +41,11 @@
 }
 
 .get_gl <- function(df, up = TRUE, hit = FALSE){
+    if(nrow(df) == 0) return(NULL)
     a <- ifelse(up, -1, 1)
     colour <- ifelse(hit,
                      ifelse(up, "#b40000", "#00786C"),
-                     ifelse(up, "#ff6464", "#00c6b2"))
+                     ifelse(up, "#ff8b8b", "#00c6b2"))
     geom_linerange(
         data = df,
         aes(
@@ -58,6 +59,7 @@
 }
 
 .draw_precursor <- function(df, mtdt, mtdtShw, nature = "qry"){
+    if(nrow(df) == 0) return(NULL)
     if(nature == "qry"){
         a = 1
         shape = 25
@@ -92,7 +94,7 @@
 }
 .customColor <- function(txt, type){
     initFont <- switch(type,
-                       qry = '<font color=\"#b40000\">',
-                       ref = '<font color=\"#00786C\">')
+                       ref = '<font color=\"#b40000\">',
+                       qry = '<font color=\"#00786C\">')
     paste0(initFont, txt, '</font>')
 }
