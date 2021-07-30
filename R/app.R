@@ -47,7 +47,7 @@ MS2IDgui <- function(){
                                 htmlOutput("infoTabId")
                                 ),
                             tabPanel(
-                                "Cons",br(),
+                                "Cons", br(),
                                 h4('QRY consensus formation'),
                                 shinyjs::hidden(
                                     div(
@@ -59,7 +59,7 @@ MS2IDgui <- function(){
                                 htmlOutput("infoTabCons")
                                 ),
                             tabPanel(
-                                "",br(),
+                                "", br(),
                                 h4("Annotation arguments"),
 
                                 htmlOutput("infoTab"),
@@ -75,11 +75,11 @@ MS2IDgui <- function(){
                         fluidRow(
                             column(4, selectInput('ffile', 'mzML file', NULL)),
                             column(2, selectInput('UNKprec', 'precursor MZ ',
-                                                  NULL, width = 120)),
+                                                  NULL, width=120)),
                             column(6, br(), br(),
                                    checkboxInput('reduntID',
                                                  'Redundant annotations ',
-                                                 value=FALSE))
+                                                 value = FALSE))
                         ),
                         DT::DTOutput('tbl'),
                         ),
