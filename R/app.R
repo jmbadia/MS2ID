@@ -47,7 +47,7 @@ MS2IDgui <- function(){
                                 htmlOutput("infoTabId")
                                 ),
                             tabPanel(
-                                "Cons", br(),
+                                "Cons",br(),
                                 h4('QRY consensus formation'),
                                 shinyjs::hidden(
                                     div(
