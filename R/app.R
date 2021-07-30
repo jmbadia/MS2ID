@@ -75,7 +75,7 @@ MS2IDgui <- function(){
                         fluidRow(
                             column(4, selectInput('ffile', 'mzML file', NULL)),
                             column(2, selectInput('UNKprec', 'precursor MZ ',
-                                                  NULL, width=120)),
+                                                  NULL, width = 120)),
                             column(6, br(), br(),
                                    checkboxInput('reduntID',
                                                  'Redundant annotations ',
