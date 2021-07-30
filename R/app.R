@@ -59,7 +59,7 @@ MS2IDgui <- function(){
                                 htmlOutput("infoTabCons")
                                 ),
                             tabPanel(
-                                "", br(),
+                                "",br(),
                                 h4("Annotation arguments"),
 
                                 htmlOutput("infoTab"),
