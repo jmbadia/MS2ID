@@ -347,7 +347,7 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
             fileSel <- rawdata()$mtdt$QRYdataOrigin == input$ffile
             precSel <- unique(rawdata()$mtdt$QRYprecursorMz[fileSel])
             updateSelectInput(session, inputId = 'UNKprec',
-                              choices = round(precSel, 4)
+                              choices = round(sort(precSel), 4)
                 )
             })
 
