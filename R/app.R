@@ -146,7 +146,7 @@ MS2IDgui <- function(){
                 "idQRYspect", "idREFspect","idREFcomp",
                 INCRMETRIC, DECRMETRIC, "massNum", "propAdduct",
                 "REFname", "REFformula",
-                "collisionEnergy", "REFexactmass", "REFadduct",
+                "collisionEnergy", "ppmPrecMass", "REFexactmass", "REFadduct",
                 "QRYrtime", "REFpredicted", "REFinstrument",
                 "REFID_db.comp", "REFID_db.spectra"
                 )

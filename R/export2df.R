@@ -18,7 +18,6 @@
         stop(paste("'metric' must contain ONE the following options:",
                    paste(c(INCRMETRIC, DECRMETRIC), collapse = ", ")))
     }
-
     hits <- hits(anRslt)
     if(!(metric %in% names(hits)))
        stop(paste0("Metric '", metric, "' not found in the annotation object"))
@@ -61,11 +60,14 @@
                                    "experimental"),
             REFpredicted = replace(REFpredicted, REFpredicted == 1, "insilico")
            )
-
+    anRslt$ppmPrecMass <- (anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
+        anRslt$QRYprecursorMz * 1e6
+    anRslt$ppmPrecMass <- round(anRslt$ppmPrecMass, 1)
     #ORDER & SUBSET columns
     mainVar <- c("QRYprecursorMz", "QRYrtime", "QRYacquisitionNum",
         "QRYacquisitionNum_CONS", "REFexactmass","propAdduct","REFadduct",
-        "REFprecursorMz", INCRMETRIC, DECRMETRIC, "REFname","REFformula",
+        "REFprecursorMz", "ppmPrecMass", INCRMETRIC, DECRMETRIC,
+        "REFname","REFformula",
         "REFinchikey", "REFCASRN","QRYmassNum","cmnMasses","REFmassNum",
         "QRYcollisionEnergy_txt", "REFcollisionEnergy","QRYpolarity",
         "REFpolarity", "QRYprecursorCharge","QRYprecursorIntensity",
