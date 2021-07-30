@@ -79,7 +79,7 @@ MS2IDgui <- function(){
                             column(6, br(), br(),
                                    checkboxInput('reduntID',
                                                  'Redundant annotations ',
-                                                 value = FALSE))
+                                                 value=FALSE))
                         ),
                         DT::DTOutput('tbl'),
                         ),
