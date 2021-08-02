@@ -1,5 +1,7 @@
 #' Cluster spectra to consens
 #'
+#' Def; spectra group. spectra that has the same main characteristics (mz, polarity, CE, file...).
+#' Def; spectra cluster. Spectra (in a group) that is colindant and has a cos>0.8 with the apex spectrum of the cluster
 #' Group spectra according its precursor mass, collision energy and polarity.
 #' Then subgroup contiguous spectra that have good (cosine) similarity. Each
 #' subgroup will form a consensus spectrum.
@@ -14,8 +16,7 @@
 #time) spectrum in time. If they are similar enough it is selected for this
 #consensus apex group; if not then the loop stops and the same process is
 #repeated but backwards in time. Once done, we apply the loop again to the next
-#'apex' found, until no spectrum lefts in the table No consensus spectrum is
-#obtained from groups with less than 3 spectra; they remain unconsensuaded '
+#'apex' found, until no spectrum remains in the table.
 #
 #' @param s list with spectra and metadata
 #' @param consCosThres numeric(1) with  the minimum cosine similarity two contiguous spectra must have to consens a spectrum.
@@ -28,18 +29,21 @@
 #'
 #' @noRd
 
-.cluster2Consens <- function(s, consCosThres=0.8, massErrorPrec){
+.cluster2Consens <- function(s, consCosThres = 0.8, massErrorPrec){
+   minScans <- 2 #min number of scans to form a consensus spectra
    # group spectra by mzprecuros
    mdataSplited <- s$Metadata
    mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
                                       mdataSplited$precursorIntensity,
                                       massErrorPrec)
    mdataSplited$still <- T #still not avaluated?
-   mdataSplited <- mdataSplited %>%
-      group_split(collisionEnergy, file, precGroup, polarity) #divide in groups
-
+   mdataSplited <- group_split(mdataSplited, collisionEnergy, file,
+                               precGroup, polarity) #divide in groups
    #cluster spectra
-   spctraClust <- lapply(mdataSplited, function(x){ #for every spectra group
+   groupPopul <- vapply(mdataSplited, nrow, FUN.VALUE = 2)
+   noGroupSpectra <- vapply(mdataSplited[groupPopul == 1], function(idxG) idxG$idSpectra, FUN.VALUE = 3)
+   #for every spectra group with more than 1 spectrum
+   spctraClust <- lapply(mdataSplited[groupPopul > 1], function(x){
       genKepp <- vector("list", nrow(x))
       ig <- 1
       while(any(x$still)){
@@ -48,17 +52,24 @@
          apex <- which(x$idSpectra==idAp)#position of the most intense precursor
          keepid <- idAp
          for(i in c(-1, 1)){#backards and then forwards
-            cos <- n <- 1
+            cos <- 1
+            n <- 0
             while(cos > consCosThres){# check adjacent similarity
+               n <- n + 1
                adj <- apex + i *n
-               if(adj < 1 | adj > nrow(x)) break
-               if( !x$still[adj] ) break
+               if(adj < 1 | adj > nrow(x)) {
+                  break
+               }
+               if(!x$still[adj]) {
+                  break
+               }
                idAdj <- x$idSpectra[adj]
                cos <- .cosine(s$Spectra[[as.character(idAp)]],
                               s$Spectra[[as.character(idAdj)]])
-               n <- n + 1
             }
-            if(n > 2) keepid <- c(keepid, x$idSpectra[apex+i*seq_len(n-2)])
+            if(n >= minScans){
+               keepid <- c(keepid, x$idSpectra[apex + i * seq_len(n - 1)])
+            }
          }
          x$still[x$idSpectra %in% keepid] <- F
          genKepp[[ig]] <- keepid
@@ -66,16 +77,15 @@
       }
       return(genKepp)
    })
-   spctraClust <- unlist(spctraClust, recursive = F)
+   spctraClust <- unlist(spctraClust, recursive = FALSE)
    spctraClust <- spctraClust[!vapply(spctraClust, is.null, FUN.VALUE = T)]
-
-   noClust <- vapply(spctraClust, function(x) length(x) < 3 , FUN.VALUE = T)
+   noClust <- vapply(spctraClust, function(x) length(x) < minScans , FUN.VALUE = T)
 
    #dataframe with the consensus spectra METADATA
    tmp <- data.frame(idSpectra = seq_len(sum(!noClust)) +
                         max(s$Metadata$idSpectra))
    tmp$sourceSpect <- spctraClust[!noClust]
-   refCols <- c("seqNum" , "acquisitionNum" , "spectrumId")
+   refCols <- c("seqNum" , "acquisitionNum" , "spectrumId", "retentionTime")
    refCols <- refCols[refCols %in% names(s$Metadata)]
    for(idRow in seq_len(nrow(tmp))){
       consensdSpectra <- s$Metadata$idSpectra %in% unlist(tmp$sourceSpect[idRow])
@@ -85,7 +95,6 @@
             tmp[idRow, names(s$Metadata)[idCol]] <- differentVal
       }
       tmp$precursorMZ[idRow] <- mean(s$Metadata$precursorMZ[consensdSpectra])
-      tmp$retentionTime[idRow] <- mean(s$Metadata$retentionTime[consensdSpectra])
       #collpase reference columns into one
       for(nameCol in refCols){
          newNameCol <- paste0(nameCol,"_CONS")
@@ -93,12 +102,18 @@
                                       collapse=", ")
       }
    }
+   tmp$rol <- 4L
+   s$Metadata$rol <- NA_integer_
+   s$Metadata$rol[s$Metadata$idSpectra %in% noGroupSpectra] <- 1L
+   s$Metadata$rol[s$Metadata$idSpectra %in% unlist(spctraClust[noClust])] <- 2L
+   s$Metadata$rol[s$Metadata$idSpectra %in% unlist(tmp$sourceSpect)] <- 3L
    #Add consensus metadata to metadata dataframe
    s$Metadata <- dplyr::bind_rows(tmp, s$Metadata)
    #assign 0 value to spectra used as primal spectra
    s$Metadata$sourceSpect[s$Metadata$idSpectra %in%
                                 unlist(spctraClust[noClust])] <- 0
    return(s)
+   #rol => 1=spectrum grouped alone, 2=spectra grouped (n>1) but no results in a cluster, 3=spectra grouped(n>1) that results in cluster, 4=cluster spectrum (made of 3 spectra)
 }
 
 #' Consens spectra
@@ -111,15 +126,14 @@
 #' @noRd
 .consens <- function(s, massErrorFrag, minComm = 2/3){
    #consensus spectra to be calculated
-   toConsens <- vapply(s$Metadata$sourceSpect, function(primals){
-      !is.null(primals) & !identical(primals,0)
-   }, FUN.VALUE = T)
+   toConsens <- s$Metadata$rol == 4L
    spectraRows <- rownames(s$Spectra[[1]])
    consSpectra <- lapply(s$Metadata$sourceSpect[toConsens], function(s2cons){
       #First consens inner mode every spectrum
       spct2cns <- lapply(s2cons, function(x) .getFragments(s$Spectra, x))
       spct2cns <- lapply(spct2cns, function(spct){
-         .consensFragm(spct, massErrorFrag = massErrorFrag, mode="innerSpectra")
+         .consensFragm(spct, massErrorFrag = massErrorFrag,
+                       mode = "innerSpectra")
       })
       numSpectra <- length(spct2cns)
       #then, consens spectra
@@ -137,7 +151,7 @@
 
 #' Group mz
 #'
-#' bin mz according a mass error (from most to less intense)
+#' bin spectra according its precursor mz +- mass error (from most to less intense)
 #'
 #' @param mz numeric vector(n) of mz
 #' @param int numeric vector(n) with the mz intensities
@@ -225,3 +239,24 @@
    }
    return(spct)
 }
+
+# Considering a dataframe with columns named x and x'_CONS', copies the non NA rows of x'_CONS' into x and removes the x_'CONS' columns. OPtionally resizes  the size of the x'_CONS' content
+.mergeCONS <- function(dfCONS, fontsize){
+   if(nrow(dfCONS) > 0 & any(grepl("_CONS$", names(dfCONS)))){
+      am <- dfCONS %>% select(ends_with("_CONS")) %>%
+         rename_with(~ gsub("_CONS", "", .x, fixed = TRUE))
+      nuclearname <- names(am)
+      CONSna <- is.na(am[, 1])
+      if(!missing(fontsize)){
+         for(idxcol in seq_len(ncol(am))){
+            am[!CONSna, idxcol] <- paste0(
+               "<font size=", fontsize, ">", am[!CONSna, idxcol],"</font>")
+         }
+      }
+      absentCol <- !nuclearname %in% names(dfCONS)
+      dfCONS[!CONSna, match(nuclearname, names(dfCONS))] <- am[!CONSna,]
+      dfCONS <- select(dfCONS, !ends_with("_CONS"))
+   }
+   return(dfCONS)
+}
+
