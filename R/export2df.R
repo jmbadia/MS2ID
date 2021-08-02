@@ -76,6 +76,5 @@
         "idREFcomp", "REFID_db.comp", "REFID_db.spectra", "QRYdataOrigin")
     anRslt <- select(anRslt, c(mainVar[mainVar %in% names(anRslt)],
                                names(anRslt)[!names(anRslt) %in% mainVar]))
-
     return(anRslt)
 }
