@@ -3,6 +3,7 @@
 #' @importFrom shinyjs useShinyjs hidden toggle
 #' @export
 MS2IDgui <- function(){
+    precDigits <- 4
     ui <- navbarPage(
         "MS2ID GUI",
         id = "tabs",
@@ -132,7 +133,7 @@ MS2IDgui <- function(){
             dt$mtdt$cosine <- round(dt$mtdt$cosine, 3)
 
             dt$mtdt <- dt$mtdt %>%
-                select(-QRYacquisitionNum_CONS, -QRYmassNum, -cmnMasses,
+                select(-QRYmassNum, -cmnMasses,
                        -REFmassNum) %>%
                 relocate(collisionEnergy, .after=QRYrtime) %>%
                 relocate(massNum, .after=REFformula) %>%
@@ -140,14 +141,15 @@ MS2IDgui <- function(){
                 relocate(idQRYspect, .before=QRYacquisitionNum) %>%
                 #remove SOME empty columns
                 select(propAdduct | where(~ !(all(is.na(.)) | all(. == ""))))
+            dt$mtdt <- .mergeCONS(dt$mtdt, fontsize = 1)
 
             #ORDER & SUBSET VISIBLE columns
             visiblVar <- c(
                 "idQRYspect", "idREFspect","idREFcomp",
                 INCRMETRIC, DECRMETRIC, "massNum", "propAdduct",
                 "REFname", "REFformula",
-                "collisionEnergy", "ppmPrecMass", "REFexactmass", "REFadduct",
-                "QRYrtime", "REFpredicted", "REFinstrument",
+                "collisionEnergy", "ppmPrecMass", "REFexactmass", "REFadduct"
+                , "REFpredicted", "REFinstrument",
                 "REFID_db.comp", "REFID_db.spectra"
                 )
             #set columns visibility default
@@ -160,21 +162,15 @@ MS2IDgui <- function(){
 
         metadataShowed <- reactive({
             req(input$UNKprec)
-            #rdmetadata <- rawdata()$metadata
-            rdmetadata <- rawdata()$mtdt
-            #round value to match with input select
-            rdmetadata$QRYprecursorMz <- round(rdmetadata$QRYprecursorMz, 4)
-            rdmetadata <- rdmetadata[
-                isolate(rdmetadata$QRYdataOrigin == input$ffile) &
-                    rdmetadata$QRYprecursorMz==input$UNKprec,]
-            #select QRYacq according if they are consensus or not
-
-            #round leftovers
-            rdmetadata$REFexactmass <- round(rdmetadata$REFexactmass, 4)
-            rdmetadata$QRYrtime <- round(rdmetadata$QRYrtime, 2)
-            rdmetadata$QRYacquisitionNum <- paste0(
-                "<font size=1>", rdmetadata$QRYacquisitionNum,"</font>")
-            return(rdmetadata)
+            rdMtdt <- rawdata()$mtdt
+            rdMtdt$QRYprecursorMz <- round(rdMtdt$QRYprecursorMz, precDigits)
+            rdMtdt <- rdMtdt[
+                isolate(rdMtdt$QRYdataOrigin == input$ffile) &
+                    rdMtdt$QRYprecursorMz == input$UNKprec, ]
+            #aesthetics modific.
+            if("REFexactmass" %in% names(rdMtdt))
+                rdMtdt$REFexactmass <- round(rdMtdt$REFexactmass, 3)
+            return(rdMtdt)
         })
 
         getSelId <- reactive({
@@ -337,6 +333,7 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
 
 
         observeEvent(input$lotFile, {
+            freezeReactiveValue(input, "ffile")
             updateSelectInput(session, 'ffile',
                               choices = unique(rawdata()$mtdt$QRYdataOrigin)
             )
@@ -347,7 +344,7 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
             fileSel <- rawdata()$mtdt$QRYdataOrigin == input$ffile
             precSel <- unique(rawdata()$mtdt$QRYprecursorMz[fileSel])
             updateSelectInput(session, inputId = 'UNKprec',
-                              choices = round(sort(precSel), 4)
+                              choices = round(sort(precSel), precDigits)
                 )
             })
 
