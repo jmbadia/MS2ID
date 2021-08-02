@@ -79,8 +79,9 @@
 #' }
 
 annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
-                     metricFUN, metricFUNThresh, noiseThresh=0.01, massError=20,
-                     cmnPrecMass=FALSE, cmnNeutralMass=TRUE, cmnPeaks=2,
+                     metricFUN, metricFUNThresh, noiseThresh=0.01,
+                     massError=20, cmnPrecMass=FALSE,
+                     cmnNeutralMass=TRUE, cmnPeaks=2,
                      cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3, consME=20,
                      ...){
@@ -177,18 +178,20 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
       message("Obtaining consensus spectra ...")
       #cluster spectra to consens them
       QRY <- .cluster2Consens(QRY, consCos, massErrorPrec = consME)
-      #consens spectra
-      QRY <- .consens(QRY, consME, consComm)
-      #keep only consensus spectra (to annotate only consensus)
-      isConsSpectra <- vapply(QRY$Metadata$sourceSpect, function(srcs){
-        !is.null(srcs) & !identical(srcs , 0)
-      }, FUN.VALUE = T)
-      if(sum(isConsSpectra)==0) stop("Not even one consensus spectrum obtained")
-      #leftovers
+      if(all(QRY$Metadata$rol!=4L)) {
+        message("No consensus spectrum was obtained")
+      }else{
+        #consens the spectra
+        QRY <- .consens(QRY, consME, consComm)
+      }
+
+      #LFT: leftovers, spectra not to annotate only to keep query spectra temporaly just for traceability of consensus formation
+      rol2Annotate <- c(1, 2, 4)
       LFT <- QRY
-      LFT$Metadata <- QRY$Metadata[!isConsSpectra, ]
-      LFT$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% LFT$Metadata$idSpectra]
-      QRY$Metadata <- QRY$Metadata[isConsSpectra, ]
+      LFT$Metadata <- QRY$Metadata[!QRY$Metadata$rol %in% rol2Annotate, ]
+      LFT$Spectra <- QRY$Spectra[names(QRY$Spectra) %in%
+                                   LFT$Metadata$idSpectra]
+      QRY$Metadata <- QRY$Metadata[QRY$Metadata$rol %in% rol2Annotate, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
       QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
     }
