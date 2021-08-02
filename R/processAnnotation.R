@@ -78,12 +78,12 @@
         QRYspect <- rbind(QRYspect, LFTspect)
     }
 
-
-    QRYspect <- rename(QRYspect, id = 'idSpectra', dataOrigin = 'file',
-                       rtime = 'retentionTime',# CE = "collisionEnergy",
-                       precScanNum = "precursorScanNum",
-                       precursorMz ="precursorMZ",
-                       isolationWindowTargetMz = "isolationWindowTargetMZ")
+    QRYspect <- QRYspect %>%
+        rename_with(~ gsub("retentionTime", "rtime", .x)) %>%
+        rename(id = 'idSpectra', dataOrigin = 'file',
+               #rtime = 'retentionTime',# CE = "collisionEnergy",
+               precScanNum = "precursorScanNum", precursorMz ="precursorMZ",
+               isolationWindowTargetMz = "isolationWindowTargetMZ")
 
     #REFspect
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
