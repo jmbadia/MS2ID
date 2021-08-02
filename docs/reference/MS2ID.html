@@ -86,7 +86,7 @@ mass-charge index." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -103,13 +103,16 @@ mass-charge index." />
     <li>
       <a href="../articles/MS2ID_intro.html">Introduction to MS2ID</a>
     </li>
+    <li>
+      <a href="../articles/results.html">Annot object: Working with results</a>
+    </li>
   </ul>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/jmbadia/MS2ID/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -134,14 +137,14 @@ mass-charge index." />
     <div class="ref-description">
     <p>The `MS2ID` class encapsulates a MS2 spectra database along with its metadata.
 Its internal structure allows to annotate query spectra - with the
-<code><a href='annotate.html'>annotate</a></code> function - using big spectra databases at high speed
+<code><a href='Annotate.html'>annotate</a></code> function - using big spectra databases at high speed
 and low RAM requirements (typically 100 query spectra/min against a 1M5
 spectra library). MS2ID class uses a SQLite database with the metadata and
 bigmemory files to  store the spectra (i.e. peaks matrices) and their
 mass-charge index.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>MS2ID</span><span class='op'>(</span><span class='va'>dir</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>MS2ID</span><span class='op'>(</span><span class='va'>ms2idFile</span><span class='op'>)</span></pre>
 
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
