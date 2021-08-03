@@ -28,14 +28,16 @@
         hits <- hits[filtVal,]
     }
 
-    sgnMetric <- ifelse(metric %in% DECRMETRIC, -1, 1)
-    hits <- group_by(hits, idQRYspect, idREFcomp)
+    #summarize if asked for
+    sgnMetric <- ifelse(metric %in% DECRMETRIC, 1, -1)
     if(summarizeHits){
         hits <- hits %>%
-            top_n(sgnMetric, !!as.name(metric)) %>%
-            distinct(idQRYspect, idREFcomp, .keep_all = T)
+            group_by(idQRYspect, idREFcomp) %>%
+            top_n(-sgnMetric, !!as.name(metric)) %>%
+            distinct(idQRYspect, idREFcomp, .keep_all = T) %>%
+            ungroup()
     }
-    hits <- arrange(hits, idQRYspect, sgnMetric*!!as.name(metric))
+
     REFmetaC <- refCompound(anRslt) %>% rename_with( ~ paste0("REF", .x))
     REFmetaS <- refSpectra(anRslt) %>% Spectra::spectraData() %>%
         as.data.frame() %>% rename_with( ~ paste0("REF", .x))
@@ -50,20 +52,16 @@
         merge(REFmetaC, by.x="idREFcomp", by.y="REFid", all.y=F) %>%
         merge(REFmetaS, by.x="idREFspect", by.y="REFid", all.y=F,
               suffixes = c(".comp",".spectra")) %>%
-        merge(QRYmetaS, by.x="idQRYspect", by.y="QRYid", all.y=F)
-
-    anRslt <- anRslt %>%
-        arrange(anRslt, QRYdataOrigin, QRYrtime, QRYprecursorMz,
-                sgnMetric*!!as.name(metric)) %>%
-        mutate(
-            REFpredicted = replace(REFpredicted, REFpredicted == 0,
-                                   "experimental"),
-            REFpredicted = replace(REFpredicted, REFpredicted == 1, "insilico")
-           )
+        merge(QRYmetaS, by.x="idQRYspect", by.y="QRYid", all.y=F) %>%
+        mutate(REFpredicted = replace(REFpredicted, REFpredicted == 0,
+                                      "experimental"),
+               REFpredicted = replace(REFpredicted, REFpredicted == 1,
+                                      "insilico")
+               )
     anRslt$ppmPrecMass <- (anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
         anRslt$QRYprecursorMz * 1e6
     anRslt$ppmPrecMass <- round(anRslt$ppmPrecMass, 1)
-    #ORDER & SUBSET columns
+    #sort columns
     mainVar <- c("QRYprecursorMz", "QRYrtime", "QRYacquisitionNum",
         "QRYacquisitionNum_CONS", "REFexactmass","propAdduct","REFadduct",
         "REFprecursorMz", "ppmPrecMass", INCRMETRIC, DECRMETRIC,
@@ -76,5 +74,22 @@
         "idREFcomp", "REFID_db.comp", "REFID_db.spectra", "QRYdataOrigin")
     anRslt <- select(anRslt, c(mainVar[mainVar %in% names(anRslt)],
                                names(anRslt)[!names(anRslt) %in% mainVar]))
+    #sort rows
+    if(summarizeHits){
+        anRslt <- anRslt %>%
+            arrange(QRYdataOrigin, QRYprecursorMz, idQRYspect,
+                    sgnMetric*!!as.name(metric))
+    }else{
+        anRslt <- anRslt %>%
+            group_by(idQRYspect, idREFcomp) %>%
+            mutate(top = ifelse(metric %in% DECRMETRIC,
+                                min(!!as.name(metric)),
+                                max(!!as.name(metric)))) %>%
+            arrange(QRYdataOrigin, QRYprecursorMz, idQRYspect,
+                    sgnMetric*top, idREFcomp,
+                    sgnMetric*!!as.name(metric)) %>%
+            ungroup() %>%
+            select(-top)
+    }
     return(anRslt)
 }
