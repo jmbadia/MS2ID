@@ -131,31 +131,26 @@ MS2IDgui <- function(){
                 }
             #round value to match with input select
             dt$mtdt$cosine <- round(dt$mtdt$cosine, 3)
-
-            dt$mtdt <- dt$mtdt %>%
-                select(-QRYmassNum, -cmnMasses,
-                       -REFmassNum) %>%
-                relocate(collisionEnergy, .after=QRYrtime) %>%
-                relocate(massNum, .after=REFformula) %>%
-                relocate(QRYacquisitionNum, .before=QRYrtime) %>%
-                relocate(idQRYspect, .before=QRYacquisitionNum) %>%
-                #remove SOME empty columns
-                select(propAdduct | where(~ !(all(is.na(.)) | all(. == ""))))
             dt$mtdt <- .mergeCONS(dt$mtdt, fontsize = 1)
-
             #ORDER & SUBSET VISIBLE columns
             visiblVar <- c(
                 "idQRYspect", "idREFspect","idREFcomp",
                 INCRMETRIC, DECRMETRIC, "massNum", "propAdduct",
-                "REFname", "REFformula",
-                "collisionEnergy", "ppmPrecMass", "REFexactmass", "REFadduct"
-                , "REFpredicted", "REFinstrument",
+                "REFname", "REFformula", "collisionEnergy", "ppmPrecMass",
+                "REFexactmass", "REFadduct", "REFpredicted", "REFinstrument",
                 "REFID_db.comp", "REFID_db.spectra"
-                )
+            )
+            dt$mtdt <- dt$mtdt %>%
+                select(-QRYmassNum, -cmnMasses, -REFmassNum, -QRYpolarity,
+                       -REFpolarity, -QRYcollisionEnergy,
+                       -REFcollisionEnergy) %>%
+                #remove SOME empty columns
+                select(propAdduct |
+                           where(~ !(all(is.na(.)) | all(. == "")))) %>%
+                select(sort(current_vars())) %>%
+                relocate(visiblVar[visiblVar %in% names(dt$mtdt)]) %>%
+                relocate(QRYacquisitionNum, .before = QRYrtime)
             #set columns visibility default
-            dt$mtdt <- dplyr::relocate(dt$mtdt,
-                                       visiblVar[visiblVar %in% names(dt$mtdt)]
-                )
             colVisibles <<- names(dt$mtdt) %in% visiblVar
             return(dt)
         })
