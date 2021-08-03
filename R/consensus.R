@@ -253,7 +253,7 @@
                "<font size=", fontsize, ">", am[!CONSna, idxcol],"</font>")
          }
       }
-      absentCol <- !nuclearname %in% names(dfCONS)
+      dfCONS <- mutate(dfCONS, across(nuclearname, as.character))
       dfCONS[!CONSna, match(nuclearname, names(dfCONS))] <- am[!CONSna,]
       dfCONS <- select(dfCONS, !ends_with("_CONS"))
    }
