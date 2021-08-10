@@ -52,7 +52,7 @@
             x = x,
             ymax = a*y,
             ymin = 0,
-            text = paste('</br>m/z: ', x ,'</br>i: ', round(y , 2))
+            text = paste('</br>m/z: ', x ,'</br>i: ', round(y, 2))
         ),
         colour = colour
         )
