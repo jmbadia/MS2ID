@@ -77,10 +77,10 @@
 #'          metricsThresh = c(0.6, 0.8, 0.6),
 #'          metricFUN = fooFunction, metricFUNThresh = 1.8)
 #' }
-
+#TODO. Ara mateix quan ppm=0 annot fa binning. Quan definitivament fem ppm esborra els if i el codi on es fa binning quan ppm=0
 annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
-                     metricFUN, metricFUNThresh, noiseThresh=0.01,
-                     massError=20, cmnPrecMass=FALSE,
+                     metricFUN, metricFUNThresh, ppm = 50,
+                     noiseThresh=0.01, massError=20, cmnPrecMass=FALSE,
                      cmnNeutralMass=TRUE, cmnPeaks=2,
                      cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3, consME=20,
@@ -101,12 +101,13 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
 
   argmnts <- c(as.list(environment()), list(...))
     #check argument types
-    reqClasses <- c(QRYdata="character", MS2ID="MS2ID", metricsThresh="numeric",
-                    metricFUNThresh="numeric", nsamples="integer",
-                    noiseThresh="numeric", cmnPeaks="integer",
-                    cmnTopPeaks="integer", db="character", predicted="logical",
-                    cmnPolarity= "logical", cmnPrecMass= "logical",
-                    cmnNeutralMass="logical", massError="numeric")
+  reqClasses <- c(QRYdata="character", MS2ID="MS2ID", metricsThresh="numeric",
+                  metricFUNThresh="numeric", ppm ="numeric",
+                  nsamples="integer", noiseThresh="numeric",
+                  cmnPeaks="integer", cmnTopPeaks="integer",
+                  db="character", predicted="logical",
+                  cmnPolarity= "logical", cmnPrecMass= "logical",
+                  cmnNeutralMass="logical", massError="numeric")
 
     reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
     .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
@@ -122,7 +123,6 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     if(length(metrics) != length(metricsThresh))
       stop("'metricsThresh' must contain a value for every metric included
              in the argument 'metrics'")
-
     if(!missing(metricFUN)){
       if(!is.function(metricFUN))
         stop("'metricFUN' argument is expected to be a function")
@@ -142,6 +142,8 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
         stop("'cmnPeaks' is expected to be a natural number")
     if (!cmnTopPeaks %in% 1:6 )
         stop("'cmnTopPeaks' is expected to be a natural number between 1 and 6")
+    if(ppm < 0)
+      stop("'ppm' argument is expected to be a positive number")
     if(massError < 0)
         stop("'massError' is expected to be a positive number")
 
@@ -149,8 +151,10 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     workVar$MS2ID <- dirname(MS2ID@dbcon@dbname)
     workVar$annotationTime <- Sys.time()
 
+    dec2binFrag = 2
+
     message("Loading query spectra ...")
-    QRY <- .loadSpectra(mzmlData = QRYdata, nsamples=nsamples, ...)
+    QRY <- .loadSpectra(mzmlData = QRYdata, nsamples = nsamples, ...)
 
     #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
@@ -166,25 +170,18 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     QRY$Spectra <- lapply(QRY$Spectra, function(x) {
         x[,x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
     })
-
-    # bin spectra
-    #TODO: Make this cte a variable (dependent of the mz index resolution) and
-    # check if its consistent with MS2ID bin
-    dec2binFrag = 2
-    message("Binning query spectra ...")
-    QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
     LFT <- NA
+
     if(consens){
       message("Obtaining consensus spectra ...")
       #cluster spectra to consens them
       QRY <- .cluster2Consens(QRY, consCos, massErrorPrec = consME)
-      if(all(QRY$Metadata$rol!=4L)) {
+      if(all(QRY$Metadata$rol != 4L)) {
         message("No consensus spectrum was obtained")
       }else{
         #consens the spectra
         QRY <- .consens(QRY, consME, consComm)
       }
-
       #LFT: leftovers, spectra not to annotate only to keep query spectra temporaly just for traceability of consensus formation
       rol2Annotate <- c(1, 2, 4)
       LFT <- QRY
@@ -193,7 +190,11 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                                    LFT$Metadata$idSpectra]
       QRY$Metadata <- QRY$Metadata[QRY$Metadata$rol %in% rol2Annotate, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
-      QRY$Spectra <- .binSpectra(spectraList=QRY$Spectra, dec2binFrag)
+    }
+    if(ppm == 0){ # bin spectra. ALWAYS after consensus
+      message("Binning query spectra ...")
+      QRY$rawSpectra <- QRY$Spectra
+      QRY$Spectra <- .binSpectra(spectraList = QRY$Spectra, dec2binFrag)
     }
     # SQL sentence according global restrictions (db, predicted, ...
     SQLwhereGen <- vector()
@@ -209,14 +210,22 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
 
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
       posMetadata <- which(QRY$Metadata$idSpectra ==
-                                 names(QRY$Spectra[idQspctr]))
-        massQ <- QRY$Spectra[[idQspctr]]["mass-charge",]
-        intQ <- QRY$Spectra[[idQspctr]]["intensity",]
+                             names(QRY$Spectra[idQspctr]))
+      Qspct <- QRY$Spectra[[idQspctr]]
+      if(ppm != 0){
+        Qspct <- rbind(Qspct,
+                       error = Qspct["mass-charge",] * ppm * 1e-6,
+                       intREF = 0)
+        mz2findMzIndex <- unique(round(Qspct["mass-charge",], dec2binFrag))
+      }else{
+        mz2findMzIndex <- Qspct["mass-charge",]
+      }
 
-        idRef <- .queryMzIndex(mzVector = massQ, ms2idObj = MS2ID,
-                               cmnPeaks = cmnPeaks, cmnTopPeaks = cmnTopPeaks)
+      idRef <- .queryMzIndex(mzVector = mz2findMzIndex,
+                             ms2idObj = MS2ID,
+                             cmnPeaks = cmnPeaks, cmnTopPeaks = cmnTopPeaks)
 
-        SQLwhereIndv <- vector()
+      SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
             SQLwhereIndv <- .appendSQLwhere("polarity",
@@ -247,12 +256,11 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                                      select="ID_compound, exactmass",
                                      from="metaCompound",
                                      where = subSQLwhereMmi)
-          idRefMeta <- idRefMmi$ID_compound[vapply(idRefMmi$exactmass, function(ix)
+          idRefMeta <- idRefMmi$ID_compound[vapply(idRefMmi$exactmass,
+                                                   function(ix)
             any(ix > QRYMmi_min & ix < QRYMmi_max), FUN.VALUE = T)]
-          #idRefMeta <- idRefMmi$ID_compound[idRefMmi$exactmass %in% exactmass_r]
           subSQLwhereMmi <- .appendSQLwhere("ID_compound", idRefMeta,
                                             mode="IN")
-          #subSQLwhereMmi <- .appendSQLwhere("ID_compound", "234263", mode="IN")
           idRefMmi <- .getSQLrecords(MS2ID, select="ID_spectra",
                                      from = "crossRef_SpectrComp",
                                      where = subSQLwhereMmi)
@@ -268,24 +276,55 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
 
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
-
+        if(ppm == 0){# Binning REF spectra (but grouping fragments later)
+         refSpectra$spectra["mass-charge", ] <- round(refSpectra$spectra["mass-charge", ], dec2binFrag)
+        }
         distance <- lapply(seq_along(refSpectra$ptr$id), function(x) {
+          if(ppm != 0){
+            Qspct["intREF", ] <- 0
+            Rspct <- .getSpectrum(refSpectra, x)
+            for(idxrmz in seq_len(ncol(Rspct))){
+              Rfragm<- Rspct["mass-charge", idxrmz]
+              qnear <- which.min(abs(Qspct["mass-charge", ] - Rfragm))
+              near <- Qspct["error", qnear] >= abs( Qspct["mass-charge",
+                                                          qnear] - Rfragm)
+              if(near){
+                Qspct["intREF", qnear] <- Qspct["intREF", qnear] +
+                  Rspct["intensity", idxrmz]
+              }else{
+                Rspct["mass-charge", idxrmz] <- NA
+              }
+            }
+            isnaR1 <- is.na(Rspct["mass-charge",])
+            struct <- cbind(Qspct[c("intensity","intREF"),],
+                            rbind(rep(0, sum(isnaR1)),
+                                  Rspct["intensity", isnaR1]))
+            #normalize intensities and add 1e-12 (2 avoid problems with log(0))
+            rowdf <- rbind(struct[1,]/sum(struct[1,]), struct[2,]/sum(struct[2,])) + 1e-12
+          }else{
             a <- .getSpectrum(refSpectra, x)
-            row1<- unique(c(a["mass-charge",], massQ))
+            a <- t(a)
+            a <- t(stats::aggregate(a[ ,"intensity"],
+                                    by = list(a[ ,"mass-charge"]), sum)
+            )
+            rownames(a) <- c("mass-charge", "intensity")
+            row1 <- unique(c(a["mass-charge",], Qspct["mass-charge",]))
             row2 <- a["intensity",][match(row1, a["mass-charge",])]
-            row1 <- intQ[match(row1, massQ)]
+            row1 <- Qspct["intensity", match(row1, Qspct["mass-charge",])]
             row1[is.na(row1)] <- 0
             row2[is.na(row2)] <- 0
             #normalize intensities and add 1e-12 (2 avoid problems with log(0))
             rowdf <- rbind(row1/sum(row1), row2/sum(row2)) + 1e-12
-            rsltM <- vapply(metrics, function(iM){
-              suppressMessages(philentropy::distance(rowdf, method = iM))
-            }, FUN.VALUE = 3.2)
-            if(metFun) rsltM <- c(rsltM, metricFunc =
-                                    metricFUN(rbind(massQ, intQ), a))
-            return(rsltM)
+          }
+          rsltM <- vapply(metrics, function(iM){
+            suppressMessages(philentropy::distance(rowdf, method = iM))
+          }, FUN.VALUE = 3.2)
+          if(metFun)
+            rsltM <- c(
+              rsltM,
+              metricFunc = metricFUN(Qspct[c("mass-charge","intensity"), ], a))
+          return(rsltM)
         })
-
         distance <- data.frame(do.call(rbind, distance))
         hits <- lapply(seq_len(ncol(distance)), function(im){
           if(decrMet[im]) distance[, im] <= metricsThresh[im]
@@ -294,16 +333,19 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
         hits <- do.call(cbind, hits)
         hits <- apply(hits, MARGIN = 1, any)
         if(any(hits)){
-          distance <- distance[hits, , drop=F]
+          distance <- distance[hits, , drop = F]
           distance$idREFspect <- refSpectra$ptr$id[hits]
           return(distance)
         } else {return(NA)}
-
     })
 
     names(distances) <- names(QRY$Spectra)
     #remove query spectra with no hits
     distances <- distances[!is.na(distances)]
+    if("rawSpectra" %in% names(QRY)){
+      QRY$Spectra <- QRY$rawSpectra
+      QRY$rawSpectra <- NULL
+    }
 
     if(length(distances) == 0){
         message("No query spectra with hits found.")
