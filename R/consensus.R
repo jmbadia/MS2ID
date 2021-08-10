@@ -102,7 +102,11 @@
                                       collapse=", ")
       }
    }
-   tmp$rol <- 4L
+   if(nrow(tmp) < 1){
+      message("No consensus spectra was formed")
+   }else{
+      tmp$rol <- 4L
+   }
    s$Metadata$rol <- NA_integer_
    s$Metadata$rol[s$Metadata$idSpectra %in% noGroupSpectra] <- 1L
    s$Metadata$rol[s$Metadata$idSpectra %in% unlist(spctraClust[noClust])] <- 2L
