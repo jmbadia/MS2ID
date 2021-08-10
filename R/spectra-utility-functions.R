@@ -63,24 +63,22 @@
 
 .binSpectra <- function(spectraList, decimals2bin){
     #check argument types
-    reqClasses <- c(decimals2bin="integer")
+    reqClasses <- c(decimals2bin = "integer")
     .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
-
     if (decimals2bin < 0)
       stop("'decimals2bin' is expected to be a natural number")
 
-    rmbrNames<-rownames(spectraList[[1]])
-    # round spectral masses and sum their intensities up
-    # if the resulting mass matches
-    spectraList <- pbapply::pblapply(spectraList, function(x){
-        x["mass-charge", ]<-round(x["mass-charge", ], decimals2bin)
-        a <- t(x)
-        x <- t(stats::aggregate(a[ ,"intensity"],
-                                by=list(a[ ,"mass-charge"]), sum))
-        rownames(x) <- rmbrNames
-        return(x)
-    })
-    return(spectraList)
+    lapply(spectraList, function(x) .binSpectrum(x, decimals2bin))
+}
+
+.binSpectrum <- function(spectrum, decimals2bin){
+  spectrum["mass-charge", ] <- round(spectrum["mass-charge", ], decimals2bin)
+  a <- t(spectrum)
+  spectrum <- t(stats::aggregate(a[ ,"intensity"],
+                                 by = list(a[ ,"mass-charge"]), sum)
+                )
+  rownames(spectrum) <- c("mass-charge", "intensity")
+  return(spectrum)
 }
 
 #' Extract a spectrum from a spectra list
