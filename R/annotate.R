@@ -78,10 +78,9 @@
 #'          metricsThresh = c(0.6, 0.8, 0.6),
 #'          metricFUN = fooFunction, metricFUNThresh = 1.8)
 #' }
-#TODO. Ara mateix quan bin=TRUE fa binning. Quan definitivament fem ppm esborra els if i el codi on es fa binning quan bin=TRUE
-annotate <- function(bin = FALSE,
-                     QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
-                     metricFUN, metricFUNThresh, massErr = 30, massErrQRY = massErr,
+annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
+                     metricFUN, metricFUNThresh,
+                     massErr = 30, massErrQRY = massErr,
                      noiseThresh=0.01,  cmnPrecMass=FALSE,
                      cmnNeutralMass=TRUE, cmnPeaks=2,
                      cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
@@ -198,11 +197,6 @@ annotate <- function(bin = FALSE,
       QRY$Metadata <- QRY$Metadata[QRY$Metadata$rol %in% rol2Annotate, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
     }
-    if(bin){ # bin spectra. ALWAYS after consensus
-      message("Binning query spectra ...")
-      QRY$rawSpectra <- QRY$Spectra
-      QRY$Spectra <- .binSpectra(spectraList = QRY$Spectra, dec2binFrag)
-    }
     # SQL sentence according global restrictions (db, predicted, ...
     SQLwhereGen <- vector()
     if(db!="all")
@@ -219,14 +213,10 @@ annotate <- function(bin = FALSE,
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
       Qspct <- QRY$Spectra[[idQspctr]]
-      if(!bin){
-        Qspct <- rbind(Qspct,
-                       error = Qspct["mass-charge", ] * massErr/1e6,
-                       intSpectr2 = 0)
-        mz2findMzIndex <- unique(round(Qspct["mass-charge",], dec2binFrag))
-      }else{
-        mz2findMzIndex <- Qspct["mass-charge",]
-      }
+      Qspct <- rbind(Qspct,
+                     error = Qspct["mass-charge", ] * massErr/1e6,
+                     intSpectr2 = 0)
+      mz2findMzIndex <- unique(round(Qspct["mass-charge",], dec2binFrag))
 
       idRef <- .queryMzIndex(mzVector = mz2findMzIndex,
                              ms2idObj = MS2ID,
@@ -283,36 +273,19 @@ annotate <- function(bin = FALSE,
 
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
-        if(bin){# Binning REF spectra (but grouping fragments later)
-         refSpectra$spectra["mass-charge", ] <- round(refSpectra$spectra["mass-charge", ], dec2binFrag)
-        }
         distance <- lapply(seq_along(refSpectra$ptr$id), function(x) {
-        if(!bin){
-            struct <- .matchFrag(Qspct, .getSpectrum(refSpectra, x))
-            #normalize intensities and add 1e-12 (2 avoid problems with log(0))
-            rowdf <- rbind(struct[1,]/sum(struct[1,]), struct[2,]/sum(struct[2,])) + 1e-12
-          }else{
-            a <- .getSpectrum(refSpectra, x)
-            a <- t(a)
-            a <- t(stats::aggregate(a[ ,"intensity"],
-                                    by = list(a[ ,"mass-charge"]), sum)
-            )
-            rownames(a) <- c("mass-charge", "intensity")
-            row1 <- unique(c(a["mass-charge",], Qspct["mass-charge",]))
-            row2 <- a["intensity",][match(row1, a["mass-charge",])]
-            row1 <- Qspct["intensity", match(row1, Qspct["mass-charge",])]
-            row1[is.na(row1)] <- 0
-            row2[is.na(row2)] <- 0
-            #normalize intensities and add 1e-12 (2 avoid problems with log(0))
-            rowdf <- rbind(row1/sum(row1), row2/sum(row2)) + 1e-12
-          }
+          struct <- .matchFrag(Qspct, .getSpectrum(refSpectra, x))
+          #normalize intensities and add 1e-12 (2 avoid problems with log(0))
+          rowdf <- rbind(struct[1,]/sum(struct[1,]),
+                         struct[2,]/sum(struct[2,])) + 1e-12
           rsltM <- vapply(metrics, function(iM){
             suppressMessages(philentropy::distance(rowdf, method = iM))
           }, FUN.VALUE = 3.2)
-          if(metFun)
+          if(metFun){
             rsltM <- c(
               rsltM,
               metricFunc = metricFUN(Qspct[c("mass-charge","intensity"), ], a))
+          }
           return(rsltM)
         })
         distance <- data.frame(do.call(rbind, distance))
