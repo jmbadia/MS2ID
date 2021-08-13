@@ -29,13 +29,13 @@
 #'
 #' @noRd
 
-.cluster2Consens <- function(s, consCosThres = 0.8, massErrorPrec){
+.cluster2Consens <- function(s, consCosThres = 0.8, massError){
    minScans <- 2 #min number of scans to form a consensus spectra
    # group spectra by mzprecuros
    mdataSplited <- s$Metadata
    mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
                                       mdataSplited$precursorIntensity,
-                                      massErrorPrec)
+                                      massError)
    mdataSplited$still <- T #still not avaluated?
    mdataSplited <- group_split(mdataSplited, collisionEnergy, file,
                                precGroup, polarity) #divide in groups
@@ -64,8 +64,12 @@
                   break
                }
                idAdj <- x$idSpectra[adj]
-               cos <- .cosine(s$Spectra[[as.character(idAp)]],
-                              s$Spectra[[as.character(idAdj)]])
+               rowdf <- .matchFrag(s$Spectra[[as.character(idAp)]],
+                                   s$Spectra[[as.character(idAdj)]],
+                                   massError)
+               cos <- suppressMessages(
+                  philentropy::distance(rowdf, method = "cosine")
+                  )
             }
             if(n >= minScans){
                keepid <- c(keepid, x$idSpectra[apex + i * seq_len(n - 1)])
@@ -146,6 +150,8 @@
                                 minComm = minComm*numSpectra,
                                 mode = "interSpectra")
       rownames(spct2cns) <- spectraRows
+      mzSort <- sort(spct2cns[1,], index.return = TRUE)$ix
+      spct2cns <- spct2cns[, mzSort, drop = FALSE]
       return(spct2cns)
    })
    names(consSpectra) <- s$Metadata$idSpectra[toConsens]
@@ -155,7 +161,7 @@
 
 #' Group mz
 #'
-#' bin spectra according its precursor mz +- mass error (from most to less intense)
+#' group spectra according its precursor mz +- mass error (from most to less intense)
 #'
 #' @param mz numeric vector(n) of mz
 #' @param int numeric vector(n) with the mz intensities
@@ -179,26 +185,62 @@
    return(group)
 }
 
-#' Cosinus similarity
+#' match Fragments
 #'
-#' @param spectr1
-#' @param spectr2
+#' To compare 2 spectra (i. e. cosine), mz fragments on both spectrum must be considered equal/not equal considering massError
 #'
-#' @return numeric(1)
+#' @param spectr1 dataframe with mz and intensity as rows, Optionally, if massErrorFrag is missing, spectr1 has also a row with the massError calculated for every mz and a row to alocate spectra 2 intensities
+#' @param spectr2 dataframe with mz and intensity as rows
+#' @param massErrorFrag in ppm.
+#'
+#' @return dataframe with 2 rows, spectr1 & spectr2 intensities. Both in the same column when the mz has been considered equal
 #' @noRd
-.cosine <- function(spectr1, spectr2){
-   mz1 <- spectr1[1, ]
-   int1 <- spectr1[2, ]
-   mz2 <- spectr2[1, ]
-   int2 <- spectr2[2, ]
-   row1<- unique(c(mz2, mz1))
-   row2 <- int2[match(row1, mz2)]
-   row1 <- int1[match(row1, mz1)]
-   row1[is.na(row1)] <- 0
-   row2[is.na(row2)] <- 0
-   rowdf <- rbind(row1, row2)
-   result <- suppressMessages(philentropy::distance(rowdf, method = "cosine"))
-   return(result)
+.matchFrag <- function(spectr1, spectr2, massErrorFrag){
+   if(!missing(massErrorFrag)){
+      spectr1 <- rbind(spectr1,
+                       error = spectr1["mass-charge",] * massErrorFrag * 1e-6,
+                       intSpectr2 = 0)
+   }else{
+      spectr1["intSpectr2", ] <- 0
+   }
+   for(idxrmz in seq_len(ncol(spectr2))){
+      mzfragm <- spectr2["mass-charge", idxrmz]
+      qnear <- which.min(abs(spectr1["mass-charge", ] - mzfragm))
+      near <- spectr1["error", qnear] >= abs(spectr1["mass-charge",
+                                                     qnear] - mzfragm)
+      if(near){
+         spectr1["intSpectr2", qnear] <- spectr1["intSpectr2", qnear] +
+            spectr2["intensity", idxrmz]
+      }else{
+         spectr2["mass-charge", idxrmz] <- NA
+      }
+   }
+   isnaSpect2 <- is.na(spectr2["mass-charge",])
+   struct <- cbind(spectr1[c("intensity","intSpectr2"),],
+                   rbind(rep(0, sum(isnaSpect2)),
+                         spectr2["intensity", isnaSpect2]))
+   return(struct)
+}
+
+#' match mz
+#'
+#' Considering two mz vectors (mz1 and mz2) and a mass error, obtain which mz1 equals every mz2 value.
+#'
+#' @param mz1 numeric(n) vector
+#' @param mz1 numeric(n) vector
+#' @param massError in ppm.
+#'
+#' @return numeric(n) vector with the position of mz1 that equals every mzm value (similar to the match() return). E.g. .matchMz(c(1, 7), c(7, 9, 11))=c(2, NA, NA)
+#' @noRd
+.matchMz <- function(mz1, mz2, massError){
+   mz1_err <- mz1 * massError * 1e-6
+   for(idxrmz in seq_along(mz2)){
+      mzfragm <- mz2[idxrmz]
+      qnear <- which.min(abs(mz1 - mzfragm))
+      near <- mz1_err[qnear] >= abs(mz1[qnear] - mzfragm)
+      mz2[idxrmz] <- ifelse(near, qnear, NA)
+   }
+   return(mz2)
 }
 
 #' consens a spectrum or spectra
