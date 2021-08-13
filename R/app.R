@@ -276,10 +276,8 @@ MS2IDgui <- function(){
             #only mz with hits
             mMz <- .matchMz(df2$x, df1$x, isolate(rawdata()$infoAnnot$massErr))
             hits1 <- !is.na(mMz)
-            if(any(hits1))
-                hits2 <- mMz[hits1]
-            else
-                hits2 <- rep(FALSE, nrow(df2))
+            hits2 <- rep(FALSE, nrow(df2))
+            hits2[mMz[hits1]] <- TRUE
             suppressWarnings(
                 p <- ggplot() +
                     .get_gl(df1[!hits1,]) +
