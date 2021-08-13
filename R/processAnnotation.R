@@ -58,10 +58,8 @@
     idSRCShits <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits,
                                "sourceSpect"]
     idSRCShits <- unique(unlist(idSRCShits))
-
     QRYspect <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits, ]
     orderSpectra <- match(QRYspect$id, names(qry$Spectra))
-
     QRYspect$mz <- lapply(orderSpectra, function(x)
         qry$Spectra[[x]]['mass-charge',])
     QRYspect$intensity <- lapply(orderSpectra, function(x)
@@ -77,7 +75,6 @@
 
         QRYspect <- rbind(QRYspect, LFTspect)
     }
-
     QRYspect <- QRYspect %>%
         rename_with(~ gsub("retentionTime", "rtime", .x)) %>%
         rename(id = 'idSpectra', dataOrigin = 'file',
@@ -91,8 +88,7 @@
     REFspect <- .getSQLrecords(ms2id, "*", "metaSpectrum", SQLwhere)
     REFspect <- dplyr::rename_with(REFspect,
                                    ~ gsub("REF", "", .x, fixed = TRUE))
-    REFspect <- dplyr::rename(REFspect, id = 'ID_spectra'#, precursorMz = 'precursor_mz'
-                              )
+    REFspect <- dplyr::rename(REFspect, id = 'ID_spectra')
     refSpectra <- .bufferSpectra(ms2id, unique(hits$idREFspect))
     REFspect$mz <- lapply(REFspect$id, function(x){
         .getSpectrum(refSpectra, which(refSpectra$ptr$id==x))['mass-charge',]
@@ -104,20 +100,21 @@
     #REFcomp
     REFcomp <- REFcomp[REFcomp$id %in% hits$idREFcomp, ]
 
-    #obtain number of common masses
+    #obtain which query fragments corresponds to each reference fragment
     hits$cmnMasses <- vapply(seq_len(nrow(hits)), function(x) {
-        a <- QRYspect$mz[match(hits$idQRYspect[x], QRYspect$id)]
-        b <- REFspect$mz[match(hits$idREFspect[x], REFspect$id)]
-        sum(unlist(a) %in% unlist(b))
+        tmpqry <- QRYspect$mz[match(hits$idQRYspect[x], QRYspect$id)] %>%
+            unlist()
+        tmpref <- REFspect$mz[match(hits$idREFspect[x], REFspect$id)] %>%
+            unlist()
+        cmnM <- sum(!is.na(.matchMz(tmpqry, tmpref, mError)))
+        return(cmnM)
     }, FUN.VALUE = 3)
-
 
     #remove NA columns
     QRYspect <- QRYspect[, !vapply(QRYspect, function(col) all(is.na(col)),
                               FUN.VALUE = T)]
     REFspect <- REFspect[, !vapply(REFspect, function(col) all(is.na(col)),
                                    FUN.VALUE = T)]
-
 
     #Spectra package only admits numeric CollisionEnergy values
     QRYspect$collisionEnergy <- as.numeric(QRYspect$collisionEnergy)
@@ -134,7 +131,6 @@
     workVar$annotationTime <- as.character(workVar$annotationTime)
 
     rslt <- Annot(qrySpectra = QRYspect, refSpectra = REFspect,
-                          refCompound = REFcomp, hits = hits,
-                          infoAnnotation = workVar)
+                  refCompound = REFcomp, hits = hits, infoAnnotation = workVar)
     return(rslt)
 }
