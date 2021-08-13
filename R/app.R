@@ -241,7 +241,7 @@ MS2IDgui <- function(){
         })
 
         output$infoTab <- renderText({
-            rdInfoAnnot <- rawdata()$infoAnnot
+            rdInfoAnnot <- isolate(rawdata()$infoAnnot)
             rdInfoAnnot$QRYdir <- rdInfoAnnot$... <- NULL
             rdInfoAnnot[rdInfoAnnot==""] <- "default"
             maxCharact <- 40
@@ -273,9 +273,13 @@ MS2IDgui <- function(){
             rd <- rawdata()
             df1 <- .getSpectra2plot(rd$refSpctr, mtdtShow$idREFspect)
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
-            #datfarmes only with hits
-            hits1 <- df1$x %in% df2$x
-            hits2 <- df2$x %in% df1$x
+            #only mz with hits
+            mMz <- .matchMz(df2$x, df1$x, isolate(rawdata()$infoAnnot$massErr))
+            hits1 <- !is.na(mMz)
+            if(any(hits1))
+                hits2 <- mMz[hits1]
+            else
+                hits2 <- rep(FALSE, nrow(df2))
             suppressWarnings(
                 p <- ggplot() +
                     .get_gl(df1[!hits1,]) +
