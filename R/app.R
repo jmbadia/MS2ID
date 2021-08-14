@@ -61,7 +61,11 @@ MS2IDgui <- function(annot){
                                     div(
                                         id = "hiddenCons",
                                         #content to show/hide
-                                        HTML("<b><font color=\"#DF0054\">Pick a row to show the plot.</font></b>"))
+                                        HTML("<b><font color=\"#DF0054\">Pick a row to show the plot.</font></b>")),
+                                    div(
+                                        id = "hiddenIsCons",
+                                        #content to show/hide
+                                        HTML("<b><font color=\"#DF0054\">The selected spectrum is NOT a consensus spectrum.</font></b>"))
                                 ),
                                 plotly::plotlyOutput('plotCons'),
                                 htmlOutput("infoTabCons")
@@ -103,6 +107,9 @@ MS2IDgui <- function(annot){
                             condition = !length(input$tbl_rows_selected))
             shinyjs::toggle(id = c("hiddenCons"),
                             condition = !length(input$tbl_rows_selected))
+            if(!length(input$tbl_rows_selected)){
+                shinyjs::hide(id = c("hiddenIsCons"))
+                }
         })
 
         options(shiny.maxRequestSize=30*1024^2)
@@ -186,7 +193,8 @@ MS2IDgui <- function(annot){
             }
             mtdtShw <- isolate(metadataShowed()) %>%
                 slice(rowSelected) %>%
-                select(idREFspect, idQRYspect, idREFcomp, QRYacquisitionNum)
+                select(idREFspect, idQRYspect, idREFcomp, QRYacquisitionNum,
+                       QRYrol)
             return(mtdtShw)
             })
 
@@ -306,6 +314,9 @@ MS2IDgui <- function(annot){
 
         output$plotCons <- plotly::renderPlotly({
             mtdtShow <- getSelId()
+            shinyjs::toggle(id = c("hiddenIsCons"),
+                            condition = (mtdtShow$QRYrol != 4))
+            req(mtdtShow$QRYrol == 4)
             rd <- rawdata()
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
             srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
