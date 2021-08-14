@@ -2,7 +2,14 @@
 #' @import shiny
 #' @importFrom shinyjs useShinyjs hidden toggle
 #' @export
-MS2IDgui <- function(){
+MS2IDgui <- function(annot){
+    if(!missing(annot)){
+        if(class(annot) == "Annot")
+            .GlobalEnv$.jmb.rawAnnotSh <- annot
+        else
+            stop("'annot' argument is expected to be an Annot object")
+    }
+    #on.exit(rm(.jmb.rawAnnotSh, envir=.GlobalEnv))
     precDigits <- 4
     ui <- navbarPage(
         "MS2ID GUI",
@@ -106,8 +113,12 @@ MS2IDgui <- function(){
         output$info <- renderText({.getFormText()})
 
         rawdata <- reactive({
-            req(input$lotFile)
-            lot <- readRDS(input$lotFile$datapath)
+            if(!is.null(input$lotFile)){
+                lot <- readRDS(input$lotFile$datapath)
+            }else if(exists(".jmb.rawAnnotSh", envir=.GlobalEnv))
+                lot <- .GlobalEnv$.jmb.rawAnnotSh
+            else
+                req(FALSE)
             dt <- list(
                 mtdt = .export2df(lot, summarizeHits = !input$reduntID),
                 refSpctr = refSpectra(lot),
@@ -297,7 +308,7 @@ MS2IDgui <- function(){
             mtdtShow <- getSelId()
             rd <- rawdata()
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
-srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
+            srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
             vsd <- rd$qrySpctr[rd$qrySpctr$id %in% srcId]
             if("basePeakIntensity" %in% Spectra::spectraVariables(vsd)){
                 vsdOrdr <- order(vsd$basePeakIntensity, decreasing = F)
@@ -328,12 +339,15 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
             plotly::ggplotly(p, tooltip = c("text"))
         })
 
-
-        observeEvent(input$lotFile, {
+        observeEvent(input$lotFile, ignoreNULL = F, {
             freezeReactiveValue(input, "ffile")
             updateSelectInput(session, 'ffile',
                               choices = unique(rawdata()$mtdt$QRYdataOrigin)
             )
+            if(exists(".jmb.rawAnnotSh", envir=.GlobalEnv)){
+                req(input$lotFile)
+                rm(.jmb.rawAnnotSh, envir=.GlobalEnv)
+                }
         })
 
         observeEvent(input$ffile, {
@@ -354,5 +368,5 @@ srcId <- unlist(rd$qrySpctr[rd$qrySpctr$id == mtdtShow$idQRYspect]$sourceSpect)
                 )}
         })
         }
-    shinyApp(ui,server,  options = list(launch.browser = TRUE))
+    shinyApp(ui, server,  options = list(launch.browser = TRUE))
 }
