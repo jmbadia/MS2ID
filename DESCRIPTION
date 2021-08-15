@@ -37,7 +37,6 @@ Imports:
     shiny,
     plotly,
     DT,
-    RColorBrewer,
     ggplot2,
     shinyFiles,
     shinyjs

@@ -327,7 +327,7 @@ MS2IDgui <- function(annot){
                 vsdOrdr <- seq_along(nrow(vsd))
             }
 
-            my_colors <- RColorBrewer::brewer.pal(length(vsd), "Set3")
+            my_colors <- rep(colCons, ceiling(length(vsd)/length(colCons)))
             p <- ggplot() +
                 geom_linerange(data = df2,
                                aes(x = x, ymax = y, ymin = 0,
@@ -341,7 +341,7 @@ MS2IDgui <- function(annot){
                 p <- p +
                     geom_linerange(data = df,
                                    aes(x = x, ymax = -y, ymin = 0,
-                                       alpha=0.7,
+                                       alpha=0.6,
                                        text=paste('</br>m/z: ', x,
                                                   '</br>i: ', round(y,2))
                                        ),
