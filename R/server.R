@@ -44,8 +44,9 @@
     if(nrow(df) == 0) return(NULL)
     a <- ifelse(up, -1, 1)
     colour <- ifelse(hit,
-                     ifelse(up, "#b40000", "#00786C"),
-                     ifelse(up, "#ff8b8b", "#00c6b2"))
+                     ifelse(up, .MS2IDcols["ref"], .MS2IDcols["qry"]),
+                     ifelse(up,
+                            .MS2IDcols["refLight"], .MS2IDcols["qryLight"]))
     geom_linerange(
         data = df,
         aes(
@@ -92,9 +93,8 @@
         geom_point()
     }
 }
+
 .customColor <- function(txt, type){
-    initFont <- switch(type,
-                       ref = '<font color=\"#b40000\">',
-                       qry = '<font color=\"#00786C\">')
-    paste0(initFont, txt, '</font>')
+    initFont <- switch(type, ref = .MS2IDcols["ref"], qry = .MS2IDcols["qry"])
+    paste0('<font color=\"', initFont, '\">', txt, '</font>')
 }

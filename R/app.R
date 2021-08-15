@@ -327,7 +327,7 @@ MS2IDgui <- function(annot){
                 vsdOrdr <- seq_along(nrow(vsd))
             }
 
-            my_colors <- rep(colCons, ceiling(length(vsd)/length(colCons)))
+            my_colors <- rep(.colCons, ceiling(length(vsd)/length(.colCons)))
             p <- ggplot() +
                 geom_linerange(data = df2,
                                aes(x = x, ymax = y, ymin = 0,
