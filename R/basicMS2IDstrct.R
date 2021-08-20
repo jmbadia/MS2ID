@@ -7,7 +7,7 @@
 #varsToParse => dataframe with the MS2ID variable names as rownames, the BD original names and the type. Must match with the columns of the metadata
 #nameDB => name of the DB we are parsing
 
-.CdDb2MS2ID <- function(metadata, fragm, varsToParse, nameDB,
+.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB,
                               lastRawDataUpdate) {
   #rename variables with MS2ID names
   MS2IDname <- match(colnames(metadata), varsToParse$originalNames)
@@ -73,7 +73,7 @@ metadata$ID_compound[!is.na(metadata$inchikey)] <- as.numeric(inchies_fact[!is.n
 metadata$ID_compound[is.na(metadata$inchikey)] <- max(metadata$ID_compound, na.rm = TRUE)+seq_len(sum(is.na(metadata$inchikey)))
 
 #2. Identify repeated spectra----------------
-message(paste("\nIdentifying repeated spectra------\n"))
+message("\nIdentifying repeated spectra------\n")
 
 #Look for duplicated spectra
 list_posEspectresduplicats <- .redundantSpectra(listfrag = fragm)
@@ -98,26 +98,29 @@ for(i in seq_along(list_posEspectresduplicats_VED)){
   metadata$ID_spectra[list_posEspectresduplicats_VED[[i]]] <- i
 }
 
-# Assign different ID_spectra to spectra not duplicated (begining with the last ID_spectra assigned on the last chunk of code)
+# Assign different ID_spectra to spectra not duplicated (beginning with the last ID_spectra assigned on the last chunk of code)
 toassign <- is.na(metadata$ID_spectra)
 initVal <- max(metadata$ID_spectra, na.rm = TRUE)
 metadata$ID_spectra[toassign] <- initVal + seq_along(which(toassign))
 metadata$ID_spectra <- as.integer(metadata$ID_spectra)
 fragments <- list(ID_spectra = metadata$ID_spectra, spectra = fragm)
 rm(fragm)
+metadata$ID_compound <- as.integer(metadata$ID_compound)
 
 #3. Restructure data into DF-------
-message(paste("\nRestructuring and sieving data ------\n"))
+message("\nRestructuring and sieving data ------\n")
 metadata$ID_db <- nameDB
 #_3.1 DF Relacional Espectre-Metabolit -------------------------
-spectraCompounds <- metadata[,c("ID_spectra","ID_compound")]
+spectraCompounds <- metadata[, c("ID_spectra","ID_compound")]
 temporalvalue <- nrow(spectraCompounds)
 #Remove duplicated relations Spectra-Metabolite
 spectraCompounds <- distinct(spectraCompounds)
 message("Relational dataframe spectraCompounds goes from ", temporalvalue, " rows to ", nrow(spectraCompounds) )
 
 #_3.2_DF MetaMetabolits-------------------------
-compounds<-metadata[,c("ID_compound","ID_db",rownames(varsToParse)[varsToParse$type=="metaboliteVar"])]
+compounds <- metadata[,
+                    c("ID_compound", "ID_db",
+                      rownames(varsToParse)[varsToParse$type=="metaboliteVar"])]
 num_metabolits_original <- nrow(compounds)
 compounds <- distinct(compounds, ID_compound, .keep_all = TRUE)
 
@@ -131,11 +134,11 @@ notRepeatedIDspect <- !duplicated(fragments$ID_spectra)
 fragments$ID_spectra <- fragments$ID_spectra[notRepeatedIDspect]
 fragments$spectra <- fragments$spectra[notRepeatedIDspect]
 
-message(paste("Due to having identical spectras & var_espectrals_distintives, we reduced the spectra number from",num_espectres_original,"to",nrow(spectra),"rows"))
+message(paste("Due to having identical spectras & var_espectrals_distintives, we reduced the spectra number from",num_espectres_original,"to", nrow(spectra),"rows"))
 
 #_3.4_DF BD-------------------------
-lastupdate<-format(Sys.time(), "%Y%m%d_%H%M%S")
-originalDB<-data.frame(ID_db= unique(metadata$ID_db), lastModification=Sys.Date(), lastRawDataUpdate = lastRawDataUpdate)
+lastupdate <- format(Sys.time(), "%Y%m%d_%H%M%S")
+originalDB <- data.frame(ID_db= unique(metadata$ID_db), lastModification=Sys.Date(), lastRawDataUpdate = lastupdate)
 
 return(list(spectraCompounds = spectraCompounds, spectra = spectra,
             compounds = compounds, originalDB = originalDB,
