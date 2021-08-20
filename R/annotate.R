@@ -86,7 +86,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3,
                      ...){
-  if(FALSE){# Create a Progress object
+  if(FALSE){ # Create a Progress object
   progress <- shiny::Progress$new()
   # Make sure it closes when we exit this reactive, even if there's an error
   on.exit(progress$close())
@@ -158,12 +158,13 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
 
     message("Loading query spectra ...")
     QRY <- .loadSpectra(mzmlData = QRYdata, nsamples = nsamples, ...)
-
     #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
-        if(!all(QRY$Metadata$polarity %in% c(0,1)))
-            stop("cmnPolarity=TRUE can not be applied because some query spectra
-                 have unknown polarity (neither 1 (positive) nor 0 (negative))")
+        if(!all(QRY$Metadata$polarity %in% c(0, 1)))
+            stop(glue::glue("
+            cmnPolarity = TRUE can not be applied because some query spectra \\
+            have unknown polarity (neither 1 (positive) nor 0 (negative))
+                            "))
     }
     #remove invalid spectra
     QRY <- .validateSpectra(QRY)
