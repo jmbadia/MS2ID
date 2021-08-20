@@ -4,7 +4,7 @@
 #' @export
 MS2IDgui <- function(annot){
     if(!missing(annot)){
-        if(class(annot) == "Annot")
+        if(is(annot, "Annot"))
             .GlobalEnv$.jmb.rawAnnotSh <- annot
         else
             stop("'annot' argument is expected to be an Annot object")
