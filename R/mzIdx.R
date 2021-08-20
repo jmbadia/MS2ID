@@ -1,4 +1,16 @@
 .mzIdx <- function(DB){
+    # Binning fragments
+    message("Binning spectral fragments")
+    # to locate query fragment into the mzIndex we adapt spectral masses.
+    dec2binFrag = 2 #the n-decimal to bin. e.g. dec2binFrag=2 => 78.04, 78.05...
+    # bin and order mz according intensities
+    spectra_mz <- pbapply::pblapply(DB$fragments$spectra, function(x){
+        x["mass-charge", ] <- round(x["mass-charge", ], dec2binFrag)
+        x <- t(x)
+        x <- aggregate(x[,"intensity"], by = list(x[,"mass-charge"]), sum)
+        return(x$'Group.1'[order(x$'x', decreasing = TRUE)])
+    })
+
     mzIndex <- list(lstmzIdx = vector("list", 6), spectrIdx = vector("list", 6))
     ## lstmzIdx[[m]] => vector of mz, index to obtain vector of idspectra whose "m" most intense fragment is such mz. m=6 refers to idspectra with such mz but not on its NOT top 5 most intense fragments
     ## lstmzIdx[[2]] == 19.02 19.04 19.10 19.14
@@ -6,13 +18,7 @@
     ## (spectrIdx[[m]][lstmzIdx[[m]] == 19.10] #vector of idspectra whose m most intense fragment is 19.10).
     ## unlist(lapply(seq_len(n), function(x) spectrIdx[[n]][lstmzIdx[[n]] == 19.10]))#vector of idspectra with mz=19.10 on its top n most intense fragments
     # (only) mz of every MS2 spectra sorted by intensity
-    spectra_mz <- lapply(DB$fragments$spectra,
-                         function(x){
-                             xmz <- x["mass-charge",
-                                      order(x["intensity",], decreasing = TRUE),
-                                      drop = FALSE]
-                             return(round(xmz, 2))
-                         })
+
     ## Maxim matrix elemnts affordable
     maxMatrixElemnts <- 3e6
 
@@ -62,9 +68,10 @@
         rm(spectra_mz_Sub, mm)
         #summarize duplicated mz results (obtained in different loops)
         mzIdx_unq <- unique(mzIdx)
+
         posSpectrIdx <- lapply(mzIdx_unq, function(idd)
             unlist(posSpectrIdx[which(mzIdx == idd)])
-            ) #15min
+            )
 
         ## sort mzIdx
         posSpectrIdx <- posSpectrIdx[match(sort(mzIdx_unq),mzIdx_unq)]
@@ -73,8 +80,10 @@
         ##replace Spectra position with Spectra id
         mzIndex$spectrIdx[[idSub]] <- lapply(posSpectrIdx, function(iPos){
             idSpectra_Sub[iPos]
-        }) #15min
-        message(paste("Read",idSub,"of",length(mzIndex$lstmzIdx)))
+        })
+        message(glue::glue("
+        Assigned spectra to the {idSub}/{length(mzIndex$lstmzIdx)} subindex
+                           "))
     }
     return(mzIndex)
 }
