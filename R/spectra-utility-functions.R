@@ -14,7 +14,7 @@
 
 .validateSpectra <- function(QRY){
   invalidMatrx <- vapply(QRY$Spectra, function(x) {
-    if(class(x)[1] == "matrix") nrow(x) != 2 | ncol(x) < 1
+    if(is(x, "matrix")) nrow(x) != 2 | ncol(x) < 1
     else TRUE
   }, FUN.VALUE = T)
 
