@@ -72,27 +72,26 @@ setValidity("MS2ID", function(object) {
 #' @rdname MS2ID
 #' @importFrom DBI dbDriver
 #' @importFrom RSQLite dbConnect
-MS2ID <- function(ms2idFile) { #must be the path to the MS2ID.db file
-    if (missing(ms2idFile))
-        stop("Argument 'ms2idFile' is required")
-    if (basename(ms2idFile) != 'MS2ID.db')
-        stop("Argument 'ms2idFile' must be a path to a 'MS2ID.db' file")
-    if (!file.exists(ms2idFile))
-        stop(paste(ms2idFile, "is not a valid file"))
+MS2ID <- function(ms2idFolder) { #must be the directory's path containing the MS2ID files
+    if (missing(ms2idFolder))
+        stop("Argument 'ms2idFolder' is required")
+    if (!file.exists(ms2idFolder))
+        stop(paste(ms2idFolder, "is not a valid directory"))
 
-    dir <- dirname(ms2idFile)
+    ms2idFolder <- dirname(ms2idFolder)
     dbFiles <- c("MS2ID.db", "mzIndex_body.bin", "mzIndex_body.desc",
                  "spectra_body.bin", "spectra_body.desc")
-    if (!all(file.exists(file.path(dir, dbFiles))))
-        stop(paste0(dir,
+    if (!all(file.exists(file.path(ms2idFolder, dbFiles))))
+        stop(paste0(ms2idFolder,
                     " does not contain all the necessary files (",
                     paste(dbFiles, collapse=", "), ")"))
 
     SQLx <- dbConnect(dbDriver("SQLite"),
-                      dbname = file.path(dir, "MS2ID.db"))
+                      dbname = file.path(ms2idFolder, "MS2ID.db"))
     bigM_mzI <- bigmemory::attach.big.matrix("mzIndex_body.desc",
-                                             backingpath=dir)
-    bigM_s <- bigmemory::attach.big.matrix("spectra_body.desc", backingpath=dir)
+                                             backingpath = ms2idFolder)
+    bigM_s <- bigmemory::attach.big.matrix("spectra_body.desc",
+                                           backingpath = ms2idFolder)
     res <- .validMS2ID(db=SQLx, mzI=bigM_mzI, spctr=bigM_s)
     if (is.character(res))
         stop(res)
