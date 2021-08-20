@@ -88,7 +88,6 @@
         spctra <- spctra[names(spctra) %in% spectra2subset]
       }
   }
-
-  result <- list(Metadata=mtdata, Spectra=spctra)
+  result <- list(Metadata = mtdata, Spectra = spctra)
   return(result)
 }
