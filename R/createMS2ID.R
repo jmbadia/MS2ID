@@ -20,8 +20,8 @@ createMS2ID <- function(cmpdb, noiseThresh = 0.01,
         if(overwrite){
             unlink(MS2IDdir, recursive = TRUE)
         }else{
-            stop("'MS2IDdir' directory already exists. Use overwrite
-                     argument if need it")
+            stop(glue::glue("'MS2IDdir' directory already exists. Use \\
+            overwrite argument if need it"))
         }
     }
 
@@ -102,7 +102,6 @@ createMS2ID <- function(cmpdb, noiseThresh = 0.01,
             required package 'enviPat' is not installed in the system."))
         }
     }
-
     #spectra treatment
     DB$fragments$spectra <- lapply(DB$fragments$spectra, function(x) {
         # Sort spectra by mass (necessary in order to apply properly COS SIM)
@@ -113,7 +112,7 @@ createMS2ID <- function(cmpdb, noiseThresh = 0.01,
         #  mistakes.
         if(is(x, "numeric") & length(x) == 2)
             return(as.matrix(x))
-        else if(is(x, "matrix"))
+        else if(!is(x, "matrix"))
             stop("Spectral data type unknown")
 
         #Filter noise
