@@ -50,7 +50,7 @@ NASpectra <- is.na(fragm)
 metadata <- metadata[!NASpectra,]
 fragm <- fragm[!NASpectra]
 #assign NA to empty entries
-metadata[metadata==""] <- NA_character_
+metadata[metadata == ""] <- NA_character_
 # Count NA / variable
 na_count <- sapply(metadata, function(y) sum(length(which(is.na(y)))))
 showNA <- paste(round(100*na_count/nrow(metadata)),"%")# % each variable's NA)
@@ -74,33 +74,34 @@ metadata$ID_compound[is.na(metadata$inchikey)] <- max(metadata$ID_compound, na.r
 
 #2. Identify repeated spectra----------------
 message("\nIdentifying repeated spectra------\n")
-
+metadata$ID_spectra <- NA
 #Look for duplicated spectra
 list_posEspectresduplicats <- .redundantSpectra(listfrag = fragm)
-#Dels 104427 espectres, 12189 son redundants
+if(length(list_posEspectresduplicats) == 0){
+  initVal <- 0
+}else{
+  #NOMES ELIMINAREM ESPECTRES IGUALS SI TENEN var_espectrals_distintives IDENTIQUES.
+  #Pq no volem que quan filtrem per una d'aquestes variables, no hi sigui un espectre que hem eliminat per duplicitat
+  #La funcio considera_varespdist() funciona amb ID_spectras i aqui encara no els tenim. Fem servir les posicions com a pseudo ID_spectras
+  #substituim posicions pels seus ID_spectras (pq encara no els hem posat)
+  message("Analyzing distinctive spectral variables\n")
 
-#NOMES ELIMINAREM ESPECTRES IGUALS SI TENEN var_espectrals_distintives IDENTIQUES.
-#Pq no volem que quan filtrem per una d'aquestes variables, no hi sigui un espectre que hem eliminat per duplicitat
-#La funcio considera_varespdist() funciona amb ID_spectras i aqui encara no els tenim. Fem servir les posicions com a pseudo ID_spectras
-#substituim posicions pels seus ID_spectras (pq encara no els hem posat)
-message("Analyzing distinctive spectral variables\n")
+  list_posEspectresduplicats_VED <- .applyDistintVars(
+    listidespectre_EspDupli = list_posEspectresduplicats,
+    dfmetaespect_VarEspDist =
+      data.frame(metadata[colnames(metadata) %in% DISTSPECTRALVARS],
+                 ID_spectra = seq_len(nrow(metadata))
+    ))
 
-list_posEspectresduplicats_VED <- .applyDistintVars(
-  listidespectre_EspDupli = list_posEspectresduplicats,
-  dfmetaespect_VarEspDist =
-    data.frame(metadata[colnames(metadata) %in% DISTSPECTRALVARS],
-               ID_spectra = seq_len(nrow(metadata))
-  ))
-
-#Assign same ID_spectra to repeated spectra
-metadata$ID_spectra <- NA
-for(i in seq_along(list_posEspectresduplicats_VED)){
-  metadata$ID_spectra[list_posEspectresduplicats_VED[[i]]] <- i
+  #Assign same ID_spectra to repeated spectra
+  for(i in seq_along(list_posEspectresduplicats_VED)){
+    metadata$ID_spectra[list_posEspectresduplicats_VED[[i]]] <- i
+  }
+  initVal <- max(metadata$ID_spectra, na.rm = TRUE)
 }
 
 # Assign different ID_spectra to spectra not duplicated (beginning with the last ID_spectra assigned on the last chunk of code)
 toassign <- is.na(metadata$ID_spectra)
-initVal <- max(metadata$ID_spectra, na.rm = TRUE)
 metadata$ID_spectra[toassign] <- initVal + seq_along(which(toassign))
 metadata$ID_spectra <- as.integer(metadata$ID_spectra)
 fragments <- list(ID_spectra = metadata$ID_spectra, spectra = fragm)
@@ -156,84 +157,79 @@ return(list(spectraCompounds = spectraCompounds, spectra = spectra,
 #listfrag es NOMES una llista de matrius despectres de fragmentacio.
 
 .redundantSpectra <- function(listfrag){
-  #ho fem en dos temps. Primer els espectres amb una massa8 es mes facil) i despres els altres
-  #
-  #_____1.8.1. Identif. MonoEspectres duplicats--------------
-  #TRACTEM ELSS FRAGMENTS QUE NOMES TENEN UNA MASSA (ES EL 18% de la HUMAN !!)
-  message("Searching repeated monospectra")
-  numcolumnes<-unlist(sapply(listfrag, function(x) ncol(x)))
+  message("Searching redundant spectra")
+#2 steps. First One-fragment spectra. Then the polyfragmented
+  #1. Monofragment spectra (18% of HMDB !!)
+  numCols <- unlist(sapply(listfrag, function(x) ncol(x)))
+  if(any(numCols < 1))
+    stop("There are spectra with less than one fragment")
+  #spectra with only one frag
+  listfrag_n1 <- lapply(list(seq_along(listfrag), listfrag),
+                            function(x) x[numCols == 1])
+  mcharge <- sapply(listfrag_n1[[2]], function(x) x["mass-charge", 1])
+  mchargeRedund <- unique(mcharge[duplicated(mcharge)])
 
-  if(any(numcolumnes<1)) stop("Hi han espectres de fragmentacio amb menys d'una massa ")
-  #seleccinem els fragments de nomes una massa
-  listfragments_n1<- lapply(list(seq_along(listfrag),listfrag), function(x) x[numcolumnes==1])
+  #group spectra with the same masscharge (because that means they're equals)
+  listfrag_n1 <- lapply(mchargeRedund,
+                        function(x) listfrag_n1[[1]][which(mcharge == x)])
 
-  #mirem quins espectres tenen la massa que ja ha sortit a un altra espectre
-  valors_masscharge <- sapply(listfragments_n1[[2]], function(x) x["mass-charge",1])
-  valorsmassa_duplicats <- unique(valors_masscharge[duplicated(valors_masscharge)])
+  #2. Polyfragmented spectra
+  listfrag_n2 <- lapply(list(seq_along(listfrag), listfrag),
+                        function(x) x[numCols > 1])
+  #sort columns according their mass
+  listfrag_n2[[2]] <- lapply(listfrag_n2[[2]], function(x) x[, order(x[1, ])])
 
-  #agrupem els fragments que tenen la mateixa massa unica de l'espectre, PQ AIXO VOL DIR Q SON ESPECTRES IDENTICS
-  listfragmentsidentics_n1 <- lapply(valorsmassa_duplicats, function(x) listfragments_n1[[1]][which(valors_masscharge==x)])
-
-  #_____1.8.2. Identif. NO MonoEspectres duplicats-------------------
-  message("Searching repeated polispectra")
-  listfragments_n2<- lapply(list(seq_along(listfrag),listfrag), function(x) x[numcolumnes>1])
-  #Si no ho hem fet abans, ordenem les columnes de les matrius de fragments per la massa
-  listfragments_n2[[2]] <- lapply(listfragments_n2[[2]], function(x) x[,order(x[1,])])
-
-  #A. Primera APROX: Calculem un hash ràpid. Si dos espectres tenen el mateix hash son candidats a ser el mateix espectre
-  hash <- unlist(lapply(listfragments_n2[[2]], function(x) sum(x["mass-charge",]) + (sum(x["intensity",])/max(x["intensity",]))))
-  hash_repetits <- unique(hash[duplicated(hash)])
-
-  if(length(hash_repetits)>0){#si hi han hash repetits
-
-    #B Les matrius que tenen un mateix hash fan un grup. Les matrius dun mateix grup (hash) son candidates a ser iguals entre elles. Anem a comparar les matrius dins de cada grup
-
-    sublistfragmentsidentics <- vector("list", length=0)
-
+  #2A. Fast aproximation: Obtain a fast hash. Only 2 spectra with the same hash can be candidates to be the same spectrum
+  hash <- unlist(lapply(listfrag_n2[[2]], function(x)
+    sum(x["mass-charge", ]) + (sum(x["intensity",])/max(x["intensity",]))
+    ))
+  hashRepeatd <- unique(hash[duplicated(hash)])
+  if(length(hashRepeatd) > 0){
+  #2.B Group spectra with the same hash, which are candidates to be equal. Then compare spectra of the same group
+    sublistIdentFragm <- vector("list", length = 0)
     #PARALELITZAR
-    listfragmentsidentics_n2 <- pbapply::pblapply(
-      hash_repetits, function(hash_repe) {
-      #posicio de les matrius amb aqst mateix hash
-      pos_matriusMateixHash<-which(hash == hash_repe)
-      #matrius amb aqst mateix hash
-      matriusMateixHash<-listfragments_n2[[2]][pos_matriusMateixHash]
-      posicionsarevisar <- 1:length(pos_matriusMateixHash)
-      #quines posicionsarevisar queden per comparar
-      leftovers <- rep(TRUE,length(posicionsarevisar))
-      #La matriu A sempre es la primera de les matrius que queden per comparar (leftovers)
+    listfrag_n2 <- pbapply::pblapply(hashRepeatd, function(hash_repe) {
+      #positions of spectra with same hash
+      pos_SpctrSameHash <- which(hash == hash_repe)
+      SpctrSameHash <- listfrag_n2[[2]][pos_SpctrSameHash]
+      pos2Check <- seq_along(pos_SpctrSameHash)
+      leftovers <- rep(TRUE, length(pos2Check))
+      # A is always the first of the remaining matrices to be compared (leftovers)
       posMatriu_1 <- 1
-
-      while(sum(leftovers)>1){#mentre quedi mes duna matriu per comparar
-        #aqui desarem quines posicions ens han sortit q tenen matrius iguals
-        coincidencies <- vector("integer", length=0)
-        #aqui comparem, de les matrius del grup q FALTEN per comparar, la primera matriu amb la resta. Si queda una matriu, ja no es compara pq no cal; per tant, hi han matrius uniques que ja ni apareixen al llistat final. Tbe hi han matrius uniques q apareixen al llistat final pero SOLES en un vector
-
-        for(posMatriu_2 in (posMatriu_1+1):sum(leftovers)){
-          comp <- all.equal(matriusMateixHash[[posicionsarevisar[leftovers][posMatriu_1]]],matriusMateixHash[[posicionsarevisar[leftovers][posMatriu_2]]])
-          #Si son iguals, desem la segona matriu
-          if(isTRUE(comp)) coincidencies <- c(coincidencies,posMatriu_2)
+      while(sum(leftovers) > 1){
+        #positions with common spectrum
+        commSpctr <- vector("integer", length = 0)
+        #Here we compare, of the remaining matrices to be compared, the first matrix with the rest. If a matrix remains, it is no longer compared because it does not match; therefore, there are single matrices that do not even appear in the final list. There are also single matrices that appear in the final list but ONLY in a vector.
+        for(posMatriu_2 in (posMatriu_1 + 1):sum(leftovers)){
+          comp <- all.equal(SpctrSameHash[[pos2Check[leftovers][posMatriu_1]]],
+                            SpctrSameHash[[pos2Check[leftovers][posMatriu_2]]])
+          #If the're equals, we keep the 2nd matrix
+          if(isTRUE(comp)) commSpctr <- c(commSpctr, posMatriu_2)
         }
-        #si hem acabat, desem la primera matriu q hem fet servir en la comparacio
-        coincidencies <- c(posMatriu_1,coincidencies)
-        #desem els fragments de les matrius trobades iguals
-        fragmentsidentics<-listfragments_n2[[1]][pos_matriusMateixHash][posicionsarevisar][leftovers][coincidencies]
-        #desem en eun elemnt a banda, els fragments anteriors
-        sublistfragmentsidentics<-c(sublistfragmentsidentics,list(fragmentsidentics))
-        #eliminem les matrius trobades iguals dels candidats a continuar comparant
-        leftovers[leftovers][coincidencies]<-FALSE
+        #We keep the first matrix, which we used to compare
+        commSpctr <- c(posMatriu_1, commSpctr)
+        #we keep the common spectrum in a list
+        identFragm <-
+          listfrag_n2[[1]][pos_SpctrSameHash][pos2Check][leftovers][commSpctr]
+        sublistIdentFragm <- c(sublistIdentFragm, list(identFragm))
+        # mark as already completed the identical spectra
+        leftovers[leftovers][commSpctr] <- FALSE
       }
-      return(sublistfragmentsidentics)
+      return(sublistIdentFragm)
     })
+    listfrag_n2 <- unlist(listfrag_n2, recursive = FALSE)
+    #remove groups wth only one element, because that means they're not redundant. Remember here we have not captured all the unique spectra
+    listfrag_n2 <- listfrag_n2[sapply(listfrag_n2, function(x) length(x) > 1)]
+  }else{
+    listfrag_n2 <- list()
   }
-  listfragmentsidentics_n2<-unlist(listfragmentsidentics_n2, recursive=FALSE)
-  #eliminem els que fan grups de un, perq vol dir q no son espectres duplicats. Recorda que no tots els unics s'han capturat
-  listfragmentsidentics_n2 <- listfragmentsidentics_n2[sapply(listfragmentsidentics_n2, function(x) length(x)>1)]
 
-  #ajunten es llistes de fragments identics
-  listfragmentsidentics <- c(listfragmentsidentics_n1,listfragmentsidentics_n2)
-  #EL num de espectres que esborrarem es...
-  message("Dels ",length(listfrag)," espectres, ",length(unlist(listfragmentsidentics))-length(listfragmentsidentics)," son redundants")
-  return(listfragmentsidentics)
+  #MERGE redundant spectra
+  listidentFragm <- c(listfrag_n1, listfrag_n2)
+  message(glue::glue("
+          {length(unlist(listidentFragm))-length(listidentFragm)} of //
+                     {length(listfrag)} spectra are redundants"))
+  return(listidentFragm)
 }
 
 
@@ -257,7 +253,6 @@ return(list(spectraCompounds = spectraCompounds, spectra = spectra,
   listidespectre_EspDupli <- listidespectre_EspDupli[vapply(listidespectre_EspDupli, function(x) length(x)>1, FUN.VALUE =TRUE )]
   return(listidespectre_EspDupli)
 }
-
 
 .removeRedundantCompounds <- function(dfmetabolits, dfEspectreMetabolit){
   nummetabolitsoriginals <- dim(dfmetabolits)[1]
