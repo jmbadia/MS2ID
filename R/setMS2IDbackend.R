@@ -60,6 +60,7 @@
     # on every row, startPos and numSpectra allows to find the
     # IDReference spectra in the mzIndex_raw[ startPos(1:numSpectra) ].
     lastPos <- 0
+
     for(i in seq_along(DB$mzIdx$spectrIdx)){
         numSpectra <- vapply(DB$mzIdx$spectrIdx[[i]], length, FUN.VALUE = 3)
         startPos <- c(0, cumsum(numSpectra)[-length(numSpectra)]) + lastPos
@@ -104,6 +105,8 @@
                              backingfile = "spectra_body.bin",
                              descriptorfile = "spectra_body.desc",
                              backingpath = MS2IDdir)
-    message("MS2ID object succesfully created and saved at {MS2IDdir}\n\n")
+    message(glue::glue("
+    MS2ID object succesfully created and saved at {MS2IDdir}\n\n
+                       "))
     invisible(MS2IDdir)
 }
