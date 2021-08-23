@@ -35,8 +35,9 @@
                                      function(x) x[-(1:(idSub-1))])
         }
         ## Maxim spectra number feasible per loop
-        l1 <- length(unique(unlist(spectra_mz_Sub)))
         l2 <- length(spectra_mz_Sub)
+        if(l2 == 0) next()
+        l1 <- length(unique(unlist(spectra_mz_Sub)))
         maxSpectraElemnts <- round(sqrt(maxMatrixElemnts/(l1/l2)))
         spectrIntervals <- c(
             seq(from = 1, to = length(spectra_mz_Sub), by = maxSpectraElemnts),
@@ -72,7 +73,6 @@
         posSpectrIdx <- lapply(mzIdx_unq, function(idd)
             unlist(posSpectrIdx[which(mzIdx == idd)])
             )
-
         ## sort mzIdx
         posSpectrIdx <- posSpectrIdx[match(sort(mzIdx_unq),mzIdx_unq)]
         mzIndex$lstmzIdx[[idSub]] <- sort(mzIdx_unq)
