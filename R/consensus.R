@@ -99,7 +99,7 @@
             tmp[idRow, names(s$Metadata)[idCol]] <- differentVal
       }
       tmp$precursorMZ[idRow] <- mean(s$Metadata$precursorMZ[consensdSpectra])
-      #collpase reference columns into one
+      #collapse reference columns into one
       for(nameCol in refCols){
          newNameCol <- paste0(nameCol,"_CONS")
          tmp[idRow, newNameCol] <- paste(s$Metadata[consensdSpectra, nameCol],
