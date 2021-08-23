@@ -102,7 +102,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
 
   argmnts <- c(as.list(environment()), list(...))
     #check argument types
-  reqClasses <- c(QRYdata="character", MS2ID="MS2ID", metricsThresh="numeric",
+  reqClasses <- c(MS2ID="MS2ID", metricsThresh="numeric",
                   metricFUNThresh="numeric",
                   nsamples="integer", noiseThresh="numeric",
                   cmnPeaks="integer", cmnTopPeaks="integer",
@@ -157,7 +157,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     dec2binFrag = 2 # necessary bin to locate query fragment into the mzIndex
 
     message("Loading query spectra ...")
-    QRY <- .loadSpectra(mzmlData = QRYdata, nsamples = nsamples, ...)
+    QRY <- .loadSpectra(data = QRYdata, nsamples = nsamples, ...)
     #check queryif argument "cmnPolarity" can be applied
     if(cmnPolarity){
         if(!all(QRY$Metadata$polarity %in% c(0, 1)))
@@ -312,7 +312,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     }
 
     if(length(distances) == 0){
-        message("No query spectra with hits found.")
+        message("No query spectra have satisfactory results")
         return()
     }
     message("Processing results obtained ...")
