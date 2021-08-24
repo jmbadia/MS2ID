@@ -61,11 +61,18 @@
 #' @noRd
 .convertSpectra <- function(spectra, msLevel, acquisitionNum){
   if(!missing(msLevel))
-    spectra <- filterMsLevel(spectra, msLevel = msLevel)
+    spectra <- Spectra::filterMsLevel(spectra, msLevel = msLevel)
+  else
+    msLevel <- "all"
   if(!missing(acquisitionNum))
-    spectra <-  filterAcquisitionNum(spectra, acquisitionNum)
+    spectra <- Spectra::filterAcquisitionNum(spectra, acquisitionNum)
+  else
+    acquisitionNum <- "all"
   if(length(spectra) == 0)
-    stop("No query spectrum fits the requirements (msLevel or acquisitionNum)")
+    stop(glue::glue("
+    No query spectra match the arguments used in the \\
+    annotate() function (msLevel={msLevel}, acquisitionNum={acquisitionNum})
+                    "))
   #rename only if it exists
   possibleCols <-
     list(

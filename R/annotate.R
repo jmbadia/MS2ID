@@ -81,9 +81,9 @@
 annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh,
                      massErr = 30, massErrQRY = massErr,
-                     noiseThresh=0.01,  cmnPrecMass=FALSE,
-                     cmnNeutralMass=TRUE, cmnPeaks=2,
-                     cmnTopPeaks=5, cmnPolarity= TRUE, db="all", predicted,
+                     noiseThresh = 0.01,  cmnPrecMass = FALSE,
+                     cmnNeutralMass = TRUE, cmnPeaks = 2,
+                     cmnTopPeaks = 5, cmnPolarity = TRUE, db ="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3,
                      ...){
   if(FALSE){ # Create a Progress object
@@ -312,7 +312,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     }
 
     if(length(distances) == 0){
-        message("No query spectra have satisfactory results")
+        message("No query spectrum has obtained a hit")
         return()
     }
     message("Processing results obtained ...")

@@ -49,7 +49,8 @@
 
     if(cmnNtMass){
         cmnNM <- !is.na(hits$propAdduct)
-        if(!any(cmnNM))  stop("No query spectra have satisfactory results.")
+        if(!any(cmnNM))
+            stop("No query spectrum meets the cmnNtMass condition")
         hits <- hits[cmnNM,]
     }
 
