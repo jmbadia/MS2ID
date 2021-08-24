@@ -39,8 +39,6 @@
 #' @param cmnPolarity -Reference spectra filter- Boolean, a TRUE value limits
 #'   the reference spectra to those with the same polarity as the query
 #'   spectrum.
-#' @param db -Reference spectra filter- Character filtering the reference
-#'   spectra by its original database (e.g. HMDB).
 #' @param predicted -Reference spectra filter- Character filtering the reference
 #'   spectra by the spectra nature. Default is no filtering
 #' @param cmnPrecMass -Reference spectra filter- Boolean, a TRUE value limits
@@ -83,7 +81,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      massErr = 30, massErrQRY = massErr,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnPeaks = 2,
-                     cmnTopPeaks = 5, cmnPolarity = TRUE, db ="all", predicted,
+                     cmnTopPeaks = 5, cmnPolarity = TRUE, predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3,
                      ...){
 
@@ -93,7 +91,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                   metricFUNThresh="numeric",
                   nsamples="integer", noiseThresh="numeric",
                   cmnPeaks="integer", cmnTopPeaks="integer",
-                  db="character", predicted="logical",
+                  predicted="logical",
                   cmnPolarity= "logical", cmnPrecMass= "logical",
                   cmnNeutralMass="logical", massErr="numeric",
                   massErrQRY="numeric")
@@ -185,11 +183,8 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
       QRY$Metadata <- QRY$Metadata[QRY$Metadata$rol %in% rol2Annotate, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
     }
-    # SQL sentence according global restrictions (db, predicted, ...
+    # SQL sentence according global restrictions (predicted)
     SQLwhereGen <- vector()
-    if(db!="all")
-        SQLwhereGen <- .appendSQLwhere("ID_db", db,
-                                       whereVector=SQLwhereGen)
     if(!missing(predicted)){
       predicted <- ifelse(predicted, 1, 0)
       SQLwhereGen <- .appendSQLwhere("predicted", predicted,

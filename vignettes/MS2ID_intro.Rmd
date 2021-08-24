@@ -82,11 +82,11 @@ In addition, the `cmnPrecMass` argument limits the reference spectra to those th
 ```{r subsetting, eval = FALSE}
 annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100,
                         cmnPrecMass = TRUE, cmnNeutralMass = TRUE, cmnPeaks = 2,
-                        cmnTopPeaks = 4, cmnPolarity = TRUE, db = "MassBank",
+                        cmnTopPeaks = 4, cmnPolarity = TRUE,
                         nature = "experimental")
 ```
 
-Other arguments subset the reference library according its nature, the primal database or the polarization of the reference spectra (`nature`, `db` and `cmnPolarity` respectively).
+Other arguments subset the reference library according its nature or the polarization of the reference spectra (`nature` and `cmnPolarity` respectively).
 
 ## Annot object
 This object stores the annotation results so we can extract particular content by appplying them *getters* (custom functions to *get* the info) or save the whole object for further analysis (use saveRDS() and loadRDS()).
