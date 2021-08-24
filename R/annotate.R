@@ -86,19 +86,6 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                      cmnTopPeaks = 5, cmnPolarity = TRUE, db ="all", predicted,
                      nsamples, consens=T, consCos=0.8, consComm=2/3,
                      ...){
-  if(FALSE){ # Create a Progress object
-  progress <- shiny::Progress$new()
-  # Make sure it closes when we exit this reactive, even if there's an error
-  on.exit(progress$close())
-  # Number of times we'll go through the loop
-  progress$set(message = "Making plot", value = 0)
-  n <- 10
-  for(i in 1:n){
-    progress$inc(1/n, detail = paste("Doing part", i))
-    # Pause for 0.1 seconds to simulate a long computation.
-    Sys.sleep(0.1)
-  }
-  }
 
   argmnts <- c(as.list(environment()), list(...))
     #check argument types
