@@ -78,7 +78,6 @@ MS2ID <- function(ms2idFolder) { #must be the directory's path containing the MS
     if (!file.exists(ms2idFolder))
         stop(paste(ms2idFolder, "is not a valid directory"))
 
-    ms2idFolder <- dirname(ms2idFolder)
     dbFiles <- c("MS2ID.db", "mzIndex_body.bin", "mzIndex_body.desc",
                  "spectra_body.bin", "spectra_body.desc")
     if (!all(file.exists(file.path(ms2idFolder, dbFiles))))
