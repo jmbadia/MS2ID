@@ -12,59 +12,65 @@
 #' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idSpectra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idSpectra' variable.
 #' @noRd
 
-.loadSpectra <- function(data, msLevel = 2L, nsamples, acquisitionNum){
-    #check types
-    reqClasses <- c(msLevel="integer", nsamples="integer",
-                    acquisitionNum = "integer")
-    .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
-    if (msLevel < 2)
-        stop("'msLevel' is expected to be a natural number > 1")
-    if (!missing(nsamples))
-      if (nsamples < 1)
-        stop("'nsamples' is expected to be a natural number > 0")
-    if (!missing(acquisitionNum))
-      if (any(acquisitionNum < 1))
-        stop("'acquisitionNum' are expected to be natural numbers > 0")
-    if(is.character(data)){
-      result <- .loadmzML(mzmlData = data, msLevel = msLevel,
-                         acquisitionNum = acquisitionNum)
-    }else if(is(data, 'Spectra')){
-      result <- .convertSpectra(spectra = data, msLevel = msLevel,
-                         acquisitionNum = acquisitionNum)
-    } else {
-    stop(glue::glue("
-    'data' is expected to be an spectra object or a character describing //
-    a directory's path with mzML files"))
-      }
+.loadSpectra <- function(data=NULL, nsamples=NULL, ...){
+  if(is.null(data))
+    stop("'data' is a mandatory argument")
+  #check types
+  reqClasses <- c(nsamples="integer")
+  .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
+  if (!is.null(nsamples))
+    if (nsamples < 1)
+      stop("'nsamples' is expected to be a natural number > 0")
+  if(is.character(data)){
+    result <- .loadmzML(mzmlData = data, ...)
+  }else if(is(data, 'Spectra')){
+    result <- .convertSpectra(spectra = data, ...)
+  } else {
+  stop(glue::glue("
+  'data' is expected to be an spectra object or a character describing //
+  a directory's path with mzML files"))
+    }
 
-  #subset to a number 'nsamples' of random samples.
-  # In this part of the code in order to maintain id traceability
-  if(!missing(nsamples)){
-    if(nsamples > nrow(result$Metadata))
-        message(glue::glue("
-        'nsamples' is larger than the number of spectra available. All //
-        spectra will be loaded"))
-    else{
-      set.seed(1)
-        spectra2subset <- sample(result$Metadata$idSpectra, nsamples)
-        result$Metadata <- result$Metadata[
-          result$Metadata$idSpectra %in% spectra2subset, ]
-        result$Spectra <- result$Spectra[
-          names(result$Spectra) %in% spectra2subset]
-      }
-  }
-  return(result)
+#subset to a number 'nsamples' of random samples.
+# In this part of the code in order to maintain id traceability
+if(!is.null(nsamples)){
+  if(nsamples > nrow(result$Metadata))
+      message(glue::glue("
+      'nsamples' is larger than the number of spectra available. All //
+      spectra will be loaded"))
+  else{
+    set.seed(1)
+      spectra2subset <- sample(result$Metadata$idSpectra, nsamples)
+      result$Metadata <- result$Metadata[
+        result$Metadata$idSpectra %in% spectra2subset, ]
+      result$Spectra <- result$Spectra[
+        names(result$Spectra) %in% spectra2subset]
+    }
+}
+return(result)
 }
 
 #' Convert spectra (Spectra package) to MS2ID query format
 #'
 #' @noRd
-.convertSpectra <- function(spectra, msLevel, acquisitionNum){
-  if(!missing(msLevel))
+.convertSpectra <- function(spectra=NULL, msLevel=NULL, acquisitionNum=NULL){
+  if(is.null(spectra))
+    stop("'spectra' is a mandatory argument")
+  #check types
+  reqClasses <- c(spectra="Spectra", msLevel="integer",
+                  acquisitionNum = "integer")
+  .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
+  if(!is.null(msLevel))
+    if (msLevel < 1)
+      stop("'msLevel' is expected to be a natural number > 0")
+  if (!is.null(acquisitionNum))
+    if (any(acquisitionNum < 1))
+      stop("'acquisitionNum' are expected to be natural numbers > 0")
+  if(!is.null(msLevel))
     spectra <- Spectra::filterMsLevel(spectra, msLevel = msLevel)
   else
     msLevel <- "all"
-  if(!missing(acquisitionNum))
+  if(!is.null(acquisitionNum))
     spectra <- Spectra::filterAcquisitionNum(spectra, acquisitionNum)
   else
     acquisitionNum <- "all"
@@ -104,7 +110,17 @@
 #' Load query spectra from mzML files
 #'
 #' @noRd
-.loadmzML <- function(mzmlData, msLevel, acquisitionNum){
+.loadmzML <- function(mzmlData=NULL, msLevel=NULL, acquisitionNum=NULL){
+  if(is.null(mzmlData))
+    stop("'mzmlData' is a mandatory argument")
+  reqClasses <- c(mzmlData = "character", msLevel="integer",
+                  acquisitionNum = "integer")
+  .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
+  if (msLevel < 1)
+    stop("'msLevel' is expected to be a natural number > 0")
+  if (!is.null(acquisitionNum))
+    if (any(acquisitionNum < 1))
+      stop("'acquisitionNum' are expected to be natural numbers > 0")
   if(identical(file_test("-d", mzmlData), T)){# one char and is dir
     #load files
     mzml_files <- dir(path = mzmlData, pattern="*\\.mzml$",
@@ -128,10 +144,11 @@
     mzRobj <- mzR::openMSfile(file)
     temp <- mzR::header(mzRobj)
     #positions to catch
-    pos2Catch <- temp$msLevel == msLevel
-    if(!missing(acquisitionNum)){
+    pos2Catch <- rep(TRUE, nrow(temp))
+    if(!is.null(msLevel))
+      pos2Catch <- pos2Catch & temp$msLevel == msLevel
+    if(!is.null(acquisitionNum))
       pos2Catch <- pos2Catch & temp$acquisitionNum %in% acquisitionNum
-    }
     #not an scan to read, jump to next file
     if(!any(pos2Catch)) next
 
