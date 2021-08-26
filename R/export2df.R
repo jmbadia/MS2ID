@@ -58,9 +58,10 @@
                REFpredicted = replace(REFpredicted, REFpredicted == 1,
                                       "insilico")
                )
-    anRslt$ppmPrecMass <- (anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
+    ppmPrecMass <- (anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
         anRslt$QRYprecursorMz * 1e6
-    anRslt$ppmPrecMass <- round(anRslt$ppmPrecMass, 1)
+    if(!all(is.na(ppmPrecMass)))
+        anRslt$ppmPrecMass <- round(ppmPrecMass, 1)
     #sort columns
     mainVar <- c("QRYprecursorMz", "QRYrtime", "QRYacquisitionNum",
         "QRYacquisitionNum_CONS", "REFexactmass","propAdduct","REFadduct",
