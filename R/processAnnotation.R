@@ -118,7 +118,10 @@
                                    FUN.VALUE = T)]
 
     #Spectra package only admits numeric CollisionEnergy values
-    QRYspect$collisionEnergy <- as.numeric(QRYspect$collisionEnergy)
+    if("collisionEnergy" %in% names(QRYspect))
+        QRYspect$collisionEnergy <- as.numeric(QRYspect$collisionEnergy)
+    else
+        QRYspect$collisionEnergy <- NA_real_
     REFspect$collisionEnergy_txt <-  REFspect$collisionEnergy
     REFspect$collisionEnergy <- suppressWarnings(
         as.numeric(REFspect$collisionEnergy))

@@ -115,7 +115,7 @@ MS2IDgui <- function(annot){
         options(shiny.maxRequestSize=30*1024^2)
         #parent environment values
         colVisibles <- NA
-        #insert here server side of tabPanelIdentification.R, (in invisible2git)
+        #insert here server side of tabPanelIdentification.R (in invisible2git)
 
         output$info <- renderText({.getFormText()})
 
@@ -132,8 +132,12 @@ MS2IDgui <- function(annot){
                 qrySpctr = qrySpectra(lot),
                 infoAnnot = infoAnnotation(lot)
                 )
+            dt$mtdt <- dt$mtdt %>%
+                mutate_each(funs(replace(., is.na(.), "unknown")),
+                            c("QRYdataOrigin", "QRYprecursorMz"))
             dt$mtdt$massNum <- paste0(
-                .customColor(dt$mtdt$QRYmassNum, "qry"), '/', dt$mtdt$cmnMasses,
+                .customColor(dt$mtdt$QRYmassNum, "qry"), '/',
+                dt$mtdt$cmnMasses,
                 '/', .customColor(dt$mtdt$REFmassNum, "ref")
                 )
             dt$mtdt$polarity <- paste0(
@@ -144,7 +148,11 @@ MS2IDgui <- function(annot){
                 .customColor(dt$mtdt$QRYcollisionEnergy, "qry"), '/',
                 .customColor(dt$mtdt$REFcollisionEnergy_txt, "ref")
             )
-            if(all(is.na(dt$mtdt$QRYacquisitionNum))){
+            if(!"QRYacquisitionNum" %in% names(dt$mtdt)){
+                dt$mtdt$QRYacquisitionNum <- NA
+            }
+            if("QRYacquisitionNum_CONS" %in% names(dt$mtdt) &
+               all(is.na(dt$mtdt$QRYacquisitionNum))){
                 dt$mtdt$QRYacquisitionNum <- dt$mtdt$QRYacquisitionNum_CONS
                 }
             #round value to match with input select
@@ -166,8 +174,8 @@ MS2IDgui <- function(annot){
                 select(propAdduct |
                            where(~ !(all(is.na(.)) | all(. == "")))) %>%
                 select(sort(current_vars())) %>%
-                relocate(visiblVar[visiblVar %in% names(dt$mtdt)]) %>%
-                relocate(QRYacquisitionNum, .before = QRYrtime)
+                relocate(visiblVar[visiblVar %in% names(dt$mtdt)])
+            #%>%relocate(QRYacquisitionNum, .before = QRYrtime)
             #set columns visibility default
             colVisibles <<- names(dt$mtdt) %in% visiblVar
             return(dt)
@@ -176,7 +184,9 @@ MS2IDgui <- function(annot){
         metadataShowed <- reactive({
             req(input$UNKprec)
             rdMtdt <- rawdata()$mtdt
-            rdMtdt$QRYprecursorMz <- round(rdMtdt$QRYprecursorMz, precDigits)
+            if(is.numeric(rdMtdt$QRYprecursorMz))
+                rdMtdt$QRYprecursorMz <- round(rdMtdt$QRYprecursorMz,
+                                               precDigits)
             rdMtdt <- rdMtdt[
                 isolate(rdMtdt$QRYdataOrigin == input$ffile) &
                     rdMtdt$QRYprecursorMz == input$UNKprec, ]
@@ -193,21 +203,18 @@ MS2IDgui <- function(annot){
             }
             mtdtShw <- isolate(metadataShowed()) %>%
                 slice(rowSelected) %>%
-                select(idREFspect, idQRYspect, idREFcomp, QRYacquisitionNum,
-                       QRYrol)
+                select(contains(c("idREFspect", "idQRYspect", "idREFcomp",
+                                "QRYacquisitionNum","QRYrol")))
             return(mtdtShw)
             })
 
         output$tbl <- DT::renderDT(
             DT::datatable(
                 metadataShowed(),
-                caption = paste(
-                    'file:', isolate(input$ffile), ', QRY precursor m/z:',
-                    isolate(as.numeric(input$UNKprec))
-                    ),
-                colnames = c('QRYprecMz' = 'QRYprecursorMz',
-                             'REFprecMz' = 'REFprecursorMz',
-                             'QRYacqNum' = 'QRYacquisitionNum'),
+                caption = glue::glue("
+                'file:' {isolate(input$ffile)}, QRY precursor m/z: \\
+                {isolate(input$UNKprec)}
+                    "),
                 extensions = 'Buttons',
                 options = list(
                     pageLength = 8,
@@ -248,14 +255,18 @@ MS2IDgui <- function(annot){
 
         output$infoTabId <- renderText({
             mtdtShw <- getSelId()
+            vals2Show <- c(
+                "cosine", "massNum", "propAdduct", "QRYprecursorMz", "REFname",
+                "REFinchikey", "REFexactmass", "REFadduct", "REFprecursorMz",
+                "REFpredicted", "REFID_db.comp")
             rd <- isolate(rawdata()$mtdt) %>%
                 filter(idREFspect == mtdtShw$idREFspect,
                        idQRYspect == mtdtShw$idQRYspect,
                        idREFcomp == mtdtShw$idREFcomp) %>%
-                select(cosine, massNum, propAdduct, QRYprecursorMz, REFname,
-                       REFinchikey, REFexactmass, REFadduct, REFprecursorMz,
-                       REFpredicted, REFID_db.comp)
-            .getFormText("compare", as.list(rd))
+                select(contains(vals2Show))
+            vals2Show[!vals2Show %in% names(rd)] <- "unknown"
+            vals2Show[vals2Show %in% names(rd)] <- rd
+            .getFormText("compare", as.list(vals2Show))
             #changed metadataShowed$REFinchikey[rowSelected] for metadata$REFinchikey
         })
 
@@ -277,7 +288,7 @@ MS2IDgui <- function(annot){
                     paste0("<b>", names(rdInfoAnnot)[idArg],
                            "</b>: ", rdInfoAnnot[[idArg]])
             }
-            paste(rdInfoAnnot$summ, collapse = ".<br> ")
+            paste(rdInfoAnnot$summ, collapse = "<br> ")
         })
 
         output$infoTabCons <- renderText({
@@ -365,9 +376,10 @@ MS2IDgui <- function(annot){
             freezeReactiveValue(input, "UNKprec")
             fileSel <- rawdata()$mtdt$QRYdataOrigin == input$ffile
             precSel <- unique(rawdata()$mtdt$QRYprecursorMz[fileSel])
+            if(is.numeric(precSel))
+                precSel <- round(sort(precSel), precDigits)
             updateSelectInput(session, inputId = 'UNKprec',
-                              choices = round(sort(precSel), precDigits)
-                )
+                              choices = precSel)
             })
 
         observeEvent(input$UNKprec, {
