@@ -81,9 +81,10 @@ MS2ID <- function(ms2idFolder) { #must be the directory's path containing the MS
     dbFiles <- c("MS2ID.db", "mzIndex_body.bin", "mzIndex_body.desc",
                  "spectra_body.bin", "spectra_body.desc")
     if (!all(file.exists(file.path(ms2idFolder, dbFiles))))
-        stop(paste0(ms2idFolder,
-                    " does not contain all the necessary files (",
-                    paste(dbFiles, collapse=", "), ")"))
+        stop(glue::glue("
+        {dirname(ms2idFolder)} does not contain all the necessary files: \\
+        {glue::glue_collapse(dbFiles, ', ', last = ' and ')}
+                        "))
 
     SQLx <- dbConnect(dbDriver("SQLite"),
                       dbname = file.path(ms2idFolder, "MS2ID.db"))
