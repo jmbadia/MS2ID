@@ -11,7 +11,7 @@
 
 .checkTypes <- function(values, types){
     b <- match(names(values), names(types))
-    for(i in which(!is.na(b))){
+    for(i in which(!is.null(b))){
         .checkType(values[[i]], types[b[i]])
     }
 }
