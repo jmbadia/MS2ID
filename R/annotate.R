@@ -76,20 +76,21 @@
 #'          metricsThresh = c(0.6, 0.8, 0.6),
 #'          metricFUN = fooFunction, metricFUNThresh = 1.8)
 #' }
-annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
+annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
+                     metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh,
                      massErr = 30, massErrQRY = massErr,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnPeaks = 2,
-                     cmnTopPeaks = 5, cmnPolarity = TRUE, predicted,
-                     nsamples, consens=T, consCos=0.8, consComm=2/3,
+                     cmnTopPeaks = 5, cmnPolarity = TRUE, predicted=NULL,
+                     consens=T, consCos=0.8, consComm=2/3,
                      ...){
-
   argmnts <- c(as.list(environment()), list(...))
+  if(is.na(QRYmsLevel)) QRYmsLevel <- NULL
     #check argument types
-  reqClasses <- c(MS2ID="MS2ID", metricsThresh="numeric",
-                  metricFUNThresh="numeric",
-                  nsamples="integer", noiseThresh="numeric",
+  reqClasses <- c(MS2ID="MS2ID", QRYmsLevel = "integer",
+                  metricsThresh="numeric",
+                  metricFUNThresh="numeric", noiseThresh="numeric",
                   cmnPeaks="integer", cmnTopPeaks="integer",
                   predicted="logical",
                   cmnPolarity= "logical", cmnPrecMass= "logical",
@@ -136,21 +137,34 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
     if(missing(massErrQRY)) massErrQRY <- massErr
 
     workVar <- mget(names(formals()), sys.frame(sys.nframe()))
+    if(!is.character(workVar$QRYdata)) workVar$QRYdata <- "spectra object"
     workVar$MS2ID <- dirname(MS2ID@dbcon@dbname)
     workVar$annotationTime <- Sys.time()
 
     dec2binFrag = 2 # necessary bin to locate query fragment into the mzIndex
 
     message("Loading query spectra ...")
-    QRY <- .loadSpectra(data = QRYdata, nsamples = nsamples, ...)
-    #check queryif argument "cmnPolarity" can be applied
+    QRY <- .loadSpectra(data = QRYdata, msLevel = QRYmsLevel, ...)
+    #Check arguments' viability considering query metadata availability
+    if(consens)
+      .checkViability(metadata=QRY$Metadata, argument="consens",
+                      necMetadata=c("precursorMZ", "precursorIntensity",
+                                    "collisionEnergy","file", "polarity"))
     if(cmnPolarity){
-        if(!all(QRY$Metadata$polarity %in% c(0, 1)))
-            stop(glue::glue("
+      .checkViability(metadata=QRY$Metadata, argument="cmnPolarity",
+                      necMetadata=c("polarity"))
+      if(!all(QRY$Metadata$polarity %in% c(0, 1)))
+        stop(glue::glue("
             cmnPolarity = TRUE can not be applied because some query spectra \\
             have unknown polarity (neither 1 (positive) nor 0 (negative))
                             "))
     }
+    if(cmnPrecMass)
+      .checkViability(metadata=QRY$Metadata, argument="cmnPrecMass",
+                      necMetadata=c("precursorMZ"))
+    if(cmnNeutralMass)
+      .checkViability(metadata=QRY$Metadata, argument="cmnNeutralMass",
+                      necMetadata=c("precursorMZ", "polarity"))
     #remove invalid spectra
     QRY <- .validateSpectra(QRY)
 
@@ -182,10 +196,13 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                                    LFT$Metadata$idSpectra]
       QRY$Metadata <- QRY$Metadata[QRY$Metadata$rol %in% rol2Annotate, ]
       QRY$Spectra <- QRY$Spectra[names(QRY$Spectra) %in% QRY$Metadata$idSpectra]
+    }else{
+      QRY$Metadata$rol <- 1L
     }
+
     # SQL sentence according global restrictions (predicted)
     SQLwhereGen <- vector()
-    if(!missing(predicted)){
+    if(!is.null(predicted)){
       predicted <- ifelse(predicted, 1, 0)
       SQLwhereGen <- .appendSQLwhere("predicted", predicted,
                                      whereVector = SQLwhereGen)
@@ -196,6 +213,7 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
       Qspct <- QRY$Spectra[[idQspctr]]
+
       Qspct <- rbind(Qspct,
                      error = Qspct["mass-charge", ] * massErr/1e6,
                      intSpectr2 = 0)
@@ -204,7 +222,6 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
       idRef <- .queryMzIndex(mzVector = mz2findMzIndex,
                              ms2idObj = MS2ID,
                              cmnPeaks = cmnPeaks, cmnTopPeaks = cmnTopPeaks)
-
       SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
@@ -303,4 +320,14 @@ annotate <- function(QRYdata, MS2ID, metrics="cosine", metricsThresh= 0.8,
                                mError = massErr,
                                cmnNtMass = cmnNeutralMass, workVar = workVar)
     return(rslt)
+}
+
+.checkViability <- function(metadata, argument, necMetadata){
+  matchnecCols <- necMetadata %in% names(metadata)
+  if(!all(matchnecCols) | anyNA(metadata[, necMetadata[matchnecCols]]))
+    stop(glue::glue("
+      '{argument}' can NOT be applied: query spectra have incomplete some of \\
+      the following required metadata: \\
+      {glue::glue_collapse(necMetadata, ', ', last = ' or ')}
+                      "))
 }
