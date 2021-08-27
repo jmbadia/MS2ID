@@ -30,12 +30,7 @@
 #'   the 'metricFUN' function.
 #' @param massErr numeric(1) with the mass error to consider when match masses, i.e. find spectra with common precursor masses or match spectra fragments prior cosinus similarity implementation
 #' @param massErrQRY numeric(1) with the mass error to consider in operations where only query spectra is involved (e.g. consensus spectrum formation). By  default massErrQRY = massErr
-#' @param cmnPeaks -Reference spectra filter- Integer limiting reference spectra
-#'   to whose with at least that number of peaks in common with the query
-#'   spectrum.
-#' @param cmnTopPeaks -Reference spectra filter- Integer limiting the annotation
-#'   to reference spectra with at least one common peak -with the query
-#'   spectrum- among their top n most intense peaks.
+#' @param cmnFrags -Reference spectra filter- vector with 2 integers (m, n) limiting reference spectra. Reference spectra and query spectra must have at least m peaks in common among their top n most intense peaks
 #' @param cmnPolarity -Reference spectra filter- Boolean, a TRUE value limits
 #'   the reference spectra to those with the same polarity as the query
 #'   spectrum.
@@ -81,18 +76,31 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metricFUN, metricFUNThresh,
                      massErr = 30, massErrQRY = massErr,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
-                     cmnNeutralMass = TRUE, cmnPeaks = 2,
-                     cmnTopPeaks = 5, cmnPolarity = TRUE, predicted=NULL,
+                     cmnNeutralMass = TRUE, cmnFrags = c(2,5),
+                     cmnPolarity = TRUE, predicted=NULL,
                      consens=T, consCos=0.8, consComm=2/3,
                      ...){
   argmnts <- c(as.list(environment()), list(...))
   if(is.na(QRYmsLevel)) QRYmsLevel <- NULL
+  if(length(cmnFrags)==2 & is.numeric(cmnFrags)){
+    if(cmnFrags[1] < 1 | cmnFrags[1] != as.integer(cmnFrags[1]))
+      stop(glue::glue("First position of 'cmnFrags' argument is expected to \\
+                      be a integer > 1"))
+    if(!cmnFrags[2] %in% 1:6)
+      stop(glue::glue("Second position of 'cmnFrags' argument is expected to \\
+                      be a integer between 1 and 6"))
+    if(!cmnFrags[2] %in% 1:6)
+      stop(glue::glue("In the 'cmnFrags' argument, first integer can not be \\
+      greater than the second one. e.g. it is not possible to find spectra \\
+      with 4 peaks in common among its top 3 most intense peaks
+                      "))
+  }else
+    stop("'cmnFrags' argument is expected to be a vector of 2 integers")
+
     #check argument types
   reqClasses <- c(MS2ID="MS2ID", QRYmsLevel = "integer",
-                  metricsThresh="numeric",
-                  metricFUNThresh="numeric", noiseThresh="numeric",
-                  cmnPeaks="integer", cmnTopPeaks="integer",
-                  predicted="logical",
+                  metricsThresh="numeric", metricFUNThresh="numeric",
+                  noiseThresh="numeric", predicted="logical",
                   cmnPolarity= "logical", cmnPrecMass= "logical",
                   cmnNeutralMass="logical", massErr="numeric",
                   massErrQRY="numeric")
@@ -126,10 +134,6 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         stop("'QRYdata' is a mandatory argument")
     if(noiseThresh < 0 | noiseThresh > 1)
         stop("'noiseThresh' is expected to be a number between 0 and 1")
-    if (cmnPeaks < 1)
-        stop("'cmnPeaks' is expected to be a natural number")
-    if (!cmnTopPeaks %in% 1:6 )
-        stop("'cmnTopPeaks' is expected to be a natural number between 1 and 6")
     if(massErr < 0)
       stop("'massErr' is expected to be a positive number")
     if(massErrQRY < 0)
@@ -140,8 +144,6 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     if(!is.character(workVar$QRYdata)) workVar$QRYdata <- "spectra object"
     workVar$MS2ID <- dirname(MS2ID@dbcon@dbname)
     workVar$annotationTime <- Sys.time()
-
-    dec2binFrag = 2 # necessary bin to locate query fragment into the mzIndex
 
     message("Loading query spectra ...")
     QRY <- .loadSpectra(data = QRYdata, msLevel = QRYmsLevel, ...)
@@ -213,15 +215,11 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
       Qspct <- QRY$Spectra[[idQspctr]]
-
+      idRef <- .queryMzIndex(QRYspct = Qspct, ms2idObj = MS2ID,
+                             cmnFrags = cmnFrags)
       Qspct <- rbind(Qspct,
                      error = Qspct["mass-charge", ] * massErr/1e6,
                      intSpectr2 = 0)
-      mz2findMzIndex <- unique(round(Qspct["mass-charge",], dec2binFrag))
-
-      idRef <- .queryMzIndex(mzVector = mz2findMzIndex,
-                             ms2idObj = MS2ID,
-                             cmnPeaks = cmnPeaks, cmnTopPeaks = cmnTopPeaks)
       SQLwhereIndv <- vector()
         #apply polarity filter
         if(cmnPolarity){
