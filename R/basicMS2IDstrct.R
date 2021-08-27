@@ -1,17 +1,15 @@
-#GOAL
-#On every parsing algorithm (no matter from what database), once achieved a common data structure (metadata and fragm argument), apply subsequently a common procedure
-
-#ARGUMENTS
-#metadata => dataframe containing spectra & metabolite metadata (variable = columns). No id variables must be included (ID_spectra, ID_compound, ID_db)
-#fragm => list where each item is a MS2 spectra. Row order must match with metadata row order
-#varsToParse => dataframe with the MS2ID variable names as rownames, the BD original names and the type. Must match with the columns of the metadata
-#nameDB => name of the DB we are parsing
-
-.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB,
-                              lastRawDataUpdate) {
+#' Adapt the metadata to the MS2ID structure
+#'
+#' @param metadata dataframe containing spectra & metabolite metadata (variable = columns). No id variables must be included (ID_spectra, ID_compound, ID_db)
+#' @param fragm list where each item is a MS2 spectra. Row order must match with metadata row order
+#' @param varsToParse dataframe with the MS2ID variable names as rownames, the BD original names and the type. Must match with the columns of the metadata
+#' @param nameDB char(1) with the name we want for the DB we are parsing
+#' @noRd
+.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB) {
   #rename variables with MS2ID names
   MS2IDname <- match(colnames(metadata), varsToParse$originalNames)
-  colnames(metadata)[!is.na(MS2IDname)] <- varsToParse$MS2IDname[MS2IDname[!is.na(MS2IDname)]]
+  colnames(metadata)[!is.na(MS2IDname)] <-
+    varsToParse$MS2IDname[MS2IDname[!is.na(MS2IDname)]]
   if(any(is.na(MS2IDname)))
     warning(paste("Following metadata variables are not considered in MS2ID",
                   "and they will be discarted: ",

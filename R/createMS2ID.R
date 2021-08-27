@@ -62,8 +62,7 @@ createMS2ID <- function(cmpdb, noiseThresh = 0.01,
     #order metadata according spectra order
     mrg <- mrg[match(fragm_spctrID, mrg$spectrum_id),]
     DB <- .basicMS2IDstrct(metadata = mrg, fragm = fragm_CompDB,
-                      varsToParse = varsToParse, nameDB = "MoNA",
-                      lastRawDataUpdate = lastRawDataUpdate)
+                      varsToParse = varsToParse, nameDB = "MoNA")
 
     ###TEMPORARILY. we do not comtemplate DB union (check 10 to implement HERE)
     # ALSO elimina metabolits (amb funcio .removeRedundantCompounds()) i spectra duplicats. Només necesari quan juntem diferents
