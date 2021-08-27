@@ -188,7 +188,7 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         message("No consensus spectrum was obtained")
       }else{
         #consens the spectra
-        QRY <- .consens(QRY, massErrQRY, consComm)
+        QRY <- .consens(QRY,  massError = massErrQRY, consComm)
       }
       #LFT: leftovers, spectra not to annotate only to keep query spectra temporaly just for traceability of consensus formation
       rol2Annotate <- c(1, 2, 4)

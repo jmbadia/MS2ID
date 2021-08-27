@@ -29,13 +29,12 @@
 #'
 #' @noRd
 
-.cluster2Consens <- function(s, consCosThres = 0.8, massError){
+.cluster2Consens <- function(s, consCosThres = 0.8, ...){
    minScans <- 2 #min number of scans to form a consensus spectra
    # group spectra by mzprecuros
    mdataSplited <- s$Metadata
    mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
-                                      mdataSplited$precursorIntensity,
-                                      massError)
+                                      mdataSplited$precursorIntensity, ...)
    mdataSplited$still <- T #still not avaluated?
    mdataSplited <- group_split(mdataSplited, collisionEnergy, file,
                                precGroup, polarity) #divide in groups
@@ -127,12 +126,11 @@
 #' Consens spectra
 #'
 #' @param s list with spectra and metadata
-#' @param massErrorFrag
 #' @param minComm numeric(1) minimum ratio of mz presence in order to be present in the final consensus spectrum
 #'
 #' @return
 #' @noRd
-.consens <- function(s, massErrorFrag, minComm = 2/3){
+.consens <- function(s, minComm = 2/3, ...){
    #consensus spectra to be calculated
    toConsens <- s$Metadata$rol == 4L
    spectraRows <- rownames(s$Spectra[[1]])
@@ -140,15 +138,13 @@
       #First consens inner mode every spectrum
       spct2cns <- lapply(s2cons, function(x) .getFragments(s$Spectra, x))
       spct2cns <- lapply(spct2cns, function(spct){
-         .consensFragm(spct, massErrorFrag = massErrorFrag,
-                       mode = "innerSpectra")
+         .consensFragm(spct, mode = "innerSpectra", ...)
       })
       numSpectra <- length(spct2cns)
       #then, consens spectra
       spct2cns <- do.call(cbind, spct2cns)
-      spct2cns <- .consensFragm(spct2cns, massErrorFrag = massErrorFrag,
-                                minComm = minComm*numSpectra,
-                                mode = "interSpectra")
+      spct2cns <- .consensFragm(spct2cns, minComm = minComm*numSpectra,
+                                mode = "interSpectra", ...)
       rownames(spct2cns) <- spectraRows
       mzSort <- sort(spct2cns[1,], index.return = TRUE)$ix
       spct2cns <- spct2cns[, mzSort, drop = FALSE]
@@ -165,8 +161,7 @@
 #'
 #' @param mz numeric vector(n) of mz
 #' @param int numeric vector(n) with the mz intensities
-#' @param massError in ppm
-#'
+#' @param massError numeric(1) with the mass error in ppm in order to group masses
 #' @return numeric vector(n) with the group each mz belongs to
 #' @noRd
 .groupmz <- function(mz, int, massError){
@@ -246,14 +241,13 @@
 #' consens a spectrum or spectra
 #'
 #' @param spct spectrum or spectra (merged) to be consensued
-#' @param massErrorFrag
 #' @param minComm integer(1) rfering to minimum iterations of a mz in primal spectra in order to be present in the cosensus spectrum. Only considered in interSpectra mode
 #' @param mode 'innerSpectra' or 'interSpectra'. The former is to bin (sum up) close mz in a spectrum. The last finds common mz inter spectra.
 #'
 #' @return
 #' @noRd
-.consensFragm <- function(spct, massErrorFrag, minComm, mode){
-   groups <- .groupmz(spct[1,], spct[2,], massErrorFrag)
+.consensFragm <- function(spct, minComm, mode, ...){
+   groups <- .groupmz(spct[1,], spct[2,], ...)
    ngroups <- vapply(groups, function(x) sum(groups==x), FUN.VALUE = 3)
    if(mode == "innerSpectra"){
       grouped <- ngroups > 1
