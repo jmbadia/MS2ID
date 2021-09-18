@@ -78,7 +78,7 @@
             select(REFprecursorMz)
     }else
         return()
-    prec_mz <- unique(unlist(prec_mz))
+    prec_mz <- as.numeric(unique(unlist(prec_mz)))
 
     if(!is.na(prec_mz) & prec_mz != "unknown"){
         prec_int <- 100 #default
