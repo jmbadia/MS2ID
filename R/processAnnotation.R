@@ -8,14 +8,16 @@
 #' @param dist annotation results
 #' @param ms2id ms2id object with the reference library used
 #' @param qry query spectra
-#' @param mError Mass error specified by the user
+#' @param massErrMs1 numeric(1). Mass error to consider in operations with first spectrometer measures, e.g. infere adducts from precursor and natural mass
+#' @param massErrMs1 numeric(1). Mass error to consider in operations with non first spectrometer measures (typycally MS2), e.g. calculate common fragments in query - reference spectra pairs
 #' @param cmnNtMass boolean indicating if hits must be subsetted to those with
 #'  proposed adducts explaining the hit
 #' @param workVar arguments specified by the user in the annotate function.
 #'
 #' @return an Annot object with the results of the annotation
 #' @noRd
-.processAnnotation<- function(dist, ms2id, qry, lft, mError, cmnNtMass, workVar) {
+.processAnnotation<- function(dist, ms2id, qry, lft, massErrMs1, massErrMsn,
+                              cmnNtMass, workVar) {
     hits <- do.call(rbind, dist)
     hits$idQRYspect <- as.numeric(rep(names(dist),
                                       vapply(dist, nrow, FUN.VALUE = 3)))
@@ -45,7 +47,7 @@
     ionizTable <- qry$Metadata[match(hits$idQRYspect, qry$Metadata$idSpectra),
                                c("precursorMZ", "polarity")]
     ionizTable$Mmi <- REFcomp[match(hits$idREFcomp, REFcomp$id), "exactmass"]
-    hits$propAdduct <- .getAdducts(ionizTable, mError)
+    hits$propAdduct <- .getAdducts(ionizTable, massErrMs1)
 
     if(cmnNtMass){
         cmnNM <- !is.na(hits$propAdduct)
@@ -107,7 +109,7 @@
             unlist()
         tmpref <- REFspect$mz[match(hits$idREFspect[x], REFspect$id)] %>%
             unlist()
-        cmnM <- sum(!is.na(.matchMz(tmpqry, tmpref, mError)))
+        cmnM <- sum(!is.na(.matchMz(tmpqry, tmpref, massErrMsn)))
         return(cmnM)
     }, FUN.VALUE = 3)
 

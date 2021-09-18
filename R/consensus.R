@@ -19,7 +19,9 @@
 #'apex' found, until no spectrum remains in the table.
 #
 #' @param s list with spectra and metadata
-#' @param consCosThres numeric(1) with  the minimum cosine similarity two contiguous spectra must have to consens a spectrum.
+#' @param consCosThres numeric(1) with the minimum cosine similarity two contiguous spectra must have to consens a spectrum.
+#' @param massErrMs1 numeric(1) mass error in ppm. Considered in grouping spectra according its precursor mass
+#' @param massErrMsn numeric(1) mass error in ppm. Considered in grouping spectra according its similarity (group fragments subalgorithm)
 #'
 #' @return s with a new column in the metadata dataframe named 'sourceSpect'.
 #'   If the row corresponds to: a consensus spectrum, sourceSpect contains a
@@ -29,12 +31,13 @@
 #'
 #' @noRd
 
-.cluster2Consens <- function(s, consCosThres = 0.8, ...){
+.cluster2Consens <- function(s, consCosThres = 0.8, massErrMs1, massErrMsn){
    minScans <- 2 #min number of scans to form a consensus spectra
    # group spectra by mzprecuros
    mdataSplited <- s$Metadata
    mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
-                                      mdataSplited$precursorIntensity, ...)
+                                      mdataSplited$precursorIntensity,
+                                      massError = massErrMs1)
    mdataSplited$still <- T #still not avaluated?
    mdataSplited <- group_split(mdataSplited, collisionEnergy, file,
                                precGroup, polarity) #divide in groups
@@ -65,7 +68,7 @@
                idAdj <- x$idSpectra[adj]
                rowdf <- .matchFrag(s$Spectra[[as.character(idAp)]],
                                    s$Spectra[[as.character(idAdj)]],
-                                   massError)
+                                   massErrorFrag = massErrMsn)
                cos <- suppressMessages(
                   philentropy::distance(rowdf, method = "cosine")
                   )

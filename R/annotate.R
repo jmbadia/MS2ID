@@ -1,7 +1,5 @@
 #'
-#'@name Annotate
-#'
-#'@title Annotate spectra against a MS2ID library
+#' Annotate spectra against a MS2ID library
 #'
 #' \code{annotate} returns, for every query spectrum, a list of compound
 #' candidates from a reference library (\linkS4class{MS2ID} object). The
@@ -28,8 +26,9 @@
 #'   respectively. Finally, the function must return a numeric(1).
 #' @param metricFUNThresh numeric(1) threshold value of the metric defined by
 #'   the 'metricFUN' function.
-#' @param massErr numeric(1) with the mass error to consider when match masses, i.e. find spectra with common precursor masses or match spectra fragments prior cosinus similarity implementation
-#' @param massErrQRY numeric(1) with the mass error to consider in operations where only query spectra is involved (e.g. consensus spectrum formation). By  default massErrQRY = massErr
+#' @param massErrMs1 numeric(1). Mass error to consider in operations with first spectrometer measures, e.g.  in consensus formation, grouping query spectra according its precursor mass or, in reference spectra prefiltering, evaluate its precursor or neutral masses
+#' @param massErrMsn numeric(1) Mass error to consider in operations with non first spectrometer measures (typycally MS2). e.g. grouping fragments for consensus formation or distance similarity measures (tipically cosine)
+#'
 #' @param cmnFrags -Reference spectra filter- vector with 2 integers (m, n) limiting reference spectra. Reference spectra and query spectra must have at least m peaks in common among their top n most intense peaks
 #' @param cmnPolarity -Reference spectra filter- Boolean, a TRUE value limits
 #'   the reference spectra to those with the same polarity as the query
@@ -74,7 +73,7 @@
 annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metrics="cosine", metricsThresh= 0.8,
                      metricFUN, metricFUNThresh,
-                     massErr = 30, massErrQRY = massErr,
+                     massErrMs1 = 30, massErrMsn = 20,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
                      cmnPolarity = TRUE, predicted=NULL,
@@ -102,8 +101,8 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                   metricsThresh="numeric", metricFUNThresh="numeric",
                   noiseThresh="numeric", predicted="logical",
                   cmnPolarity= "logical", cmnPrecMass= "logical",
-                  cmnNeutralMass="logical", massErr="numeric",
-                  massErrQRY="numeric")
+                  cmnNeutralMass="logical",
+                  massErrMs1="numeric", massErrMsn="numeric")
 
     reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
     .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
@@ -134,11 +133,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         stop("'QRYdata' is a mandatory argument")
     if(noiseThresh < 0 | noiseThresh > 1)
         stop("'noiseThresh' is expected to be a number between 0 and 1")
-    if(massErr < 0)
-      stop("'massErr' is expected to be a positive number")
-    if(massErrQRY < 0)
-      stop("'massErrQRY' is expected to be a positive number")
-    if(missing(massErrQRY)) massErrQRY <- massErr
+    if(massErrMs1 < 0)
+      stop("'massErrMs1' is expected to be a positive number")
+    if(massErrMsn < 0)
+      stop("'massErrMsn' is expected to be a positive number")
 
     workVar <- mget(names(formals()), sys.frame(sys.nframe()))
     if(!is.character(workVar$QRYdata)) workVar$QRYdata <- "spectra object"
@@ -181,14 +179,14 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     if(consens){
       message("Obtaining consensus spectra ...")
       #cluster spectra to consens them
-
-      QRY <- .cluster2Consens(QRY, consCos, massError = massErrQRY)
+      QRY <- .cluster2Consens(s = QRY, consCosThres = consCos,
+                              massErrMs1 = massErrMs1, massErrMsn = massErrMsn)
 
       if(all(QRY$Metadata$rol != 4L)) {
         message("No consensus spectrum was obtained")
       }else{
         #consens the spectra
-        QRY <- .consens(QRY,  massError = massErrQRY, consComm)
+        QRY <- .consens(QRY,  massError = massErrMsn, consComm)
       }
       #LFT: leftovers, spectra not to annotate only to keep query spectra temporaly just for traceability of consensus formation
       rol2Annotate <- c(1, 2, 4)
@@ -218,7 +216,7 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
       idRef <- .queryMzIndex(QRYspct = Qspct, ms2idObj = MS2ID,
                              cmnFrags = cmnFrags)
       Qspct <- rbind(Qspct,
-                     error = Qspct["mass-charge", ] * massErr/1e6,
+                     error = Qspct["mass-charge", ] * massErrMsn/1e6,
                      intSpectr2 = 0)
       SQLwhereIndv <- vector()
         #apply polarity filter
@@ -230,9 +228,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         #apply precursor mass filter
         if(cmnPrecMass){
             minPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
-                (1 - massErr/1e6)
+                (1 - massErrMs1/1e6)
             maxPrecMass <- QRY$Metadata$precursorMZ[posMetadata] *
-                (1 + massErr/1e6)
+                (1 + massErrMs1/1e6)
             SQLwhereIndv <- .appendSQLwhere("precursorMz",
                                             c(minPrecMass, maxPrecMass),
                                             mode="BETWEEN",
@@ -242,8 +240,8 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         if(cmnNeutralMass){
           QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
                               QRY$Metadata$polarity[posMetadata])
-          QRYMmi_min <- QRYMmi * (1 - massErr/1e6)
-          QRYMmi_max <- QRYMmi * (1 + massErr/1e6)
+          QRYMmi_min <- QRYMmi * (1 - massErrMsn/1e6)
+          QRYMmi_max <- QRYMmi * (1 + massErrMsn/1e6)
           subSQLwhereMmi <- .appendSQLwhere("exactmass",
                                             c(min(QRYMmi_min), max(QRYMmi_max)),
                                             mode="BETWEEN")
@@ -313,9 +311,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         return()
     }
     message("Processing results obtained ...")
-    rslt <- .processAnnotation(dist = distances, ms2id = MS2ID , qry = QRY,
-                               lft = LFT,
-                               mError = massErr,
+    rslt <- .processAnnotation(dist = distances, ms2id = MS2ID ,
+                               qry = QRY, lft = LFT,
+                               massErrMs1 = massErrMs1, massErrMsn = massErrMsn,
                                cmnNtMass = cmnNeutralMass, workVar = workVar)
     return(rslt)
 }
