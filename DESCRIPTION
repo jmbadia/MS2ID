@@ -39,20 +39,23 @@ Imports:
     DT,
     ggplot2,
     shinyFiles,
-    shinyjs
+    shinyjs,
+    glue
 Collate: 
     'AllGenerics.R'
     'Annot.R'
     'Annot-methods.R'
-    'CdDb2MS2ID.R'
     'MS2ID.R'
     'SQL-utility-tools.R'
     'adduct-utility-functions.R'
     'annotate.R'
     'app.R'
+    'basicMS2IDstrct.R'
     'bigMemory-utility-tools.R'
     'checkTypes.R'
     'consensus.R'
+    'createMS2ID.R'
+    'customValues.R'
     'export2df.R'
     'export2xlsx.R'
     'loadSpectra.R'
