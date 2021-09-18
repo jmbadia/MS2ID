@@ -17,7 +17,7 @@
     stop("'data' is a mandatory argument")
   #check types
   reqClasses <- c(nsamples="integer")
-  .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
+  .checkTypes(as.list(match.call(expand.dots = FALSE))[-1], reqClasses)
   if (!is.null(nsamples))
     if (nsamples < 1)
       stop("'nsamples' is expected to be a natural number > 0")
