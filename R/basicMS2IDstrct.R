@@ -4,23 +4,37 @@
 #' @param fragm list where each item is a MS2 spectra. Row order must match with metadata row order
 #' @param varsToParse dataframe with the MS2ID variable names as rownames, the BD original names and the type. Must match with the columns of the metadata
 #' @param nameDB char(1) with the name we want for the DB we are parsing
+#' @param numCmp int(1) number of compounds in the original DB
+#' @param numMs int(1) number of spectra in the original DB
 #' @noRd
-.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB) {
+.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB,
+                             numCmp, numMs)
+  {
   #rename variables with MS2ID names
   MS2IDname <- match(colnames(metadata), varsToParse$originalNames)
   colnames(metadata)[!is.na(MS2IDname)] <-
     varsToParse$MS2IDname[MS2IDname[!is.na(MS2IDname)]]
+  included <- colnames(metadata)[!is.na(MS2IDname)]
+  message(glue::glue("
+    \nInput metadata considered:\n \\
+    {glue::glue_collapse(included, ', ', last = ' and ')}"))
   if(any(is.na(MS2IDname)))
-    warning(paste("Following metadata variables are not considered in MS2ID",
-                  "and they will be discarted: ",
-                  paste(colnames(metadata)[is.na(MS2IDname)], collapse = ", ")))
-
-  if(!all(varsToParse$MS2IDname %in% varsToParse$originalNames))
-    warning(paste("The following MS2ID variables have not been found in",
-                "metadata argument and they will not be included: ",
-                paste(varsToParse$MS2IDname
-                      [!varsToParse$MS2IDname %in% colnames(metadata)],
-                      collapse =", ")))
+  {
+    notIncluded <- colnames(metadata)[is.na(MS2IDname)]
+    message(glue::glue("
+    \nInput metadata discarded:\n \\
+    {glue::glue_collapse(notIncluded, ', ', last = ' and ')}\\
+    (variables not covered by the MS2ID class)"))
+  }
+  if(!all(varsToParse$MS2IDname %in% varsToParse$originalNames)){
+    notIncluded <- varsToParse$MS2IDname[
+      !varsToParse$MS2IDname %in% colnames(metadata)]
+    message(glue::glue("
+     \nInput metadata not present:\n \\
+     {glue::glue_collapse(notIncluded, ', ', last = ' and ')}\\
+     (variables covered by the MS2ID class but not present in the\\
+     input metadata)"))
+  }
 
   #remove not considered variables (even spectrum_id, which we do not need anymore)
   metadata <- metadata[,!is.na(MS2IDname)]
@@ -42,7 +56,7 @@
   }
 
   #0. Check & repair----------------
-  message("\nChecking & repairing data------\n")
+  message("\nChecking & repairing data------")
 #remove entries with NA spectra
 NASpectra <- is.na(fragm)
 metadata <- metadata[!NASpectra,]
@@ -55,8 +69,9 @@ showNA <- paste(round(100*na_count/nrow(metadata)),"%")# % each variable's NA)
 names(showNA) <- names(na_count)
 message(paste("NA presence on every variable:\n", .print_and_capture(showNA)))
 
+message("\n-------- 2/n. REDUNDANT DATA --------")
 #1.Obtain ID_compound-------------------
-message(paste("\nIdentifying repeated metabolites------\n"))
+message("\nRedundant metabolites------")
 # IF INCHIKEY!=NA every unique inchikey means a different ID_compound
 #ELSE for every metabolite a different ID_compound
 
@@ -69,11 +84,15 @@ metadata$ID_compound[!is.na(metadata$inchikey)] <- as.numeric(inchies_fact[!is.n
 
 #"IT HAS NOT inchikey" CASE
 metadata$ID_compound[is.na(metadata$inchikey)] <- max(metadata$ID_compound, na.rm = TRUE)+seq_len(sum(is.na(metadata$inchikey)))
-
+metadata$ID_compound <- as.integer(metadata$ID_compound)
+message(glue::glue("
+{numCmp - length(unique(metadata$ID_compound))} out of {numCmp} \\
+metabolites are redundant and will be eliminated
+                   "))
 #2. Identify repeated spectra----------------
-message("\nIdentifying repeated spectra------\n")
+message("\nRedundant spectra------")
 metadata$ID_spectra <- NA
-#Look for duplicated spectra
+#Look for redundant spectra
 list_posEspectresduplicats <- .redundantSpectra(listfrag = fragm)
 if(length(list_posEspectresduplicats) == 0){
   initVal <- 0
@@ -82,7 +101,7 @@ if(length(list_posEspectresduplicats) == 0){
   #Pq no volem que quan filtrem per una d'aquestes variables, no hi sigui un espectre que hem eliminat per duplicitat
   #La funcio considera_varespdist() funciona amb ID_spectras i aqui encara no els tenim. Fem servir les posicions com a pseudo ID_spectras
   #substituim posicions pels seus ID_spectras (pq encara no els hem posat)
-  message("Analyzing distinctive spectral variables\n")
+  message("Analyzing distinctive spectral variables")
 
   list_posEspectresduplicats_VED <- .applyDistintVars(
     listidespectre_EspDupli = list_posEspectresduplicats,
@@ -104,40 +123,37 @@ metadata$ID_spectra[toassign] <- initVal + seq_along(which(toassign))
 metadata$ID_spectra <- as.integer(metadata$ID_spectra)
 fragments <- list(ID_spectra = metadata$ID_spectra, spectra = fragm)
 rm(fragm)
-metadata$ID_compound <- as.integer(metadata$ID_compound)
-
+message(glue::glue("
+{numMs - length(unique(metadata$ID_spectra))} out of {numMs} \\
+spectra are redundant and will be eliminated
+                   "))
 #3. Restructure data into DF-------
-message("\nRestructuring and sieving data ------\n")
 metadata$ID_db <- nameDB
 #_3.1 DF Relacional Espectre-Metabolit -------------------------
 spectraCompounds <- metadata[, c("ID_spectra","ID_compound")]
-temporalvalue <- nrow(spectraCompounds)
 #Remove duplicated relations Spectra-Metabolite
 spectraCompounds <- distinct(spectraCompounds)
-message("Relational dataframe spectraCompounds goes from ", temporalvalue, " rows to ", nrow(spectraCompounds) )
 
 #_3.2_DF MetaMetabolits-------------------------
 compounds <- metadata[,
                     c("ID_compound", "ID_db",
                       rownames(varsToParse)[varsToParse$type=="metaboliteVar"])]
-num_metabolits_original <- nrow(compounds)
 compounds <- distinct(compounds, ID_compound, .keep_all = TRUE)
 
-message(paste("Due to duplicated inchikeys, we reduced metabolites number from ",num_metabolits_original,"to",nrow(compounds),"rows"))
-
 #_3.3 DF MetaEspectres-------------------------
-spectra<-metadata[,c("ID_spectra","ID_db",rownames(varsToParse)[varsToParse$type=="spectraVar"])]
-num_espectres_original <- nrow(spectra)
+spectra <- metadata[ , c("ID_spectra","ID_db",
+                         rownames(varsToParse)[varsToParse$type=="spectraVar"])]
 spectra <- distinct(spectra, ID_spectra, .keep_all = TRUE)
 notRepeatedIDspect <- !duplicated(fragments$ID_spectra)
 fragments$ID_spectra <- fragments$ID_spectra[notRepeatedIDspect]
 fragments$spectra <- fragments$spectra[notRepeatedIDspect]
 
-message(paste("Due to having identical spectras & var_espectrals_distintives, we reduced the spectra number from",num_espectres_original,"to", nrow(spectra),"rows"))
 
 #_3.4_DF BD-------------------------
 lastupdate <- format(Sys.time(), "%Y%m%d_%H%M%S")
-originalDB <- data.frame(ID_db= unique(metadata$ID_db), lastModification=Sys.Date(), lastRawDataUpdate = lastupdate)
+originalDB <- data.frame(ID_db = unique(metadata$ID_db),
+                         lastModification = Sys.Date(),
+                         lastRawDataUpdate = lastupdate)
 
 return(list(spectraCompounds = spectraCompounds, spectra = spectra,
             compounds = compounds, originalDB = originalDB,
@@ -224,9 +240,6 @@ return(list(spectraCompounds = spectraCompounds, spectra = spectra,
 
   #MERGE redundant spectra
   listidentFragm <- c(listfrag_n1, listfrag_n2)
-  message(glue::glue("
-          {length(unlist(listidentFragm))-length(listidentFragm)} of //
-                     {length(listfrag)} spectra are redundants"))
   return(listidentFragm)
 }
 
