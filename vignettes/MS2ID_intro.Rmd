@@ -26,13 +26,51 @@ if(!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("jmbadia/MS2ID", build_vignettes = TRUE, force=T)
 ```
 
-## Simple annotation of query spectra
-First, load as MS2ID object your reference library; the only argument need it is a path to the db files (see #section on how to obtain those files from open database repositories).
-```{r setup, eval = FALSE}
-library(MS2ID)
-libraryDir <- "resources/MS2ID_B2R_20201113_083214"
-refLibrary <- MS2ID(libraryDir)
+## Introduction
+Conceptually, MS2ID package is structured on three steps:   
+  
+1. **Creating an in-house MSn spectra library** as a *M2ID* object  
+-- MS2IDdirectory <- createMS2ID(Mona, ...)
+2. **Annotating MSn query spectra** against an MS2ID object, obtaining as a result an *Annot* object   
+-- MS2IDobject <- MS2ID(MS2IDdirectory)    
+-- AnnotObject <- annotate(querySpectra, MS2IDobject, ...)   
+3. **Browsing the results** using the MS2ID GUI interface (based on Shiny)  
+-- MS2IDgui(AnnotObject)    
+
+## MS2ID creation
+The createMS2ID() function takes as necessary argument MS/MS spectral data. This data can be obtained from publicly available resources such as HMDB, ChEBI and PubChem or any personal library by using the [CompoundDB package](https://euracbiomedicalresearch.github.io/CompoundDb/index.html), developed by Johannes Rainer and Jan Stanstrup.  Here we parse a small portion of the HMDB following [the corresponding CompoundDb vignette](https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-hmdb-1).
+```{r CompDbFormation, cache=TRUE}
+library(CompoundDb)
+workDir <- tempdir()
+
+## Locate the compounds file
+hmdb_file <- system.file("sdf/HMDB_sub.sdf.gz", package = "CompoundDb")
+cmps <- compound_tbl_sdf(hmdb_file)
+## Locate the xml files
+xml_path <- system.file("xml", package = "CompoundDb")
+spctra <- msms_spectra_hmdb(xml_path)
+#configure metadata  
+metad <- make_metadata(source = "HMDB", url = "http://www.hmdb.ca",
+                       source_version = "4.0", source_date = "2017-09",
+                       organism = "Hsapiens")
+#obtain compdb object
+db_file <- createCompDb(cmps, metadata = metad, msms_spectra = spctra,
+                        path = workDir)
+cmpdb <- CompDb(db_file)
 ```
+The creation of the MS2ID backend is pretty straightforward
+```{r MS2IDcreation, cache=TRUE}
+library(MS2ID)
+MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, overwrite = TRUE)
+```
+## Annotation
+The createMS2ID() function takes as necessary argument MS/MS spectral data. This data can be obtained from publicly available resources such as HMDB, ChEBI and PubChem or any personal library by using the [CompoundDB package](https://euracbiomedicalresearch.github.io/CompoundDb/index.html), developed by Johannes Rainer and Jan Stanstrup.  Here we parse a small portion of the HMDB following [the corresponding CompoundDb vignette](https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-hmdb-1).
+```{r annot}
+
+```
+
+A simple annotation only requires a MS2
+
 
 A simple annotation only requires a MS2ID object like the former and the location of the query spectra. However, for preliminary attempts, it is also advised to limit the annotation to a number of randomized scans with the nsamples `argument`.
 ```{r SimpleAnnotation, eval = FALSE}
@@ -41,7 +79,6 @@ annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, nsamples = 100)
 ```
 
 The resulting variable (e.g. `annotResult`) is an Annot object (see [proper page](results.html)).
-
 ## Annotation with different metrics
 As a default, annotate function use cosine similarity as a metric to compare two spectra; also, its default threshold value to beat in order to consider the comparison a hit is 0.8.  
 The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered successful when at least one of the metrics exceeds its threshold value.
