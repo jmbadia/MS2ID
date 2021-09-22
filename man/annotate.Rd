@@ -12,8 +12,8 @@ annotate(
   metricsThresh = 0.8,
   metricFUN,
   metricFUNThresh,
-  massErr = 30,
-  massErrQRY = massErr,
+  massErrMs1 = 30,
+  massErrMsn = 20,
   noiseThresh = 0.01,
   cmnPrecMass = FALSE,
   cmnNeutralMass = TRUE,
@@ -49,9 +49,9 @@ respectively. Finally, the function must return a numeric(1).}
 \item{metricFUNThresh}{numeric(1) threshold value of the metric defined by
 the 'metricFUN' function.}
 
-\item{massErr}{numeric(1) with the mass error to consider when match masses, i.e. find spectra with common precursor masses or match spectra fragments prior cosinus similarity implementation}
+\item{massErrMs1}{numeric(1). Mass error to consider in operations with first spectrometer measures, e.g.  in consensus formation, grouping query spectra according its precursor mass or, in reference spectra prefiltering, evaluate its precursor or neutral masses}
 
-\item{massErrQRY}{numeric(1) with the mass error to consider in operations where only query spectra is involved (e.g. consensus spectrum formation). By  default massErrQRY = massErr}
+\item{massErrMsn}{numeric(1) Mass error to consider in operations with non first spectrometer measures (typycally MS2). e.g. grouping fragments for consensus formation or distance similarity measures (tipically cosine)}
 
 \item{noiseThresh}{A numeric defining the threshold used in the noise
 filtering of the query spectra, considered as \% intensity relative to base
