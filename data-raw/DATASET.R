@@ -1,4 +1,6 @@
-## code to prepare `DATASET` dataset goes here
+##CODE to prepare `DATASET` for calculate adducts
+
+#A. Code to obtain 'adducts' dataset------------------
 #load adducts table (enviPat)
 adducts <- readRDS("data-raw/adductsTable.rds")
 # change positive or negative polarity with usual terms (1 or 0)
