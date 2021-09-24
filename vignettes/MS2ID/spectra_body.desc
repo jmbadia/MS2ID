@@ -1,5 +1,0 @@
-new("big.matrix.descriptor", description = list(sharedType = "FileBacked", 
-    filename = "spectra_body.bin", dirname = "./MS2ID/", totalRows = 2L, 
-    totalCols = 23L, rowOffset = c(0, 2), colOffset = c(0, 23
-    ), nrow = 2, ncol = 23, rowNames = c("mass-charge", "intensity"
-    ), colNames = NULL, type = "double", separated = FALSE))
