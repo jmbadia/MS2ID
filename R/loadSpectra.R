@@ -171,6 +171,5 @@ return(result)
   # Apply same ID to metadata spectra and metadata matrix
   mtdata <- cbind(idSpectra = seq_len(nrow(mtdata)), mtdata)
   names(spctra) <- seq_len(nrow(mtdata))
-
   return(list(Metadata = mtdata, Spectra = spctra))
 }
