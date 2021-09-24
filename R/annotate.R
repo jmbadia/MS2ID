@@ -76,8 +76,8 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      massErrMs1 = 30, massErrMsn = 20,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
-                     cmnPolarity = TRUE, predicted=NULL,
-                     consens=T, consCos=0.8, consComm=2/3,
+                     cmnPolarity = TRUE, predicted = NULL,
+                     consens=TRUE, consCos=0.8, consComm=2/3,
                      ...){
   argmnts <- c(as.list(environment()), list(...))
   if(is.na(QRYmsLevel)) QRYmsLevel <- NULL
@@ -278,9 +278,7 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
             suppressMessages(philentropy::distance(rowdf, method = iM))
           }, FUN.VALUE = 3.2)
           if(metFun){
-            rsltM <- c(
-              rsltM,
-              metricFunc = metricFUN(Qspct[c("mass-charge","intensity"), ], a))
+            rsltM <- c(rsltM, metricFunc = metricFUN(rowdf))
           }
           return(rsltM)
         })
