@@ -78,8 +78,8 @@ Using the previous object as argument, the creation of the MS2ID object is prett
 
 ```{r MS2IDcreation}
 library(MS2ID)
-MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, overwrite = TRUE,
-                              path = wrkDir)
+MS2IDdirectory <- createMS2ID(cmpdb = cmpdb,
+                              overwrite = TRUE, path = wrkDir)
 ```
 By default, `createMS2ID` checks `cmpdb` object for redundant compounds or MS/MS spectra and removes them. Visit the help documentation for more information.  
 
@@ -97,7 +97,7 @@ annotResult <- annotate(QRYdata = queryFolder, MS2ID = refLibrary)
 ```
 The resulting variable `annotResult` is an `Annot` object that contains the annotation results. We can subset its content by applying them *getters* (custom functions to get the info) or save the whole object (`saveRDS` function is recommended) for further analysis ([more info](annotate.html#annot)). 
 
-Annotate function offers more features such as prefiltering of the reference spectra library or different similarity metrics. Please, feel free to check them in its own [vignette](annotate.html#annot).  
+Annotate function offers more features such as prefiltering of the reference spectra library or different similarity metrics. Please, feel free to check them in its own [vignette](annotate.html).  
 
 ## Browsing the results {#results}
 The annotation results can be browsed by using  

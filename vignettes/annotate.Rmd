@@ -55,8 +55,8 @@ db_file <- createCompDb(cmps, metadata = metad, msms_spectra = spctr,
                         path = cmpdbDir)
 cmpdb <- CompDb(db_file)
 library(MS2ID)
-MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, overwrite = TRUE,
-                              path = wrkDir)
+MS2IDdirectory <- createMS2ID(name = "MS2ID_annotVign", cmpdb = cmpdb,
+                              overwrite = TRUE, path = wrkDir)
 ```
 
 The following example shows the basic usage of the function `annotate.` It takes advantage of tools developed in the `r Biocpkg("Spectra")` package [@Spectra] to subset query spectra according to their retention time and MSLevel; please note that direct loading mzML files is also possible.  
