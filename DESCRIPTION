@@ -4,7 +4,7 @@ Title: High-throughput MS/MS annotation using an unique in house database
 Version: 0.0.1
 Authors@R: 
     person(given = "Josep M.",
-           family = "Badia Aparicio",
+           family = "Badia",
            role = c("aut", "cre"),
            email = "josepmaria.badia@urv.cat",
            comment = c(ORCID = "0000-0002-5704-1124"))
@@ -69,6 +69,7 @@ Collate:
     'utils-pipe.R'
     'zzz.R'
 Suggests: 
+    BiocStyle, 
     knitr,
     rmarkdown
 VignetteBuilder: knitr

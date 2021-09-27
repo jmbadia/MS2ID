@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MS2ID</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.0.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
       </span>
     </div>
 
@@ -84,6 +84,9 @@
   </a>
 </li>
 <li>
+  <a href="../articles/MS2ID.html">Get started</a>
+</li>
+<li>
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
@@ -94,10 +97,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/MS2ID_intro.html">Introduction to MS2ID</a>
-    </li>
-    <li>
-      <a href="../articles/results.html">Annot object: Working with results</a>
+      <a href="../articles/annotate.html">Annotate query spectra</a>
     </li>
   </ul>
 </li>
@@ -154,20 +154,33 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="Annotate.html">annotate()</a></code> </p>
-        </td>
-        <td><p>Annotate spectra against a MS2ID library
-
-<code>annotate</code> returns, for every query spectrum, a list of compound
-candidates from a reference library (MS2ID object). The
-criteria relies on compare every query spectrum with reference spectra using
-distance metrics.</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="MS2ID.html">MS2ID()</a></code> </p>
         </td>
         <td><p>In-house database for high-throughput MS/MS annotation</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="annotate.html">annotate()</a></code> </p>
+        </td>
+        <td><p>Annotate spectra against a MS2ID library</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="createMS2ID.html">createMS2ID()</a></code> </p>
+        </td>
+        <td><p>Create a MS2ID object</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="dot-MS2IDcols.html">.MS2IDcols</a></code> </p>
+        </td>
+        <td><p>Vector of custom colors</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="dot-colCons.html">.colCons</a></code> </p>
+        </td>
+        <td><p>Vector of CONS colors</p></td>
       </tr><tr>
         
         <td>
@@ -189,7 +202,7 @@ distance metrics.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by Josep M. Badia Aparicio.</p>
+  <p>Developed by Josep M. Badia.</p>
 </div>
 
 <div class="pkgdown">

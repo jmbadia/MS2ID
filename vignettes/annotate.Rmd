@@ -1,24 +1,35 @@
 ---
 title: "Annotate query spectra"
-output: rmarkdown::html_vignette
+output:
+    BiocStyle::html_document:
+        toc_float: true
+bibliography: references.bib
 vignette: >
-  %\VignetteIndexEntry{Annot object: Working with results}
+  %\VignetteIndexEntry{Annotate query spectra}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignettePackage{MS2ID}
+  %\VignetteDepends{MS2ID, CompoundDb, Spectra, BiocStyle}
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
+```{r style, echo = FALSE, results = 'asis', message = FALSE}
+BiocStyle::markdown()
 ```
-*This vignette describe in detail the function `annotate`. It is advised a previous reading of the MS2ID introduction.  
+
+**Authors**: `r packageDescription("MS2ID")[["Author"]] `<br />
+**Last modified:** `r file.info("MS2ID.Rmd")$mtime`<br />
+**Compiled**: `r date()`
+
+```{r, echo = FALSE, message = FALSE}
+library(MS2ID)
+library(BiocStyle)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, eval = TRUE)
+```
+*This vignette describe in detail the `annotate` function. It is advised a previous reading of the [MS2ID introduction](MS2ID.html).  
 
 ## Introduction  
-`annotate()` is the MS2ID function that annotates MS/MS query spectra. That is, every query spectrum is compared with a reference library, and compounds with similar spectrum are listed.
 
-Annotation function requires a reference library as MS2ID object, as described in the more general vignette Introduction to MS2ID vignette. 
+`annotate` is the MS2ID function that annotates MS/MS query spectra; every query spectrum is compared with a reference library, and compounds with a similar spectrum are listed. This function requires an MS2ID reference library, as described in [MS2ID introduction](MS2ID.html); next code recalls how to obtain it: 
 ```{r CompDbFormation, message=FALSE, cache=TRUE}
 library(CompoundDb)
 wrkDir <- tempdir()
@@ -48,7 +59,7 @@ MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, overwrite = TRUE,
                               path = wrkDir)
 ```
 
-The following example shows basic usage of the function annotate taking advantage of tools developed in the Spectra package; please note that directly loading mzML files is also possible.  
+The following example shows the basic usage of the function `annotate.` It takes advantage of tools developed in the `r Biocpkg("Spectra")` package [@Spectra] to subset query spectra according to their retention time and MSLevel; please note that direct loading mzML files is also possible.  
 
 ```{r SimpleAnnotation, message=FALSE}
 library(utils, Spectra, MS2ID)
@@ -62,26 +73,68 @@ querySpectra <- querySpectra %>%
 refLibrary <- MS2ID(MS2IDdirectory)
 annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary)
 ```
-The annotate() function returns an Annot object.  
+The `annotate` function returns an `Annot`  object.  
 
-## Annot object
+## Annot object {#annot}
 This object stores the annotation so we can:
 
-* Browse graphically results with the MS2Igui() function.
-* Export them to an xlsx file by using the export2xlsx() function
-* Extract particular content by applying them *getters* (custom functions to *get* the info).
-    + **hits()**: returns a cross-reference dataframe containing the hits along with their proposed adducts and common masses.
-    + **qrySpectra()**: returns an Spectra object (see [Spectra](https://www.bioconductor.org/packages/release/bioc/html/Spectra.html) package) containing the query spectra with hits.
-    + **refSpectra()**: returns an Spectra object with the successful reference spectra.
-    + **refCompound()**: returns a dataframe containing (reference) compound metadata of successful reference spectra.
-    + **infoAnnotation()**: returns the variables used on the annotation process.
+* Browse graphically the results with the `MS2IDgui` function.
+* Export all the data as an xlsx file by using the `export2xlsx` function.
+* Extract any content by using the following *getters* (custom functions to *get* the info).
+    + `hits()`: Returns a cross-reference data frame containing the annotation hits, the id of the spectra and compounds and:  
+        - *propAdduct*: the proposed adduct that would match the query precursor mass with the neutral mass of the reference compound. 
+        - *cmnMasses*: Number of fragments in common between the query and the reference spectrum
+    + `qrySpectra()`: returns an `Spectra` object (`r Biocpkg("Spectra")` package) containing both successful query and consensus spectra (and their source spectra) (see [consensus spectra](#consensus)).
+    + `refSpectra()`: returns an `Spectra` object (`r Biocpkg("Spectra")` package) with the reference spectra present in the *hits* table.
+    + `refCompound()`: returns a data frame containing metadata of the reference compounds present in the *hits* table.
+    + `infoAnnotation()`: variables used on the `annotate` function.
 
-## Consensus stuff  
-Lorum ipsum.
+In the example below, we use `r Biocpkg("Spectra")` tools to browse the annotation results, although it is more advisable to use the visual browsing provided by the `MS2IDgui` function.    
+```{r mergeresult, message=FALSE}
+#merge hits and compound info
+result <- merge(x = hits(annotResult), y = refCompound(annotResult), 
+                by.x = "idREFcomp", by.y = "id", all.y = FALSE)
+head(result)
+```
+
+```{r getters, message=FALSE}
+library(Spectra)
+#Subset spectra and metadata considering first hit query spectra
+idQRYspect_1 <- result$idQRYspect[1]
+result_1 <- dplyr::filter(result, idQRYspect  == idQRYspect_1)
+qrySpct_1 <- qrySpectra(annotResult)
+qrySpct_1 <- qrySpct_1[qrySpct_1$id %in% result_1$idQRYspect]
+refSpct_1 <- refSpectra(annotResult)
+refSpct_1 <- refSpct_1[refSpct_1$id %in% result_1$idREFspect]
+#compare query spectrum with its first hit reference spectrum
+refSpct_draw <- refSpct_1[1]
+refSpct_draw$intensity <- refSpct_draw$intensity/max(refSpct_draw$intensity)
+qrySpct_1$intensity <- qrySpct_1$intensity/max(qrySpct_1$intensity)
+plotSpectraMirror(qrySpct_1, refSpct_draw)
+```
+
+## Consensus spectra {#consensus}
+As a default, `annotate` function tries to summarize adjacent MS/MS spectra into consensus spectra: the resulting consensus spectra will be annotated instead of the query spectra that summarizes (along with the query spectra non able to be consensued). This strategy diminishes artifacts and noise and reduce significantly the annotation time.  
+A group of **adjacent** query spectra is considered *source* for a consensus spectrum when all of them have the same precursor mass, collision energy and polarity. Also, every query spectrum must be similar (cosine > `consCos` argument) to the apex spectrum of the group. The resulting consensus spectrum will be formed by the fragments present in the majority of the source query spectra (ratio determined by the `consComm` argument).  
+The final `annot` object will contain not only the query spectra and the consensus spectra that succeeded in the annotation (i.e. with hits), but also the query spectra used to form the successful consensus spectra. Although it is recommended to use the MS2IDgui feature to elucidate the nature of the query spectra, it is also possible to check it by analyzing some of the variables contained in the `annot` object.  
+
+* When the spectrum is a consensus spectrum, *spectrumId_CONS* and *rtime_CONS* variables show the id and the retention time of its source query spectra.
+* *rol* is an integer that makes explicit the nature of the spectrum:  
+    + 1: query spectrum not grouped so it does not form consensus.  
+    + 2: query spectrum grouped but not similar to the apex spectrum; it does not form consensus.  
+    + 3: query spectrum source for a consensus spectrum.  
+    + 4: consensus spectrum.  
+    
+The algorithm will not annotate the spectra with rol=3.
+```{r consensus, message=FALSE}
+qrySpct <- qrySpectra(annotResult)
+#shor query data concerning consensus formation
+head(spectraData(qrySpct, c("id", "spectrumId_CONS", "rtime_CONS", "rol")))
+```
 
 ## Subsetting the reference library
-In annotation, subsetting the reference library not only reduces significantly the computing time (taking advantage of the MS2ID backend and the fragments index); it also prunes the result and cuts off non-sense hits. For example, the `cmnFrags = (m, n)` argument limits the reference spectra so that it is fulfilled that reference spectra and query spectra have at least m peaks in common among their top n most intense peaks,
-In addition, the `cmnPrecMass` argument limits the reference spectra to those that have the same precursor mass as the query spectrum. And `cmnNeutralMass` will keep only those with a neutral mass that matches some of the plausible neutral masses of the query (considering the query precursor mass and all possible adducts).
+In annotation, subsetting the reference library not only reduces the computing time significantly -by taking advantage of the MS2ID backend and the fragments index: it also prunes the result and cuts off non-sense hits. For example, the `cmnFrags = (m, n)` argument limits the reference spectra so that reference spectra and query spectra have at least m peaks in common among their top n most intense peaks.  
+In addition, the `cmnPrecMass` argument limits the reference spectra to those with the same precursor mass as the query spectrum. On the other hand, `cmnNeutralMass` limits reference spectra to those with a neutral mass plausible with the query precursor (considering all possible adducts).
 ```{r subsetting, eval=FALSE}
 annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, 
                         cmnFrags = (3, 5),
@@ -89,11 +142,11 @@ annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary,
                         cmnPolarity = TRUE, nature = "experimental")
 ```
 
-Other arguments subset the reference library according its nature or the polarization of the reference spectra (`predicted` and `cmnPolarity` respectively).
+Other arguments subset the reference spectra according to their polarization or experimental nature (`cmnPolarity` and `predicted`, respectively).
 
 ## Annotation with different metrics
-As a default, annotate function use cosine similarity as a metric to compare two spectra; also, its default threshold value to beat in order to consider the comparison a hit is 0.8.  
-The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics exceeds its threshold value. Note that *to beat* a threshold value has a different meaning depending on the metric. *Topsoe* and *squared_chord* metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value will be lower than its threshold. 
+As a default, the annotate function uses cosine similarity as a metric to compare two spectra; its default threshold value to beat to consider the comparison a hit is 0.8.  
+The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics exceeds its threshold value. **Note that *to beat* a threshold value has a different meaning depending on the metric**: *topsoe* and *squared_chord* metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value is lower than its threshold. 
 ```{r diffMetrics, echo=TRUE, message=FALSE}
 annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary,
                         metrics = c("fidelity", "cosine", "topsoe"),
@@ -101,7 +154,7 @@ annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary,
 head(MS2ID::hits(annotResult))
 ```
 
-Moreover, the user can define its own metric by declaring a function as an argument, along with its threshold value; in the following example, foo function uses cosine+1 as a distance metric. 
+Moreover, **the user can define its own metric** by declaring a function as an argument; in the following example, `foo` function uses cosine+1 as a distance metric.
 ```{r fooAnnotation, echo=TRUE, message=FALSE}
 foo <- function(finalMatrix){
   vector1 <- finalMatrix[1,]
@@ -112,9 +165,12 @@ foo <- function(finalMatrix){
   names(CosplusOne) <- "CosplusOne"
   return(CosplusOne)
 }
+
 annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary,
                         metrics = c("cosine"), metricsThresh = c(0.8),
                         metricFUN = foo, metricFUNThresh = 1.8)
 head(MS2ID::hits(annotResult))
 ```
+
+## References
 

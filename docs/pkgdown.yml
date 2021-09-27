@@ -2,7 +2,7 @@ pandoc: 2.11.4
 pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
-  MS2ID_intro: MS2ID_intro.html
-  results: results.html
-last_built: 2021-07-30T11:49Z
+  MS2ID: MS2ID.html
+  annotate: annotate.html
+last_built: 2021-09-27T17:13Z
 

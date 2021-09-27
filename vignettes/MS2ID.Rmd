@@ -1,0 +1,116 @@
+---
+title: "Introduction to MS2ID"
+output:
+    BiocStyle::html_document:
+        toc_float: true
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Introduction to MS2ID}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignettePackage{MS2ID}
+  %\VignetteDepends{MS2ID, CompoundDb, Spectra, BiocStyle}
+---
+
+```{r style, echo = FALSE, results = 'asis', message = FALSE}
+BiocStyle::markdown()
+```
+
+**Authors**: `r packageDescription("MS2ID")[["Author"]] `<br />
+**Last modified:** `r file.info("MS2ID.Rmd")$mtime`<br />
+**Compiled**: `r date()`
+
+```{r, echo = FALSE, message = FALSE}
+library(MS2ID)
+library(BiocStyle)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, eval = FALSE)
+```
+## Introduction
+MS2ID aims to fast annotate query MS/MS spectra straightforwardly with minimum RAM requirements by using an in-house database. With this in mind, `MS2ID` object keeps all data in a on disk backend based on `r CRANpkg("RSQLite")` and `r CRANpkg("bigmemory")` packages and indexes all spectrum fragments in a table.  
+Conceptually, MS2ID workflow is structured on three steps:   
+
+1. [Creating an in-house MSn spectra library](#creation) as a `M2ID` object  
+   + MS2IDdirectory <- createMS2ID(Mona, ...)
+2. [Annotating MSn query spectra](#annotation) against an MS2ID object, obtaining as a result an `Annot` object   
+    + MS2IDobject <- MS2ID(MS2IDdirectory)    
+    + AnnotObject <- annotate(querySpectra, MS2IDobject, ...)   
+3. [Browsing the results](#results) using the MS2ID GUI interface based on Shiny  
+    + MS2IDgui(AnnotObject)    
+    
+## Installation
+
+You can download the development version from GitHub with:
+
+```{r installation, eval = FALSE}
+if(!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
+devtools::install_github("jmbadia/MS2ID", build_vignettes = TRUE, force=T)
+```
+
+## MS2ID creation {#creation}
+The `createMS2ID` function takes as necessary argument MS/MS spectral data. This data can be obtained from publicly available resources such as HMDB, ChEBI and PubChem or any personal library through the `r Biocpkg("CompoundDb")` package [@CompoundDB].  Here we parse a small portion of MoNA (206 MS/MS spectra) following the CompoundDB [vignette](https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-mona-1).
+```{r CompDbFormation}
+library(CompoundDb)
+wrkDir <- tempdir()
+## Locate the compounds file
+MoNAsubset <- system.file("extdata/MoNAsubset.sdf.gz", package = "MS2ID")
+cmps <- compound_tbl_sdf(MoNAsubset)
+spctr <- msms_spectra_mona(MoNAsubset, collapsed = TRUE)
+spctr$predicted <- FALSE
+#configure metadata  
+metad <- data.frame(
+        name = c("source", "url", "source_version","source_date"),
+        value = c("MoNA", "https://mona.fiehnlab.ucdavis.edu/downloads",
+                  "v1", '07-09')
+    )
+#obtain compdb object
+cmpdbDir <- file.path(wrkDir, "cmpdbDir")
+if(dir.exists(cmpdbDir)){
+  do.call(file.remove, list(list.files(cmpdbDir, full.names = TRUE)))
+}else{
+  dir.create(cmpdbDir)
+}
+db_file <- createCompDb(cmps, metadata = metad, msms_spectra = spctr,
+                        path = cmpdbDir)
+cmpdb <- CompDb(db_file)
+```
+Using the previous object as argument, the creation of the MS2ID object is pretty straightforward.  
+
+```{r MS2IDcreation}
+library(MS2ID)
+MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, overwrite = TRUE,
+                              path = wrkDir)
+```
+By default, `createMS2ID` checks `cmpdb` object for redundant compounds or MS/MS spectra and removes them. Visit the help documentation for more information.  
+
+## Annotation {#annotation}
+A simple annotation only requires an `MS2ID` object like the former and query spectra. In the example following, query spectra are provided in mzML format (three mzML files, 2235 MS/MS spectra total). Still, the function also supports `Spectra` objects from the `r Biocpkg("Spectra")` package [@Spectra].  
+By default, the annotation process summarizes query spectra into consensus spectra according to their similarity and neighbouring; this speeds up the algorithm and reduces the noise. Please, consult the [annotation vignette](annotate.html#consensus) for more information.
+
+```{r SimpleAnnotation}
+library(utils)
+queryFile <- system.file("extdata/Met1.zip", package = "MS2ID")
+queryFolder <- file.path(wrkDir, "QRYspectra")
+utils::unzip(queryFile, exdir = queryFolder)
+refLibrary <- MS2ID(MS2IDdirectory)
+annotResult <- annotate(QRYdata = queryFolder, MS2ID = refLibrary)
+```
+The resulting variable `annotResult` is an `Annot` object that contains the annotation results. We can subset its content by applying them *getters* (custom functions to get the info) or save the whole object (`saveRDS` function is recommended) for further analysis ([more info](annotate.html#annot)). 
+
+Annotate function offers more features such as prefiltering of the reference spectra library or different similarity metrics. Please, feel free to check them in its own [vignette](annotate.html#annot).  
+
+## Browsing the results {#results}
+The annotation results can be browsed by using  
+
+
+- The `export2xlsx` function to export the annotation results to an excel file
+
+- The `MS2Igui` function, which allows to compare graphically both query and reference spectra. Please note that using `MS2IDgui` function with no arguments pops up the interface with no annotation data. Visit the 'About' page in MS2IDgui for more information.  
+
+```{r ms2idgui, eval = FALSE}
+MS2IDgui(annotResult)
+```
+
+![MS2ID GUI interface](MS2IDgui.png){width=100%}  
+
+## References

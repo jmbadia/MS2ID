@@ -78,7 +78,7 @@ mass-charge index." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MS2ID</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.0.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
       </span>
     </div>
 
@@ -91,6 +91,9 @@ mass-charge index." />
   </a>
 </li>
 <li>
+  <a href="../articles/MS2ID.html">Get started</a>
+</li>
+<li>
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
@@ -101,10 +104,7 @@ mass-charge index." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/MS2ID_intro.html">Introduction to MS2ID</a>
-    </li>
-    <li>
-      <a href="../articles/results.html">Annot object: Working with results</a>
+      <a href="../articles/annotate.html">Annotate query spectra</a>
     </li>
   </ul>
 </li>
@@ -137,14 +137,14 @@ mass-charge index." />
     <div class="ref-description">
     <p>The `MS2ID` class encapsulates a MS2 spectra database along with its metadata.
 Its internal structure allows to annotate query spectra - with the
-<code><a href='Annotate.html'>annotate</a></code> function - using big spectra databases at high speed
+<code><a href='annotate.html'>annotate</a></code> function - using big spectra databases at high speed
 and low RAM requirements (typically 100 query spectra/min against a 1M5
 spectra library). MS2ID class uses a SQLite database with the metadata and
 bigmemory files to  store the spectra (i.e. peaks matrices) and their
 mass-charge index.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>MS2ID</span><span class='op'>(</span><span class='va'>ms2idFile</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>MS2ID</span><span class='op'>(</span><span class='va'>ms2idFolder</span><span class='op'>)</span></pre>
 
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
@@ -176,7 +176,7 @@ name or any bigmemory file names)</p>
 
       <footer>
       <div class="copyright">
-  <p>Developed by Josep M. Badia Aparicio.</p>
+  <p>Developed by Josep M. Badia.</p>
 </div>
 
 <div class="pkgdown">
