@@ -70,8 +70,8 @@ querySpectra <- Spectra::Spectra(dir(queryFolder, full.names = TRUE))
 querySpectra <- querySpectra %>%
   Spectra::filterMsLevel(2) %>% 
   Spectra::filterRt(c(100, 400))
-refLibrary <- MS2ID(MS2IDdirectory)
-annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary)
+MS2IDobj <- MS2ID(MS2IDdirectory)
+annotResult <- annotate(QRYdata = querySpectra, MS2ID = MS2IDobj)
 ```
 The `annotate` function returns an `Annot`  object.  
 
@@ -134,21 +134,21 @@ head(spectraData(qrySpct, c("id", "spectrumId_CONS", "rtime_CONS", "rol")))
 
 ## Subsetting the reference library
 In annotation, subsetting the reference library not only reduces the computing time significantly -by taking advantage of the MS2ID backend and the fragments index: it also prunes the result and cuts off non-sense hits. For example, the `cmnFrags = (m, n)` argument limits the reference spectra so that reference spectra and query spectra have at least m peaks in common among their top n most intense peaks.  
-In addition, the `cmnPrecMass` argument limits the reference spectra to those with the same precursor mass as the query spectrum. On the other hand, `cmnNeutralMass` limits reference spectra to those with a neutral mass plausible with the query precursor (considering all possible adducts).
+In addition, the `cmnPrecMass` argument limits the reference spectra to those with the precursor mass of the query spectrum. On the other hand, `cmnNeutralMass` limits reference spectra to those with a neutral mass plausible with the query precursor (considering all possible adducts).
 ```{r subsetting, eval=FALSE}
-annotResult <- annotate(QRYdir = queryDir, MS2ID = refLibrary, 
+annotResult <- annotate(QRYdir = queryDir, MS2ID = MS2IDobj, 
                         cmnFrags = (3, 5),
                         cmnPrecMass = TRUE, cmnNeutralMass = TRUE, 
-                        cmnPolarity = TRUE, nature = "experimental")
+                        cmnPolarity = TRUE, predicted = FALSE)
 ```
 
-Other arguments subset the reference spectra according to their polarization or experimental nature (`cmnPolarity` and `predicted`, respectively).
+Other arguments subset the reference spectra according its experimental nature or the query spectrum polarization (`predicted` and `cmnPolarity`, respectively).
 
 ## Annotation with different metrics
 As a default, the annotate function uses cosine similarity as a metric to compare two spectra; its default threshold value to beat to consider the comparison a hit is 0.8.  
-The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics exceeds its threshold value. **Note that *to beat* a threshold value has a different meaning depending on the metric**: *topsoe* and *squared_chord* metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value is lower than its threshold. 
+The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics fulfills its threshold value. **Note that *to fulfill* a threshold value has a different meaning depending on the metric**: *topsoe* and *squared_chord* metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value is lower than its threshold. 
 ```{r diffMetrics, echo=TRUE, message=FALSE}
-annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary,
+annotResult <- annotate(QRYdata = querySpectra, MS2ID = MS2IDobj,
                         metrics = c("fidelity", "cosine", "topsoe"),
                         metricsThresh = c(0.6, 0.8, 0.6))
 head(MS2ID::hits(annotResult))
@@ -166,7 +166,7 @@ foo <- function(finalMatrix){
   return(CosplusOne)
 }
 
-annotResult <- annotate(QRYdata = querySpectra, MS2ID = refLibrary,
+annotResult <- annotate(QRYdata = querySpectra, MS2ID = MS2IDobj,
                         metrics = c("cosine"), metricsThresh = c(0.8),
                         metricFUN = foo, metricFUNThresh = 1.8)
 head(MS2ID::hits(annotResult))
