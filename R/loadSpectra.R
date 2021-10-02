@@ -87,15 +87,15 @@ return(result)
     )
   possibleCols <- possibleCols[possibleCols %in% intersect(
     unlist(possibleCols),
-    spectraVariables(spectra)
+    Spectra::spectraVariables(spectra)
   )]
-  mtdata <- spectra %>% spectraData() %>%
+  mtdata <- spectra %>% Spectra::spectraData() %>%
     as.data.frame() %>%
     rename(retentionTime = rtime, file = dataOrigin,
            precursorMZ = precursorMz, !!!possibleCols) %>%
     select(!dataStorage)
   mtdata$file <- basename(mtdata$file)
-  spctra <- lapply(peaksData(spectra), function(idxsp) {
+  spctra <- lapply(Spectra::peaksData(spectra), function(idxsp) {
     colnames(idxsp) <- c('mass-charge', 'intensity')
     t(idxsp)
   })
