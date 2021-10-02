@@ -11,7 +11,7 @@
 #'\code{\link{annotate}} function - using big spectra databases at high speed
 #'and low RAM requirements (typically 100 query spectra/min against a 1M5
 #'spectra library). MS2ID class uses a SQLite database with the metadata and
-#'bigmemory files to  store the spectra (i.e. peaks matrices) and their
+#'bigmemory files to store the spectra (i.e. peaks matrices) and their
 #'mass-charge index.
 #'
 #'@details
@@ -20,17 +20,30 @@
 #'providing the path where the library files are (i.e. SQL file
 #'name or any bigmemory file names)
 #'
-#'@section General functions: \itemize{ \item `MS2ID()`: Constructor of a MS2ID
-#'  object. \item `annotate()`: function to annotate query spectra against a
-#'  MS2ID library }
+#' @section General functions: \itemize{ \item `MS2ID()`: Constructor of a MS2ID
+#'  object.}
 #'
-#'@author Josep M. Badia
+#' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
 NULL
 
-#' @importFrom methods new
+#' The MS2ID class
 #'
+#' An S4 class to represent a reference library.
+#'
+#'
+#' @slot dbcon A DBIConnection object with the MSQL data
+#' @slot spectracon A big.matrix object with the spectra data
+#' @slot mzIndexcon A big.matrix object with index of fragments
+#' @slot .properties A list with properties of the class
+#'
+#' @name Spectra-class
+#' @docType class
+#' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
+#'
+#' @importFrom methods new
 #' @importClassesFrom bigmemory big.matrix
 #' @exportClass MS2ID
+#' @noRd
 .MS2ID <- setClass("MS2ID",
                     slots = c(dbcon = "DBIConnection",
                               spectracon= "big.matrix",
@@ -68,11 +81,16 @@ setValidity("MS2ID", function(object) {
     if (length(txt)) txt else TRUE
 }
 
+# CReatto ot he clase
+#
+#' @param ms2idFolder character(1) with the directory's path containing the
+#'   MS2ID files
+#'
 #' @export
 #' @rdname MS2ID
 #' @importFrom DBI dbDriver
 #' @importFrom RSQLite dbConnect
-MS2ID <- function(ms2idFolder) { #must be the directory's path containing the MS2ID files
+MS2ID <- function(ms2idFolder) {
     if (missing(ms2idFolder))
         stop("Argument 'ms2idFolder' is required")
     if (!file.exists(ms2idFolder))
@@ -98,3 +116,28 @@ MS2ID <- function(ms2idFolder) { #must be the directory's path containing the MS
     ms2idObj <- .MS2ID(dbcon=SQLx, spectracon= bigM_s, mzIndexcon= bigM_mzI)
     return(ms2idObj)
 }
+
+#' @rdname MS2ID
+#'
+#' @importFrom DBI dbGetQuery
+#' @importMethodsFrom methods show
+#'
+#' @exportMethod show
+setMethod("show", "MS2ID",
+          function(object) {
+              crossRef <- dbGetQuery(object@dbcon,
+                                     "SELECT * FROM crossRef_SpectrComp")
+              cat("MS2ID spectra library (", class(object)[1L],
+                  ") \nContains: ", length(unique(crossRef$ID_compound)),                        " compounds / ", length(unique(crossRef$ID_spectra)),
+                  " spectra\n", sep = "")
+              props <- dbGetQuery(object@dbcon,
+                                  "SELECT * FROM dbOriginal")
+              rdUpdate <- strptime(props$lastRawDataUpdate, "%Y%m%d_%H%M%S")
+              rdUpdate <- as.character(rdUpdate)
+              lastMod <- as.POSIXct(props$lastModification*24*60*60,
+                                    origin = "1970-01-01", tz="UTC")
+              lastMod <- as.character(lastMod)
+              cat("Database original: ", props$ID_db,
+                  "\nLast raw data update: ", rdUpdate,
+                  "\nLast modification: ", lastMod, "\n", sep = "")
+          })

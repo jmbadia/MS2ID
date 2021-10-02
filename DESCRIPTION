@@ -71,5 +71,6 @@ Collate:
 Suggests: 
     BiocStyle, 
     knitr,
+    CompoundDb,
     rmarkdown
 VignetteBuilder: knitr
