@@ -10,9 +10,11 @@
 #' @noRd
 
 .checkTypes <- function(values, types){
-    b <- match(names(values), names(types))
-    for(i in which(!is.null(b))){
-        .checkType(values[[i]], types[b[i]])
+    notPresent <- vapply(values, is.null, FUN.VALUE = TRUE) | is.na(values)
+    values <- values[!notPresent]
+    types <- types[match(names(values), names(types))]
+    for(i in seq_along(values)){
+        .checkType(values[[i]], types[i])
     }
 }
 
@@ -31,17 +33,26 @@
     if(is.name(value)){ #when argument has no value
         return()
     }else if(type=="integer" & is.numeric(value)){
-        if(as.integer(value) != value) pchunk <- "integer"
+        if(as.integer(value) != value) pchunk <- "type integer"
     }else if(type=="integer"){
-        pchunk <- "integer"
+        pchunk <- "type integer"
     }else if(type=="numeric" & !is.numeric(value)){
-        pchunk <- "integer or numeric"
+        pchunk <- "type integer or numeric"
     }else if(type=="logical" & !is.logical(value)){
-        pchunk <- "logical (TRUE or FALSE)"
+        pchunk <- "type logical (TRUE or FALSE)"
+    }else if(type=="dataframe" & !is.data.frame(value)){
+        pchunk <- "type data frame"
     }else if(type=="character" & !is.character(value)){
-        pchunk <- "character"
+        pchunk <- "type character"
+    }else if(type=="MS2ID" & !is(value, "MS2ID")){
+        pchunk <- "class MS2ID"
+    }else if(type=="Annot" & !is(value, "Annot")){
+        pchunk <- "class Annot"
+    }else if(type=="function" & !is.function(value)){
+        pchunk <- "type function"
     }
     if(exists("pchunk")){
-        stop(paste0("'", names(type),"' argument is expected to be ", pchunk))
+        stop(paste0("'", names(type),"' argument is expected to be of ",
+                    pchunk))
     }
 }
