@@ -1,13 +1,13 @@
 .getFormText <- function(type = "info", varList){
     switch (type,
         info = glue::glue("
-        Use the <i>Settings</i> section to load a results file (e.g. <a \\
-        href=https://rovira-my.sharepoint.com/:u:/g/personal/39879942-n_\\
-        epp_urv_cat/ERSapzHJPIBNgTxxYYKqqZsBMoWKj3ag99l-TqZOXDK43Q?e=PchTkL \\
-        target='_blank'>this sample</a>) and configure. Once the \\
-        Identifications table (right panel) is loaded, select a query spectrum\\
-        (by clicking a row) and check its QRY vs REF spectra plot (<i>\\
-        Identific.</i> tab) or the consensus formation (<i>Consens.</i> tab).
+        Use the <i>Settings</i> section to load a rds file with an Annot \\
+        object (e.g. AnnotSample.rds hosted in \\
+        <a href=https://doi.org/10.5281/zenodo.5561324 target='_blank'> \\
+        Zenodo</a>). Once the \\
+        annotations table (right panel) is loaded, select a row (query
+        spectrum) and check its QRY vs REF spectra plot (<i>\\
+        QRY/REF</i> tab) or its consensus formation (<i>Cons.</i> tab).
                           "),
         consens = glue::glue("
         <br><font color=\"#00786C\"><b>This query consensus spectrum</b> \\
@@ -57,7 +57,7 @@
             text = paste('</br>m/z: ', x ,'</br>i: ', round(y, 2))
         ),
         colour = colour
-        )
+    )
 }
 
 .draw_precursor <- function(df, mtdt, mtdtShw, nature = "qry"){
