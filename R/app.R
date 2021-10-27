@@ -1,12 +1,75 @@
+#' @title Browse visually an Annot object
+#'
+#' @description
+#' \code{MS2IDgui} is a Shiny app that visually browses the annotation results stored in an \linkS4class{Annot} object. The \linkS4class{Annot} object can be loaded as an argument or directly from the user interface.
+#'
+#' @details
+#' The user interface has two panels. The \strong{right panel} lists the loaded
+#' annotations as rows in a table; when one of them is clicked, the \strong{left
+#' panel} responds by displaying the figures related to the selection:
+#' \itemize{\item Tab QRY/REF: The figure compares the query (green) and the
+#' reference (red) spectrum, with fragments in common (considering the
+#' massErrorMSn argument) in a brighter colour; if present, precursor masses are
+#' pointed out with a triangular symbol. Also, the bottom description shows the
+#' inchikey of the reference compound and a link to a Pubchem's page listing
+#' compounds with that inchikey.\item Tab Cons.: If the annotation has a
+#' consensual query spectrum, this sub-panel displays a figure with the query
+#' spectra that form it..}
+#' The \strong{left panel} also has two more tabs with general features:
+#' \itemize{\item Tab Home: Contains a control to load rds files (with
+#' \linkS4class{Annot} object). \item Tab Info: Lists the arguments used in the
+#' \code{\link{annotate}} function that resulted in the present
+#' \linkS4class{Annot} object.}
+#' Concerning the \strong{right panel}, it must be noted:
+#' The \itemize{\item \code{mzML file} and \code{precursor M/z} controls filter
+#' the annotations based in the query mzML file and the precursor mass of the
+#' query spectrum, respectively. Also, the \code{redundant annotation} option
+#' summarizes the annotations displaying only, for every query spectrum, the
+#' best annotation per compound. \item Every row corresponds to an annotation in
+#' the table, and different annotations of the same spectrum have identical row
+#' colours. \item Column names that contain QRY, REF or CONS refer to query,
+#' reference or consensus entities, respectively. e.g. \code{QRYprecursorMz}
+#' contains the precursor M/z of the query spectra, \code{REFadduct} the adducts
+#' of the reference spectra and \code{QRYrtime_CONS} the retention times of the
+#' query spectra that conform every consensus spectrum. \item The column
+#' \code{massNum} refers to the number of fragments of the query spectrum
+#' (green), the reference spectrum (red) and the number of fragments in common
+#' (black). Similarly, the column \code{collisionEnergy} shows the collision
+#' energy of the query (green) and reference (red) spectra. \item
+#' \code{REFinchikey} shows the inchikey of the reference compound and links to
+#' a Pubchem's page with a list of compounds that shares that inchikey. \item
+#' \code{ppmPrecMass} refers to the difference, in ppm, between query and
+#' reference precursor masses.}
+#'
+#' @param annot \linkS4class{Annot} object with the results to be browsed. By
+#'   default (no argument), the function opens the browser with no data and the
+#'   \linkS4class{Annot} object can be loaded using the user interface.
+#' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
+#' @seealso \linkS4class{Annot} class and \code{\link{annotate}} function.
+#' @example man/examples/loadMS2ID.R
+#' @example man/examples/selectQuerySpectra.R
+#' @examples
+#'
+#' ## ANNOTATION ---
+#' library(MS2ID)
+#' MS2IDlib <- MS2ID(MS2IDFolder)
+#' annotResult <- annotate(QRYdata = queryFolder, MS2ID = MS2IDlib)
+#'
+#' ## Browse visually the results---
+#' \dontrun{
+#' MS2IDgui(annotResult)
+#' }
+#'
 #' @import ggplot2
 #' @import shiny
-#' @importFrom shinyjs useShinyjs hidden toggle
+#' @importFrom shinyjs useShinyjs hidden hide toggle
 #' @export
 MS2IDgui <- function(annot){
     if(!missing(annot)){
-        if(is(annot, "Annot"))
+        if(is(annot, "Annot")){
             .GlobalEnv$.jmb.rawAnnotSh <- annot
-        else
+            nameAnnotObj <- as.list(match.call()[-1])$annot
+            }else
             stop("'annot' argument is expected to be an Annot object")
     }
     #on.exit(rm(.jmb.rawAnnotSh, envir=.GlobalEnv))
@@ -34,7 +97,7 @@ MS2IDgui <- function(annot){
                                 h4("Intro"), hr(),
                                 htmlOutput("info"), br(),
                                 h4("Settings"), hr(),
-                                fileInput("lotFile", "Upload a results file",
+                                fileInput("lotFile", "Upload an Annot object",
                                           multiple = FALSE, accept = c(".rds")
                                           ),
                                 ),
@@ -86,7 +149,7 @@ MS2IDgui <- function(annot){
                         tags$hr(),
                         fluidRow(
                             column(4, selectInput('ffile', 'mzML file', NULL)),
-                            column(2, selectInput('UNKprec', 'precursor MZ ',
+                            column(2, selectInput('UNKprec', 'precursor M/z ',
                                                   NULL, width=120)),
                             column(6, br(), br(),
                                    checkboxInput('reduntID',
@@ -98,8 +161,12 @@ MS2IDgui <- function(annot){
                     ),
                 )
             ),
-        tabPanel("About")
+        tabPanel("About",
+                 HTML("
+                 <h3>About</h3>
+                 MS2IDgui is a Shiny app that visually browses the annotation results stored in an Annot object. Use the help available from the Help menu in R (help(MS2IDgui)) or visit <a href='https://jmbadia.github.io/MS2ID/articles/MS2ID.html'>the vignette</a> of the MS2ID package."))
         )
+
 
     server <- function(input, output, session) {
         observe({
@@ -133,9 +200,9 @@ MS2IDgui <- function(annot){
                 infoAnnot = infoAnnotation(lot)
                 )
             dt$mtdt <- dt$mtdt %>%
-                mutate_each(funs(replace(., is.na(.), "unknown")),
-                            c("QRYdataOrigin", "QRYprecursorMz"))
-            dt$mtdt$massNum <- paste0(
+                tidyr::replace_na(list(QRYdataOrigin="unknown",
+                                       QRYprecursorMz="unknown"))
+                dt$mtdt$massNum <- paste0(
                 .customColor(dt$mtdt$QRYmassNum, "qry"), '/',
                 dt$mtdt$cmnMasses,
                 '/', .customColor(dt$mtdt$REFmassNum, "ref")
@@ -173,9 +240,8 @@ MS2IDgui <- function(annot){
                 #remove SOME empty columns
                 select(propAdduct |
                            where(~ !(all(is.na(.)) | all(. == "")))) %>%
-                select(sort(current_vars())) %>%
+                select(sort(names(.))) %>%
                 relocate(visiblVar[visiblVar %in% names(dt$mtdt)])
-            #%>%relocate(QRYacquisitionNum, .before = QRYrtime)
             #set columns visibility default
             colVisibles <<- names(dt$mtdt) %in% visiblVar
             return(dt)
@@ -250,7 +316,12 @@ MS2IDgui <- function(annot){
             )
 
         output$subheaderTable <- renderText(
-            paste(h3(paste("Annotations in", input$lotFile$name)))
+            if(exists(".jmb.rawAnnotSh", envir=.GlobalEnv)){
+                paste(h3(paste0("Annotations in '", nameAnnotObj, "' variable"))
+                      )
+            }else{
+                paste(h3("Please, load an Annot object"))
+            }
         )
 
         output$infoTabId <- renderText({
@@ -304,7 +375,8 @@ MS2IDgui <- function(annot){
             df1 <- .getSpectra2plot(rd$refSpctr, mtdtShow$idREFspect)
             df2 <- .getSpectra2plot(rd$qrySpctr, mtdtShow$idQRYspect)
             #only mz with hits
-            mMz <- .matchMz(df2$x, df1$x, isolate(rawdata()$infoAnnot$massErr))
+            mMz <- .matchMz(df2$x, df1$x,
+                            isolate(rawdata()$infoAnnot$massErrMsn))
             hits1 <- !is.na(mMz)
             hits2 <- rep(FALSE, nrow(df2))
             hits2[mMz[hits1]] <- TRUE
@@ -369,15 +441,21 @@ MS2IDgui <- function(annot){
             if(exists(".jmb.rawAnnotSh", envir=.GlobalEnv)){
                 req(input$lotFile)
                 rm(.jmb.rawAnnotSh, envir=.GlobalEnv)
-                }
+            }
+            input$lotFile$name
+            output$subheaderTable <- renderText(
+                paste(h3(paste0("Annotations in '", input$lotFile$name,
+                               "' file")))
+            )
         })
 
         observeEvent(input$ffile, {
             freezeReactiveValue(input, "UNKprec")
             fileSel <- rawdata()$mtdt$QRYdataOrigin == input$ffile
             precSel <- unique(rawdata()$mtdt$QRYprecursorMz[fileSel])
-            if(is.numeric(precSel))
-                precSel <- round(sort(precSel), precDigits)
+            names <- suppressWarnings(as.numeric(precSel))
+            if(!anyNA(precSel))
+                names(precSel) <- round(names, precDigits)
             updateSelectInput(session, inputId = 'UNKprec',
                               choices = precSel)
             })
