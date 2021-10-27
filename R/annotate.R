@@ -12,6 +12,15 @@
 #'   character(1) with the directory name containing the mzML files.
 #' @param MS2ID \linkS4class{MS2ID} object with the in-house database to use in
 #'   the annotation.
+#' @param QRYmsLevel integer(1). This argument filters the query spectra loaded
+#'   from mzML files according their msLevel.
+#' @param consens boolean(1) indicating if the query spectra must be consensued
+#'   or not.
+#' @param consCos numeric(1) with the minimum cosine similarity two
+#'   contiguous spectra must have to consens a spectrum.
+#' @param consComm numeric(1) During the consensus formation, minimum presence of
+#'   m/z in the query spectra in order to be part of the final consensus
+#'   spectrum.
 #' @param noiseThresh numeric(1) defining the threshold used in the noise
 #'   filtering of the query spectra. It is expressed as \% intensity relative to
 #'   base peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of less
@@ -59,16 +68,19 @@
 #' @param cmnNeutralMass -Reference spectra filter- Boolean filtering the
 #'   reference spectra to those with a neutral mass plausible with the query
 #'   precursor (considering all possible adducts).
-#' @param nsamples integer(1) defines a subset of x random query spectra to work
-#'   with. Useful for speeding up preliminary testing before definitive
-#'   annotation, it is not compatible with the consensus formation.
+#' @param ... other arguments passed to function
 #'
 #' @return an \linkS4class{Annot} object with the results of the annotation
+#' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
+#' @seealso \linkS4class{Annot} class and the post annotation tools
+#'   \code{\link{MS2IDgui}} and \code{\link{export2xlsx}}.
 #' @export
+#' @example man/examples/loadMS2ID.R
+#' @example man/examples/selectQuerySpectra.R
 #' @example man/examples/annotate.R
 annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metrics="cosine", metricsThresh= 0.8,
-                     metricFUN, metricFUNThresh,
+                     metricFUN = NULL, metricFUNThresh = NULL,
                      massErrMs1 = 5, massErrMsn = 20,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
@@ -94,12 +106,12 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
 
     #check argument types
   reqClasses <- c(MS2ID="MS2ID", QRYmsLevel = "integer",
-                  metricsThresh="numeric", metricFUNThresh="numeric",
+                  metricsThresh="numeric",
+                  metricFUN = "function", metricFUNThresh="numeric",
                   noiseThresh="numeric", predicted="logical",
                   cmnPolarity= "logical", cmnPrecMass= "logical",
                   cmnNeutralMass="logical",
                   massErrMs1="numeric", massErrMsn="numeric")
-
     reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
     .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
 
@@ -114,12 +126,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     if(length(metrics) != length(metricsThresh))
       stop("'metricsThresh' must contain a value for every metric included
              in the argument 'metrics'")
-    if(!missing(metricFUN)){
-      if(!is.function(metricFUN))
-        stop("'metricFUN' argument is expected to be a function")
-      if(missing(metricFUNThresh))
-        stop(paste("A numeric is expected in 'metricFUNThresh' when metricFUN",
-                   "argument is used is expected to a numeric "))
+    if(!is.null(metricFUN)){
+      if(is.null(metricFUNThresh))
+        stop(glue::glue("A numeric is expected in 'metricFUNThresh' when  \\
+                        metricFUN argument is used"))
       metFun <- TRUE
       metricsThresh <- c(metricsThresh, metricFUNThresh)
       decrMet <- c(decrMet, F)
@@ -182,7 +192,7 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         message("No consensus spectrum was obtained")
       }else{
         #consens the spectra
-        QRY <- .consens(QRY,  massError = massErrMsn, consComm)
+        QRY <- .consens(QRY, massError = massErrMsn, minComm= consComm)
       }
       #LFT: leftovers, spectra not to annotate only to keep query spectra temporaly just for traceability of consensus formation
       rol2Annotate <- c(1, 2, 4)
@@ -204,13 +214,14 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                                      whereVector = SQLwhereGen)
     }
     message("Solving distance metrics between query and reference spectra ...")
-
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
       Qspct <- QRY$Spectra[[idQspctr]]
       idRef <- .queryMzIndex(QRYspct = Qspct, ms2idObj = MS2ID,
                              cmnFrags = cmnFrags)
+      #return if query spectrum has no targeted db spectra
+      if(length(idRef) == 0) return(NA)
       Qspct <- rbind(Qspct,
                      error = Qspct["mass-charge", ] * massErrMsn/1e6,
                      intSpectr2 = 0)
@@ -232,31 +243,41 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                                             mode="BETWEEN",
                                             whereVector=SQLwhereIndv)
         }
-
         if(cmnNeutralMass){
           QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
                               QRY$Metadata$polarity[posMetadata])
           QRYMmi_min <- QRYMmi * (1 - massErrMsn/1e6)
           QRYMmi_max <- QRYMmi * (1 + massErrMsn/1e6)
-          subSQLwhereMmi <- .appendSQLwhere("exactmass",
+          #FIND compounds with spectra=IDref
+          subSQL_IdComp <- .appendSQLwhere("ID_spectra", idRef,
+                                            mode="IN")
+          idRef2 <- .getSQLrecords(MS2ID, select="ID_compound, ID_spectra",
+                                     from = "crossRef_SpectrComp",
+                                     where = subSQL_IdComp)
+          subSQLwh <- .appendSQLwhere("ID_compound",
+                                      unique(idRef2$ID_compound),
+                                      mode="IN")
+          subSQLwh <- .appendSQLwhere("exactmass",
                                             c(min(QRYMmi_min), max(QRYMmi_max)),
-                                            mode="BETWEEN")
+                                            mode="BETWEEN",
+                                            whereVector = subSQLwh)
           idRefMmi <- .getSQLrecords(MS2ID,
                                      select="ID_compound, exactmass",
                                      from="metaCompound",
-                                     where = subSQLwhereMmi)
-          idRefMeta <- idRefMmi$ID_compound[vapply(idRefMmi$exactmass,
+                                     where = subSQLwh)
+          if(nrow(idRefMmi) == 0) return(NA)
+          idRefComp <- idRefMmi$ID_compound[vapply(idRefMmi$exactmass,
                                                    function(ix)
             any(ix > QRYMmi_min & ix < QRYMmi_max), FUN.VALUE = T)]
-          subSQLwhereMmi <- .appendSQLwhere("ID_compound", idRefMeta,
-                                            mode="IN")
-          idRefMmi <- .getSQLrecords(MS2ID, select="ID_spectra",
-                                     from = "crossRef_SpectrComp",
-                                     where = subSQLwhereMmi)
-          idRef <- intersect(idRef, unlist(idRefMmi))
+          if(length(idRefComp) == 0) return(NA)
+          # idRef <- idRef2$ID_spectra[match(idRefComp, idRef2$ID_compound)]
+          idRef <- idRef2$ID_spectra[idRef2$ID_compound %in% idRefComp]
         }
+        #return if query spectrum has no targeted db spectra
+        if(length(idRef) == 0) return(NA)
+
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
-                                        whereVector=SQLwhereIndv)
+                                        whereVector = SQLwhereIndv)
         idRef <- .getSQLrecords(MS2ID, "ID_spectra", "metaSpectrum",
                                 c(SQLwhereGen, SQLwhereIndv))
 
