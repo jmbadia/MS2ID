@@ -1,17 +1,25 @@
 #' Extract metadata from an annotation object in dataframe format
 #'
 #' @param anRslt Annot object with the results to be exported
-#' @param noCmnNeutralMassDist numeric(1) with a distance threshold to subset Non common neutral mass results.
-#' @param metric char(1) with the name of the metric that must subset (according to the distance threshold) and order the identifications.
+#' @param metric,metricThresh char(1) and numeric(1) with the metric (and its
+#'   threshold respectively) that subsets annotations on the final excel file.
+#'   \code{metric} parameter is also used to sort the annottations.
 #' @param summarizeHits boolean(1) if TRUE, resulting dataframe keeps only the best hits of every query spectra - Compound pair.
 #' @param file char(1) name (with path) of the exported file
 #' @param overwrite boolean(1) If TRUE, overwrite any existing file.
 #' @noRd
 #'
 #' @import dplyr
-.export2df <- function(anRslt, noCmnNeutralMassDist, metric = "cosine",
-                       summarizeHits = TRUE, ...){
-    #TODO CHECK ARGUMENTS
+.export2df <- function(anRslt, metric = "cosine", metricThresh,
+                       summarizeHits = TRUE){
+    #CHECK ARGUMENTS
+    argmnts <- c(as.list(environment()))
+    reqClasses <- c(anRslt = "Annot", summarizeHits = "logical",
+                    metric = "character", metricThresh = "numeric")
+    reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
+    .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
+    if(missing(anRslt))
+        stop("'anRslt' argument is mandatory")
     if(length(metric)!=1){
         stop("'metric' must contain ONE string")
     }else if(!(metric %in% c(INCRMETRIC, DECRMETRIC))){
@@ -22,10 +30,9 @@
     if(!(metric %in% names(hits)))
        stop(paste0("Metric '", metric, "' not found in the annotation object"))
 
-    if(!missing(noCmnNeutralMassDist)){
-        filtVal <- hits[, metric] >= noCmnNeutralMassDist |
-            !is.na(hits$propAdduct)
-        hits <- hits[filtVal,]
+    if(!missing(metricThresh)){
+        filtVal <- hits[, metric] >= metricThresh
+        hits <- hits[filtVal, ]
     }
 
     #summarize if asked for
@@ -63,16 +70,17 @@
     if(!all(is.na(ppmPrecMass)))
         anRslt$ppmPrecMass <- round(ppmPrecMass, 1)
     #sort columns
-    mainVar <- c("QRYprecursorMz", "QRYrtime", "QRYacquisitionNum",
-        "QRYacquisitionNum_CONS", "REFexactmass","propAdduct","REFadduct",
-        "REFprecursorMz", "ppmPrecMass", INCRMETRIC, DECRMETRIC,
-        "REFname","REFformula",
-        "REFinchikey", "REFCASRN","QRYmassNum","cmnMasses","REFmassNum",
-        "QRYcollisionEnergy_txt", "REFcollisionEnergy","QRYpolarity",
-        "REFpolarity", "QRYprecursorCharge","QRYprecursorIntensity",
-        "REFpredicted", "REFinstrument", "REFinstrumentType",
-        "REFionSource", "QRYmsLevel","idQRYspect", "idREFspect",
-        "idREFcomp", "REFID_db.comp", "REFID_db.spectra", "QRYdataOrigin")
+    mainVar <- c("QRYprecursorMz","idQRYspect", "idREFspect", "idREFcomp",
+                 INCRMETRIC, DECRMETRIC, "QRYmassNum", "cmnMasses",
+                 "REFmassNum", "propAdduct", "REFname","REFformula",
+                 "REFinchikey", "ppmPrecMass", "QRYcollisionEnergy_txt",
+                 "REFcollisionEnergy", "REFexactmass","REFprecursorMz",
+                 "REFadduct","REFpredicted", "REFinstrument",
+                 "REFinstrumentType","REFID_db.comp", "REFID_db.spectra",
+                 "QRYrtime", "QRYacquisitionNum", "QRYacquisitionNum_CONS",
+                 "REFCASRN","QRYpolarity", "REFpolarity",
+                 "QRYprecursorCharge","QRYprecursorIntensity",
+                 "REFionSource", "QRYmsLevel",  "QRYdataOrigin")
     anRslt <- select(anRslt, c(mainVar[mainVar %in% names(anRslt)],
                                names(anRslt)[!names(anRslt) %in% mainVar]))
     #sort rows
@@ -90,7 +98,8 @@
                     sgnMetric*top, idREFcomp,
                     sgnMetric*!!as.name(metric)) %>%
             ungroup() %>%
-            select(-top)
+            select(-top) %>%
+            as.data.frame()
     }
     return(anRslt)
 }
