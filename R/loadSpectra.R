@@ -3,21 +3,23 @@
 #' @param data `character` defining either the directory containing the mzML files, or the files themselves.
 #' @param msLevel `integer` or `numeric`, but a natural number. It subsets the
 #'  spectra to be loaded to those with such msLevel. By default, msLevel=2L
-#' @param nsamples `integer` or `numeric`, but a natural number. To speed up
-#'  the identification process, the user can limit spectra to load to
-#'  'nsamples'. The spectra are chosen at random.
+#' @param nsamples integer(1) defines a subset of x random query spectra to work
+#'   with. Useful for speeding up preliminary testing before definitive
+#'   annotation, it is not compatible with the consensus formation.
 #'
 #' @param acquisitionNum vector of`integer` or `numeric`. The user can limit spectra based on their acquisitionNum
 #'
 #' @return a list with 2 items, 'Metadata' and 'Spectra'. The former is a data frame with spectrum metadata. The latter is a list with two items, a list of spectra (under matrix form) and 'idSpectra' (vector of its spectra id.) Both 'Metadata' and 'Spectra' are linked using the 'idSpectra' variable.
 #' @noRd
 
-.loadSpectra <- function(data=NULL, nsamples=NULL, ...){
+.loadSpectra <- function(data = NULL, nsamples = NULL, ...){
+  argmnts <- c(as.list(environment()), list(...))
   if(is.null(data))
     stop("'data' is a mandatory argument")
   #check types
-  reqClasses <- c(nsamples="integer")
-  .checkTypes(as.list(match.call(expand.dots = FALSE))[-1], reqClasses)
+  reqClasses <- c(nsamples = "integer")
+  reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
+  .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
   if (!is.null(nsamples))
     if (nsamples < 1)
       stop("'nsamples' is expected to be a natural number > 0")
