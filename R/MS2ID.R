@@ -1,42 +1,43 @@
-#'@name MS2ID
+#' @title MS2ID class for high-throughput MS/MS annotation
 #'
-#'@title In-house database for high-throughput MS/MS annotation
+#' @description
 #'
-#'@aliases MS2ID-class
-#'
-#'@description
-#'
-#'The `MS2ID` class encapsulates a MS2 spectra database along with its metadata.
-#'Its internal structure allows to annotate query spectra - with the
+#'The `MS2ID` class encapsulates, a MS2 spectra database along with its
+#'metadata. Its internal structure allows to annotate query spectra - with the
 #'\code{\link{annotate}} function - using big spectra databases at high speed
 #'and low RAM requirements (typically 100 query spectra/min against a 1M5
 #'spectra library). MS2ID class uses a SQLite database with the metadata and
 #'bigmemory files to store the spectra (i.e. peaks matrices) and their
-#'mass-charge index.
+#'mass-charge index. See
+#'\href{https://jmbadia.github.io/MS2ID/articles/MS2ID.html}{vignette}.
 #'
-#'@details
+#'@details The \code{createMS2ID} function creates a MS2ID backend that is
+#'  subsequently used by the \code{MS2ID} constructor, which creates the
+#'  \code{MS2ID} object.
 #'
-#'`MS2ID` objects should be created using the constructor function `MS2ID`
-#'providing the path where the library files are (i.e. SQL file
-#'name or any bigmemory file names)
-#'
-#' @section General functions: \itemize{ \item `MS2ID()`: Constructor of a MS2ID
-#'  object.}
+#'@section General functions: \itemize{  \item createMS2ID(): Function to create
+#'  MS2ID backends. \item MS2ID(): Constructor function for MS2ID objects.}
 #'
 #' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
+#' @seealso \code{\link{createMS2ID}} function.
+#' @example man/examples/MS2IDcreation.R
+#' @importFrom Rdpack reprompt
+#' @references
+#' \insertRef{CompoundDB}{MS2ID}
+#' @aliases MS2ID-class
+#' @name MS2ID
 NULL
 
 #' The MS2ID class
 #'
 #' An S4 class to represent a reference library.
 #'
-#'
 #' @slot dbcon A DBIConnection object with the MSQL data
 #' @slot spectracon A big.matrix object with the spectra data
 #' @slot mzIndexcon A big.matrix object with index of fragments
 #' @slot .properties A list with properties of the class
 #'
-#' @name Spectra-class
+#' @name MS2ID-class
 #' @docType class
 #' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
 #'
@@ -81,15 +82,15 @@ setValidity("MS2ID", function(object) {
     if (length(txt)) txt else TRUE
 }
 
-# CReatto ot he clase
-#
-#' @param ms2idFolder character(1) with the directory's path containing the
-#'   MS2ID files
+#' Creator of the MS2ID class
 #'
-#' @export
+#' @param ms2idFolder character(1) with the directory's path of the MS2ID
+#'   backend
+#'
 #' @rdname MS2ID
 #' @importFrom DBI dbDriver
 #' @importFrom RSQLite dbConnect
+#' @export
 MS2ID <- function(ms2idFolder) {
     if (missing(ms2idFolder))
         stop("Argument 'ms2idFolder' is required")
@@ -117,6 +118,9 @@ MS2ID <- function(ms2idFolder) {
     return(ms2idObj)
 }
 
+#' Subset method for Annot class
+#'
+#' @param object character: signature supported
 #' @rdname MS2ID
 #'
 #' @importFrom DBI dbGetQuery

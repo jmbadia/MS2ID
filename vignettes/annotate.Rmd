@@ -3,7 +3,7 @@ title: "Annotate query spectra"
 output:
     BiocStyle::html_document:
         toc_float: true
-bibliography: references.bib
+bibliography: references.bib 
 vignette: >
   %\VignetteIndexEntry{Annotate query spectra}
   %\VignetteEngine{knitr::rmarkdown}
@@ -62,8 +62,8 @@ MS2IDdirectory <- createMS2ID(name = "MS2ID_annotVign", cmpdb = cmpdb,
 The following example shows the basic usage of the function `annotate.` It takes advantage of tools developed in the `r Biocpkg("Spectra")` package [@Spectra] to subset query spectra according to their retention time and MSLevel; please note that direct loading mzML files is also possible.  
 
 ```{r SimpleAnnotation, message=FALSE}
-library(utils, Spectra, MS2ID)
-queryFile <- system.file("extdata/Met1.zip", package = "MS2ID")
+library(utils);library(Spectra);library(MS2ID)
+queryFile <- system.file("extdata/QRYspectra.zip", package = "MS2ID")
 queryFolder <- file.path(wrkDir, "QRYspectra")
 utils::unzip(queryFile, exdir = queryFolder)
 querySpectra <- Spectra::Spectra(dir(queryFolder, full.names = TRUE))

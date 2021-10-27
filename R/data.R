@@ -16,4 +16,5 @@
 #'   \item{Multi}{Factor to multiply chemical formula with}
 #' }
 #' @source \url{https://cran.r-project.org/package=enviPat}
+#' @noRd
 "adducts"

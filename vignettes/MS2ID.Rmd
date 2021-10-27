@@ -2,8 +2,8 @@
 title: "Introduction to MS2ID"
 output:
     BiocStyle::html_document:
-        toc_float: true
-bibliography: references.bib
+        toc_float: TRUE
+bibliography: references.bib 
 vignette: >
   %\VignetteIndexEntry{Introduction to MS2ID}
   %\VignetteEngine{knitr::rmarkdown}
@@ -89,7 +89,7 @@ By default, the annotation process summarizes query spectra into consensus spect
 
 ```{r SimpleAnnotation}
 library(utils)
-queryFile <- system.file("extdata/Met1.zip", package = "MS2ID")
+queryFile <- system.file("extdata/QRYspectra.zip", package = "MS2ID")
 queryFolder <- file.path(wrkDir, "QRYspectra")
 utils::unzip(queryFile, exdir = queryFolder)
 refLibrary <- MS2ID(MS2IDdirectory)

@@ -1,23 +1,33 @@
-#' Create a MS2ID object
+#' Create a MS2ID backend
 #'
 #' \code{createMS2ID} processes the data contained in a
-#' \code{\linkS4class{CompDb}} object and saves the result as SQL and bigMemory
-#' files in a directory. Later on, that directory can be load
-#' as \linkS4class{MS2ID} object in order to be used repeatedly as reference
-#' library with the \code{\link{annotate}} function.
+#' \code{\link[CompDb-class]{CompDb}} object \insertCite{CompoundDB}{MS2ID} and
+#' creates a MS2ID backend by saving data as SQL and bigMemory files in a
+#' directory. Later on, that directory will be load as an \linkS4class{MS2ID}
+#' object in order to be used repeatedly as reference library with the
+#' \code{\link{annotate}} function.
 #'
 #' @param name character(1) name of the directory where the files will be saved.
-#' @param path character(1) with the directory's path.
-#' @param cmpdb \code{\linkS4class{CompDb}}(1) object (with MS/MS spectra).
+#' @param path character(1) with the path where to create the MS2ID backend.
+#' @param cmpdb \code{\link[CompDb-class]{CompDb}}(1) object (with MS/MS
+#'   spectra).
 #' @param noiseThresh A numeric defining the threshold used in the noise
 #'   filtering of the MS/MS spectra. e.g. noiseThresh = 0.01 removes peaks with
 #'   an intensity less than 1\% of the base peak.
-#' @param calcSplash boolean(1) indicating if SPLASH values (when missing) must be calculated using the \code{\link[splashR]{getSplash}} function.
-#' @param calcMmi boolean(1) indicating if compound monoisotopic mass values (when missing) must be calculated using the \code{\link[enviPat]{check_chemform}} function.
-#' @param overwrite boolean(1) indicating if the function can overwrite     results.
+#' @param calcSplash boolean(1) indicating if SPLASH values (when missing) must
+#'   be calculated using the \code{\link[splashR]{getSplash}} function.
+#' @param calcMmi boolean(1) indicating if compound monoisotopic mass values
+#'   (when missing) must be calculated using the
+#'   \code{\link[enviPat]{check_chemform}} function.
+#' @param overwrite boolean(1) indicating if the function can overwrite
+#'   results.
 #'
-#' @return a character(1) naming the resulting directory (+ path)
-#' @seealso \code{\linkS4class{MS2ID}}
+#' @return \code{createMS2ID} returns a character(1) with the MS2ID backend
+#'   location. This value must be used as \code{ms2idFolder} parameter in the
+#'   \code{MS2ID} constructor.
+#' @author Josep M. Badia \email{josepmaria.badia@@urv.cat}
+#' @seealso \linkS4class{MS2ID} class.
+#' @rdname MS2ID
 #' @export
 createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
                         calcSplash = TRUE, calcMmi = TRUE, overwrite = FALSE)

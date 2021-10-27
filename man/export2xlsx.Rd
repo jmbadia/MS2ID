@@ -2,21 +2,78 @@
 % Please edit documentation in R/export2xlsx.R
 \name{export2xlsx}
 \alias{export2xlsx}
-\title{Export an annotation object as xlsx file}
+\title{Export an annotation object to an xlsx file}
 \usage{
-export2xlsx(anRslt, summarizeHits, ...)
+export2xlsx(anRslt, summarizeHits = TRUE, file = NULL, overwrite = FALSE, ...)
 }
 \arguments{
-\item{anRslt}{Annot object with the results to be exported}
+\item{anRslt}{\linkS4class{Annot} object with the results to export.}
 
-\item{noCmnNeutralMassDist}{numeric(1) with a distance threshold to subset Non common neutral mass results.}
+\item{summarizeHits}{boolean(1). A TRUE value summarizes the resulting excel,
+keeping only, for every query spectrum, the best annotation per compound.}
 
-\item{metric}{char(1) with the name of the metric that must subset (according to the distance threshold) and order the identifications.}
-
-\item{file}{char(1) name (with path) of the exported file}
+\item{file}{char(1) name of the resulting xlsx file}
 
 \item{overwrite}{boolean(1) If TRUE, overwrite any existing file.}
+
+\item{...}{other arguments passed to function}
 }
 \description{
-Export an annotation object as xlsx file
+\code{export2xlsx} function exports the data contained in an
+\linkS4class{Annot} object to a xlsx file.
+}
+\details{
+\code{export2xlsx} function distributes the annotation results among
+different worksheets of an xlsx file, one per query file, and every row
+corresponds to an annotation. Annotations of the same query spectrum have
+identical row colours. Contiguous annotations with equal query precursor mass
+have similar row colours (e.g. variations of orange); the best distance
+metric and the most common compound name among those contiguous annotations
+are bolded in red and black. Moreover:
+\itemize{\item Column names that contain QRY, REF or CONS refer to query,
+reference or consensus entities, respectively. e.g. \code{QRYprecursorMz}
+contains the precursor M/z of the query spectra, \code{REFadduct} the adducts
+of the reference spectra and \code{QRYrtime_CONS} the retention times of the
+query spectra that conform every consensus spectrum. \item The column
+\code{massNum.QRY_CMN_REF} (e.g. 7/4/5) shows the number of fragments of the
+query and reference spectra, and the number of fragments they have in common.
+\item \code{REFinchikey} contains the inchikey of the reference compound and
+a link to a Pubchem's page listing compounds with that inchikey. \item
+\code{ppmPrecMass} refers to the difference, in ppm, between query and
+reference precursor masses.}
+}
+\examples{
+
+## LOAD MS2ID LIBRARY ---
+## Decompress the MS2ID library that comes with MS2ID
+MS2IDzipFile <- system.file("extdata/MS2IDLibrary.zip",
+                            package = "MS2ID",
+                            mustWork = TRUE)
+library(utils)
+MS2IDFolder <- dirname(unzip(MS2IDzipFile,
+                             exdir = tempdir()))[1]
+
+## SELECT QUERY SPECTRA ---
+## Decompress the query mzML files that come with MS2ID
+queryFile <- system.file("extdata/QRYspectra.zip",
+                         package = "MS2ID",
+                         mustWork = TRUE)
+queryFolder <- file.path(tempdir(), "QRYspectra")
+library(utils)
+unzip(queryFile, exdir = queryFolder)
+
+## ANNOTATION ---
+library(MS2ID)
+MS2IDlib <- MS2ID(MS2IDFolder)
+annotResult <- annotate(QRYdata = queryFolder, MS2ID = MS2IDlib)
+
+## EXPORT TO XLSX FILE---
+export2xlsx(anRslt = annotResult, file = "sample",
+            summarizeHits = FALSE, overwrite=TRUE)
+}
+\seealso{
+\linkS4class{Annot} class and \code{\link{annotate}} function.
+}
+\author{
+Josep M. Badia \email{josepmaria.badia@urv.cat}
 }
