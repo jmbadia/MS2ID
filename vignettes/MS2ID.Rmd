@@ -23,7 +23,7 @@ BiocStyle::markdown()
 ```{r, echo = FALSE, message = FALSE}
 library(MS2ID)
 library(BiocStyle)
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, eval = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, eval = TRUE)
 ```
 ## Introduction
 MS2ID aims to fast annotate query MS/MS spectra straightforwardly with minimum RAM requirements by using an in-house database. With this in mind, `MS2ID` object keeps all data in a on disk backend based on `r CRANpkg("RSQLite")` and `r CRANpkg("bigmemory")` packages and indexes all spectrum fragments in a table.  
@@ -44,15 +44,26 @@ You can download the development version from GitHub with:
 ```{r installation, eval = FALSE}
 if(!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("jmbadia/MS2ID", build_vignettes = TRUE, force=T)
+devtools::install_github("jmbadia/MS2ID", force=T)
 ```
 
 ## MS2ID creation {#creation}
-The `createMS2ID` function takes as necessary argument MS/MS spectral data. This data can be obtained from publicly available resources such as HMDB, ChEBI and PubChem or any personal library through the `r Biocpkg("CompoundDb")` package [@CompoundDB].  Here we parse a small portion of MoNA (206 MS/MS spectra) following the CompoundDB [vignette](https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-mona-1).
-```{r CompDbFormation}
+`MS2ID` package already contains a sample MS/MS spectra library. Next code extracts it in order to be used:
+
+```{r basicMS2IDcreation}
+## Decompress the MS2ID library that comes with MS2ID
+MS2IDzipFile <- system.file("extdata/MS2IDLibrary.zip", package = "MS2ID",
+                            mustWork = TRUE)
+library(utils)
+MS2IDdirectory <- dirname(utils::unzip(MS2IDzipFile, exdir = tempdir()))[1]
+
+```
+
+On the other hand, reference MS/MS spectral data can be obtained from publicly available resources -HMDB, ChEBI and PubChem or any personal library- through the `r Biocpkg("CompoundDb")` package [@CompoundDB] plus the `createMS2ID` function. Here we parse a small portion of MoNA (206 MS/MS spectra) following the CompoundDB [vignette](https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-mona-1).
+```{r CompDbFormation, eval=FALSE}
 library(CompoundDb)
 wrkDir <- tempdir()
-## Locate the compounds file
+## Locate the compounds file 
 MoNAsubset <- system.file("extdata/MoNAsubset.sdf.gz", package = "MS2ID")
 cmps <- compound_tbl_sdf(MoNAsubset)
 spctr <- msms_spectra_mona(MoNAsubset, collapsed = TRUE)
@@ -73,15 +84,11 @@ if(dir.exists(cmpdbDir)){
 db_file <- createCompDb(cmps, metadata = metad, msms_spectra = spctr,
                         path = cmpdbDir)
 cmpdb <- CompDb(db_file)
-```
-Using the previous object as argument, the creation of the MS2ID object is pretty straightforward.  
-
-```{r MS2IDcreation}
+#create the MS2ID directory
 library(MS2ID)
 MS2IDdirectory <- createMS2ID(cmpdb = cmpdb,
                               overwrite = TRUE, path = wrkDir)
 ```
-By default, `createMS2ID` checks `cmpdb` object for redundant compounds or MS/MS spectra and removes them. Visit the help documentation for more information.  
 
 ## Annotation {#annotation}
 A simple annotation only requires an `MS2ID` object like the former and query spectra. In the example following, query spectra are provided in mzML format (three mzML files, 2235 MS/MS spectra total). Still, the function also supports `Spectra` objects from the `r Biocpkg("Spectra")` package [@Spectra].  
@@ -90,7 +97,7 @@ By default, the annotation process summarizes query spectra into consensus spect
 ```{r SimpleAnnotation}
 library(utils)
 queryFile <- system.file("extdata/QRYspectra.zip", package = "MS2ID")
-queryFolder <- file.path(wrkDir, "QRYspectra")
+queryFolder <- file.path(tempdir(), "QRYspectra")
 utils::unzip(queryFile, exdir = queryFolder)
 refLibrary <- MS2ID(MS2IDdirectory)
 annotResult <- annotate(QRYdata = queryFolder, MS2ID = refLibrary)

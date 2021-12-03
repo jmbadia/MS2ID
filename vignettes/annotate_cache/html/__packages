@@ -1,9 +1,0 @@
-base
-usethis
-devtools
-AnnotationFilter
-BiocGenerics
-S4Vectors
-CompoundDb
-MS2ID
-BiocStyle
