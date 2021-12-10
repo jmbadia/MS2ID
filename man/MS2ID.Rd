@@ -31,20 +31,27 @@ backend}
 
 \item{path}{character(1) with the path where to create the MS2ID backend.}
 
-\item{cmpdb}{\code{\link[CompDb-class]{CompDb}}(1) object (with MS/MS spectra).}
+\item{cmpdb}{\code{\link[CompDb-class]{CompDb}}(1) object (with MS/MS
+spectra).}
 
 \item{noiseThresh}{A numeric defining the threshold used in the noise
 filtering of the MS/MS spectra. e.g. noiseThresh = 0.01 removes peaks with
 an intensity less than 1\% of the base peak.}
 
-\item{calcSplash}{boolean(1) indicating if SPLASH values (when missing) must be calculated using the \code{\link[splashR]{getSplash}} function.}
+\item{calcSplash}{boolean(1) indicating if SPLASH values (when missing) must
+be calculated using the \code{\link[splashR]{getSplash}} function.}
 
-\item{calcMmi}{boolean(1) indicating if compound monoisotopic mass values (when missing) must be calculated using the \code{\link[enviPat]{check_chemform}} function.}
+\item{calcMmi}{boolean(1) indicating if compound monoisotopic mass values
+(when missing) must be calculated using the
+\code{\link[enviPat]{check_chemform}} function.}
 
-\item{overwrite}{boolean(1) indicating if the function can overwrite     results.}
+\item{overwrite}{boolean(1) indicating if the function can overwrite
+results.}
 }
 \value{
-\code{createMS2ID} returns a character(1) with the MS2ID backend location. This value must be used as \code{ms2idFolder} parameter in the \code{MS2ID} constructor.
+\code{createMS2ID} returns a character(1) with the MS2ID backend
+  location. This value must be used as \code{ms2idFolder} parameter in the
+  \code{MS2ID} constructor.
 }
 \description{
 The `MS2ID` class encapsulates, a MS2 spectra database along with its
@@ -57,10 +64,10 @@ mass-charge index. See
 \href{https://jmbadia.github.io/MS2ID/articles/MS2ID.html}{vignette}.
 
 \code{createMS2ID} processes the data contained in a
-\code{\link[CompDb-class]{CompDb}} object \insertCite{CompoundDB}{MS2ID} and creates
-a MS2ID backend by saving data as SQL and bigMemory files in a directory.
-Later on, that directory will be load as an \linkS4class{MS2ID} object in
-order to be used repeatedly as reference library with the
+\code{\link[CompDb-class]{CompDb}} object \insertCite{CompoundDB}{MS2ID} and
+creates a MS2ID backend by saving data as SQL and bigMemory files in a
+directory. Later on, that directory will be load as an \linkS4class{MS2ID}
+object in order to be used repeatedly as reference library with the
 \code{\link{annotate}} function.
 }
 \details{

@@ -79,7 +79,7 @@
 
       
 
-      </header><script src="MS2ID_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
+      </header><script src="MS2ID_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Introduction to MS2ID</h1>
@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (links[i].hostname != window.location.hostname)
       links[i].target = '_blank';
 });
-</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-09-27 19:37:55<br><strong>Compiled</strong>: Mon Sep 27 19:39:32 2021</p>
+</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-12-03 16:51:03<br><strong>Compiled</strong>: Fri Dec 10 14:21:14 2021</p>
 <div id="introduction" class="section level2">
 <h2 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h2>
@@ -140,19 +140,26 @@ Conceptually, MS2ID workflow is structured on three steps:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>
     <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span>
-<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"jmbadia/MS2ID"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span>, force<span class="op">=</span><span class="cn">T</span><span class="op">)</span></code></pre></div>
+<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"jmbadia/MS2ID"</span>, force<span class="op">=</span><span class="cn">T</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="creation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#creation" class="anchor"></a>MS2ID creation</h2>
-<p>The <code>createMS2ID</code> function takes as necessary argument MS/MS spectral data. This data can be obtained from publicly available resources such as HMDB, ChEBI and PubChem or any personal library through the <em><a href="https://bioconductor.org/packages/3.14/CompoundDb">CompoundDb</a></em> package <span class="citation">(Stanstrup and Rainer 2021)</span>. Here we parse a small portion of MoNA (206 MS/MS spectra) following the CompoundDB <a href="https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-mona-1">vignette</a>.</p>
+<p><code>MS2ID</code> package already contains a sample MS/MS spectra library. Next code extracts it in order to be used:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/EuracBiomedicalResearch/CompoundDb">CompoundDb</a></span><span class="op">)</span>
+<code class="sourceCode R"><span class="co">## Decompress the MS2ID library that comes with MS2ID</span>
+<span class="va">MS2IDzipFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/MS2IDLibrary.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span>,
+                            mustWork <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">utils</span><span class="op">)</span>
+<span class="va">MS2IDdirectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html">dirname</a></span><span class="op">(</span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="va">MS2IDzipFile</span>, exdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></code></pre></div>
+<p>On the other hand, reference MS/MS spectral data can be obtained from publicly available resources -HMDB, ChEBI and PubChem or any personal library- through the <em><a href="https://bioconductor.org/packages/3.14/CompoundDb">CompoundDb</a></em> package <span class="citation">(Stanstrup and Rainer 2021)</span> plus the <code>createMS2ID</code> function. Here we parse a small portion of MoNA (206 MS/MS spectra) following the CompoundDB <a href="https://euracbiomedicalresearch.github.io/CompoundDb/articles/create-compounddb.html#create-a-compdb-object-for-mona-1">vignette</a>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">CompoundDb</span><span class="op">)</span>
 <span class="va">wrkDir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">## Locate the compounds file</span>
+<span class="co">## Locate the compounds file </span>
 <span class="va">MoNAsubset</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/MoNAsubset.sdf.gz"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
-<span class="va">cmps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/compound_tbl_sdf.html">compound_tbl_sdf</a></span><span class="op">(</span><span class="va">MoNAsubset</span><span class="op">)</span>
-<span class="va">spctr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/msms_spectra_mona.html">msms_spectra_mona</a></span><span class="op">(</span><span class="va">MoNAsubset</span>, collapsed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="va">cmps</span> <span class="op">&lt;-</span> <span class="fu">compound_tbl_sdf</span><span class="op">(</span><span class="va">MoNAsubset</span><span class="op">)</span>
+<span class="va">spctr</span> <span class="op">&lt;-</span> <span class="fu">msms_spectra_mona</span><span class="op">(</span><span class="va">MoNAsubset</span>, collapsed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 <span class="va">spctr</span><span class="op">$</span><span class="va">predicted</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
 <span class="co">#configure metadata  </span>
 <span class="va">metad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>
@@ -167,15 +174,13 @@ Conceptually, MS2ID workflow is structured on three steps:</p>
 <span class="op">}</span><span class="kw">else</span><span class="op">{</span>
   <span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">cmpdbDir</span><span class="op">)</span>
 <span class="op">}</span>
-<span class="va">db_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/createCompDb.html">createCompDb</a></span><span class="op">(</span><span class="va">cmps</span>, metadata <span class="op">=</span> <span class="va">metad</span>, msms_spectra <span class="op">=</span> <span class="va">spctr</span>,
+<span class="va">db_file</span> <span class="op">&lt;-</span> <span class="fu">createCompDb</span><span class="op">(</span><span class="va">cmps</span>, metadata <span class="op">=</span> <span class="va">metad</span>, msms_spectra <span class="op">=</span> <span class="va">spctr</span>,
                         path <span class="op">=</span> <span class="va">cmpdbDir</span><span class="op">)</span>
-<span class="va">cmpdb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/CompDb.html">CompDb</a></span><span class="op">(</span><span class="va">db_file</span><span class="op">)</span></code></pre></div>
-<p>Using the previous object as argument, the creation of the MS2ID object is pretty straightforward.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://jmbadia.github.io/MS2ID/index.html">MS2ID</a></span><span class="op">)</span>
-<span class="va">MS2IDdirectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createMS2ID.html">createMS2ID</a></span><span class="op">(</span>cmpdb <span class="op">=</span> <span class="va">cmpdb</span>,
+<span class="va">cmpdb</span> <span class="op">&lt;-</span> <span class="fu">CompDb</span><span class="op">(</span><span class="va">db_file</span><span class="op">)</span>
+<span class="co">#create the MS2ID directory</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://jmbadia.github.io/MS2ID/index.html">MS2ID</a></span><span class="op">)</span>
+<span class="va">MS2IDdirectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/MS2ID.html">createMS2ID</a></span><span class="op">(</span>cmpdb <span class="op">=</span> <span class="va">cmpdb</span>,
                               overwrite <span class="op">=</span> <span class="cn">TRUE</span>, path <span class="op">=</span> <span class="va">wrkDir</span><span class="op">)</span></code></pre></div>
-<p>By default, <code>createMS2ID</code> checks <code>cmpdb</code> object for redundant compounds or MS/MS spectra and removes them. Visit the help documentation for more information.</p>
 </div>
 <div id="annotation" class="section level2">
 <h2 class="hasAnchor">
@@ -184,13 +189,13 @@ Conceptually, MS2ID workflow is structured on three steps:</p>
 By default, the annotation process summarizes query spectra into consensus spectra according to their similarity and neighbouring; this speeds up the algorithm and reduces the noise. Please, consult the <a href="annotate.html#consensus">annotation vignette</a> for more information.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">utils</span><span class="op">)</span>
-<span class="va">queryFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/Met1.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
-<span class="va">queryFolder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">wrkDir</span>, <span class="st">"QRYspectra"</span><span class="op">)</span>
+<span class="va">queryFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/QRYspectra.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
+<span class="va">queryFolder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"QRYspectra"</span><span class="op">)</span>
 <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="va">queryFile</span>, exdir <span class="op">=</span> <span class="va">queryFolder</span><span class="op">)</span>
 <span class="va">refLibrary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/MS2ID.html">MS2ID</a></span><span class="op">(</span><span class="va">MS2IDdirectory</span><span class="op">)</span>
 <span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">queryFolder</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span><span class="op">)</span></code></pre></div>
 <p>The resulting variable <code>annotResult</code> is an <code>Annot</code> object that contains the annotation results. We can subset its content by applying them <em>getters</em> (custom functions to get the info) or save the whole object (<code>saveRDS</code> function is recommended) for further analysis (<a href="annotate.html#annot">more info</a>).</p>
-<p>Annotate function offers more features such as prefiltering of the reference spectra library or different similarity metrics. Please, feel free to check them in its own <a href="annotate.html#annot">vignette</a>.</p>
+<p>Annotate function offers more features such as prefiltering of the reference spectra library or different similarity metrics. Please, feel free to check them in its own <a href="annotate.html">vignette</a>.</p>
 </div>
 <div id="results" class="section level2">
 <h2 class="hasAnchor">
@@ -201,7 +206,7 @@ By default, the annotation process summarizes query spectra into consensus spect
 <li><p>The <code>MS2Igui</code> function, which allows to compare graphically both query and reference spectra. Please note that using <code>MS2IDgui</code> function with no arguments pops up the interface with no annotation data. Visit the ‘About’ page in MS2IDgui for more information.</p></li>
 </ul>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">MS2IDgui</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/MS2IDgui.html">MS2IDgui</a></span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span></code></pre></div>
 <div class="figure">
 <img src="MS2IDgui.png" style="width:100.0%" alt=""><p class="caption">MS2ID GUI interface</p>
 </div>

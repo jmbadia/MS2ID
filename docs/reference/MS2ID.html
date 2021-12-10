@@ -50,10 +50,10 @@ mass-charge index. See
 vignette.
 createMS2ID processes the data contained in a
 CompDb object (Stanstrup and Rainer 2021)
- and creates
-a MS2ID backend by saving data as SQL and bigMemory files in a directory.
-Later on, that directory will be load as an MS2ID object in
-order to be used repeatedly as reference library with the
+ and
+creates a MS2ID backend by saving data as SQL and bigMemory files in a
+directory. Later on, that directory will be load as an MS2ID
+object in order to be used repeatedly as reference library with the
 annotate function." />
 
 
@@ -153,10 +153,10 @@ mass-charge index. See
 <a href='https://jmbadia.github.io/MS2ID/articles/MS2ID.html'>vignette</a>.</p>
 <p><code>createMS2ID</code> processes the data contained in a
 <code>CompDb</code> object (Stanstrup and Rainer 2021)
- and creates
-a MS2ID backend by saving data as SQL and bigMemory files in a directory.
-Later on, that directory will be load as an MS2ID object in
-order to be used repeatedly as reference library with the
+ and
+creates a MS2ID backend by saving data as SQL and bigMemory files in a
+directory. Later on, that directory will be load as an MS2ID
+object in order to be used repeatedly as reference library with the
 <code><a href='annotate.html'>annotate</a></code> function.</p>
     </div>
 
@@ -184,6 +184,10 @@ order to be used repeatedly as reference library with the
 backend</p></td>
     </tr>
     <tr>
+      <th>object</th>
+      <td><p>character: signature supported</p></td>
+    </tr>
+    <tr>
       <th>name</th>
       <td><p>character(1) name of the directory where the files will be saved.</p></td>
     </tr>
@@ -193,7 +197,8 @@ backend</p></td>
     </tr>
     <tr>
       <th>cmpdb</th>
-      <td><p><code>CompDb</code>(1) object (with MS/MS spectra).</p></td>
+      <td><p><code>CompDb</code>(1) object (with MS/MS
+spectra).</p></td>
     </tr>
     <tr>
       <th>noiseThresh</th>
@@ -203,21 +208,27 @@ an intensity less than 1% of the base peak.</p></td>
     </tr>
     <tr>
       <th>calcSplash</th>
-      <td><p>boolean(1) indicating if SPLASH values (when missing) must be calculated using the <code><a href='https://rdrr.io/pkg/splashR/man/getSplash.html'>getSplash</a></code> function.</p></td>
+      <td><p>boolean(1) indicating if SPLASH values (when missing) must
+be calculated using the <code><a href='https://rdrr.io/pkg/splashR/man/getSplash.html'>getSplash</a></code> function.</p></td>
     </tr>
     <tr>
       <th>calcMmi</th>
-      <td><p>boolean(1) indicating if compound monoisotopic mass values (when missing) must be calculated using the <code><a href='https://rdrr.io/pkg/enviPat/man/check_chemform.html'>check_chemform</a></code> function.</p></td>
+      <td><p>boolean(1) indicating if compound monoisotopic mass values
+(when missing) must be calculated using the
+<code><a href='https://rdrr.io/pkg/enviPat/man/check_chemform.html'>check_chemform</a></code> function.</p></td>
     </tr>
     <tr>
       <th>overwrite</th>
-      <td><p>boolean(1) indicating if the function can overwrite     results.</p></td>
+      <td><p>boolean(1) indicating if the function can overwrite
+results.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p><code>createMS2ID</code> returns a character(1) with the MS2ID backend location. This value must be used as <code>ms2idFolder</code> parameter in the <code>MS2ID</code> constructor.</p>
+    <p><code>createMS2ID</code> returns a character(1) with the MS2ID backend
+  location. This value must be used as <code>ms2idFolder</code> parameter in the
+  <code>MS2ID</code> constructor.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The <code>createMS2ID</code> function creates a MS2ID backend that is
@@ -251,11 +262,11 @@ R package version 0.8.1, <a href='https://github.com/EuracBiomedicalResearch/Com
 <span class='va'>MoNAsubset</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span><span class='op'>(</span><span class='st'>"extdata/MoNAsubset.sdf.gz"</span>,
                           package <span class='op'>=</span> <span class='st'>"MS2ID"</span><span class='op'>)</span>
 <span class='co'>## Use CompoundDB to parse MoNA</span>
-<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://github.com/EuracBiomedicalResearch/CompoundDb'>CompoundDb</a></span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Loading required package: AnnotationFilter</span></div><div class='input'><span class='va'>cmps</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/warning.html'>suppressWarnings</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/pkg/CompoundDb/man/compound_tbl_sdf.html'>compound_tbl_sdf</a></span><span class='op'>(</span><span class='va'>MoNAsubset</span><span class='op'>)</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Guessing we've got a SDF file from MoNa.</span></div><div class='input'><span class='va'>spctr</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/CompoundDb/man/msms_spectra_mona.html'>msms_spectra_mona</a></span><span class='op'>(</span><span class='va'>MoNAsubset</span>, collapsed <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'>Reading SDF file ... </span></div><div class='output co'>#&gt; <span class='message'>OK</span></div><div class='output co'>#&gt; <span class='message'>Extracting 206 spectra ... </span></div><div class='output co'>#&gt; <span class='message'>OK</span></div><div class='input'><span class='va'>spctr</span><span class='op'>$</span><span class='va'>predicted</span> <span class='op'>&lt;-</span> <span class='cn'>FALSE</span>
-<span class='va'>metad</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>CompoundDb</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in library(CompoundDb): there is no package called ‘CompoundDb’</span></div><div class='input'><span class='va'>cmps</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/warning.html'>suppressWarnings</a></span><span class='op'>(</span><span class='fu'>compound_tbl_sdf</span><span class='op'>(</span><span class='va'>MoNAsubset</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in compound_tbl_sdf(MoNAsubset): could not find function "compound_tbl_sdf"</span></div><div class='input'><span class='va'>spctr</span> <span class='op'>&lt;-</span> <span class='fu'>msms_spectra_mona</span><span class='op'>(</span><span class='va'>MoNAsubset</span>, collapsed <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in msms_spectra_mona(MoNAsubset, collapsed = TRUE): could not find function "msms_spectra_mona"</span></div><div class='input'><span class='va'>spctr</span><span class='op'>$</span><span class='va'>predicted</span> <span class='op'>&lt;-</span> <span class='cn'>FALSE</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in spctr$predicted &lt;- FALSE: object 'spctr' not found</span></div><div class='input'><span class='va'>metad</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span>
     name <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"source"</span>, <span class='st'>"url"</span>,
              <span class='st'>"source_version"</span>,<span class='st'>"source_date"</span><span class='op'>)</span>,
     value <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"MoNA"</span>,
@@ -269,40 +280,17 @@ R package version 0.8.1, <a href='https://github.com/EuracBiomedicalResearch/Com
 <span class='op'>}</span><span class='kw'>else</span><span class='op'>{</span>
     <span class='fu'><a href='https://rdrr.io/r/base/files2.html'>dir.create</a></span><span class='op'>(</span><span class='va'>cmpdbDir</span><span class='op'>)</span>
 <span class='op'>}</span>
-<span class='va'>db_file</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/CompoundDb/man/createCompDb.html'>createCompDb</a></span><span class='op'>(</span><span class='va'>cmps</span>, metadata <span class='op'>=</span> <span class='va'>metad</span>,
+<span class='va'>db_file</span> <span class='op'>&lt;-</span> <span class='fu'>createCompDb</span><span class='op'>(</span><span class='va'>cmps</span>, metadata <span class='op'>=</span> <span class='va'>metad</span>,
                         msms_spectra <span class='op'>=</span> <span class='va'>spctr</span>,
                         path <span class='op'>=</span> <span class='va'>cmpdbDir</span><span class='op'>)</span>
-<span class='va'>cmpdb</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/CompoundDb/man/CompDb.html'>CompDb</a></span><span class='op'>(</span><span class='va'>db_file</span><span class='op'>)</span>
-<span class='co'>## Create the MS2ID backend</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in createCompDb(cmps, metadata = metad, msms_spectra = spctr, path = cmpdbDir): could not find function "createCompDb"</span></div><div class='input'><span class='va'>cmpdb</span> <span class='op'>&lt;-</span> <span class='fu'>CompDb</span><span class='op'>(</span><span class='va'>db_file</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in CompDb(db_file): could not find function "CompDb"</span></div><div class='input'><span class='co'>## Create the MS2ID backend</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://jmbadia.github.io/MS2ID/index.html'>MS2ID</a></span><span class='op'>)</span>
 <span class='va'>MS2IDdirectory</span> <span class='op'>&lt;-</span> <span class='fu'>createMS2ID</span><span class='op'>(</span>cmpdb <span class='op'>=</span> <span class='va'>cmpdb</span>,
                               overwrite <span class='op'>=</span> <span class='cn'>TRUE</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/tempfile.html'>tempdir</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>-------- 1/n. RE-STRUCTURING THE DATA --------</span></div><div class='output co'>#&gt; <span class='message'>loading spectral data...</span></div><div class='output co'>#&gt; <span class='message'>parsing spectral data</span></div><div class='output co'>#&gt; <span class='message'>   </span>
-#&gt; <span class='message'>Input metadata considered:</span>
-#&gt; <span class='message'>   name, inchikey, formula, exactmass, smiles, originalSpectrumId, polarity, collisionEnergy, predicted, splash, instrumentType, instrument, precursorMz, adduct and msLevel</span></div><div class='output co'>#&gt; <span class='message'>   </span>
-#&gt; <span class='message'>Input metadata discarded:</span>
-#&gt; <span class='message'>   compound_id, inchi, spectrum_type, spectrum_id, msms_mz_range_min and msms_mz_range_max   (variables not covered by the MS2ID class)</span></div><div class='output co'>#&gt; <span class='message'>    </span>
-#&gt; <span class='message'>Input metadata not present:</span>
-#&gt; <span class='message'>    originalCompoundId, ExactMass, Kegg, Chebi, PubchemCID, PubchemSID, cas, precursorMassPath, ionSource, fragmentMode and resolution    (variables covered by the MS2ID class but not present in the    input metadata)</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>Checking &amp; repairing data------</span></div><div class='output co'>#&gt; <span class='message'>NA presence on every variable:</span>
-#&gt; <span class='message'>               name           inchikey            formula          exactmass </span>
-#&gt; <span class='message'>             "0 %"             "24 %"              "0 %"              "0 %" </span>
-#&gt; <span class='message'>            smiles originalSpectrumId           polarity    collisionEnergy </span>
-#&gt; <span class='message'>           "100 %"              "0 %"              "0 %"             "10 %" </span>
-#&gt; <span class='message'>         predicted             splash     instrumentType         instrument </span>
-#&gt; <span class='message'>             "0 %"            "100 %"              "2 %"              "3 %" </span>
-#&gt; <span class='message'>       precursorMz             adduct            msLevel </span>
-#&gt; <span class='message'>             "4 %"              "4 %"              "2 %" </span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>-------- 2/n. REDUNDANT DATA --------</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>Redundant metabolites------</span></div><div class='output co'>#&gt; <span class='message'>145 out of 206 metabolites are redundant and will be eliminated</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>Redundant spectra------</span></div><div class='output co'>#&gt; <span class='message'>Searching redundant spectra</span></div><div class='output co'>#&gt; <span class='message'>Analyzing distinctive spectral variables</span></div><div class='output co'>#&gt; <span class='message'>4 out of 206 spectra are redundant and will be eliminated</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>-------- 3/n. CALCULATING MISSING VARIABLES --------</span></div><div class='output co'>#&gt; <span class='message'>Obtaining spectra's SPLASH values using splashR</span></div><div class='output co'>#&gt; <span class='message'>Obtaining compound monoisotopic mass using envipat</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>-------- 4/n. OBTAINING THE MZ INDEX --------</span></div><div class='output co'>#&gt; <span class='message'>Binning spectral fragments</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 1/6 subindex</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 2/6 subindex</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 3/6 subindex</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 4/6 subindex</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 5/6 subindex</span></div><div class='output co'>#&gt; <span class='message'>Assigned spectra to the 6/6 subindex</span></div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>-------- 5/n. SAVING THE MS2ID BACKEND FILES --------</span></div><div class='output co'>#&gt; <span class='message'>MS2ID object succesfully created and saved at /tmp/RtmpUScWPq/MS2ID</span>
-#&gt; <span class='message'></span></div><div class='input'><span class='co'>## Obtain the MS2ID object</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in is(cmpdb, "CompDb"): object 'cmpdb' not found</span></div><div class='input'><span class='co'>## Obtain the MS2ID object</span>
 <span class='va'>MS2IDlib</span> <span class='op'>&lt;-</span> <span class='fu'>MS2ID</span><span class='op'>(</span><span class='va'>MS2IDdirectory</span><span class='op'>)</span>
-</div></pre>
+</div><div class='output co'>#&gt; <span class='error'>Error in file.exists(ms2idFolder): object 'MS2IDdirectory' not found</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

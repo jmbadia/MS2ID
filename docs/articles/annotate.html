@@ -79,7 +79,7 @@
 
       
 
-      </header><script src="annotate_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
+      </header><script src="annotate_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Annotate query spectra</h1>
@@ -103,54 +103,37 @@ document.addEventListener("DOMContentLoaded", function() {
     if (links[i].hostname != window.location.hostname)
       links[i].target = '_blank';
 });
-</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-09-27 19:37:55<br><strong>Compiled</strong>: Mon Sep 27 19:39:36 2021</p>
+</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-12-03 16:51:03<br><strong>Compiled</strong>: Fri Dec 10 14:21:24 2021</p>
 <p>*This vignette describe in detail the <code>annotate</code> function. It is advised a previous reading of the <a href="MS2ID.html">MS2ID introduction</a>.</p>
 <div id="introduction" class="section level2">
 <h2 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h2>
-<p><code>annotate</code> is the MS2ID function that annotates MS/MS query spectra; every query spectrum is compared with a reference library, and compounds with a similar spectrum are listed. This function requires an MS2ID reference library, as described in <a href="MS2ID.html">MS2ID introduction</a>; next code recalls how to obtain it:</p>
+<p><code>annotate</code> is the MS2ID function that annotates MS/MS query spectra; every query spectrum is compared with a reference library, and compounds with a similar spectrum are listed. This function requires an MS2ID reference library, as described in <a href="MS2ID.html">MS2ID introduction</a>; here we will use the sample attached to MS2ID:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/EuracBiomedicalResearch/CompoundDb">CompoundDb</a></span><span class="op">)</span>
-<span class="va">wrkDir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">## Locate the compounds file</span>
-<span class="va">MoNAsubset</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/MoNAsubset.sdf.gz"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
-<span class="va">cmps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/compound_tbl_sdf.html">compound_tbl_sdf</a></span><span class="op">(</span><span class="va">MoNAsubset</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning: MoNa data can currently not be normalized and the compound table
-## contains thus highly redundant data.</code></pre>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">spctr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/msms_spectra_mona.html">msms_spectra_mona</a></span><span class="op">(</span><span class="va">MoNAsubset</span>, collapsed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="va">spctr</span><span class="op">$</span><span class="va">predicted</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
-<span class="co">#configure metadata  </span>
-<span class="va">metad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>
-        name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"source"</span>, <span class="st">"url"</span>, <span class="st">"source_version"</span>,<span class="st">"source_date"</span><span class="op">)</span>,
-        value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"MoNA"</span>, <span class="st">"https://mona.fiehnlab.ucdavis.edu/downloads"</span>,
-                  <span class="st">"v1"</span>, <span class="st">'07-09'</span><span class="op">)</span>
-    <span class="op">)</span>
-<span class="co">#obtain compdb object</span>
-<span class="va">cmpdbDir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">wrkDir</span>, <span class="st">"cmpdbDir"</span><span class="op">)</span>
-<span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.exists</a></span><span class="op">(</span><span class="va">cmpdbDir</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">file.remove</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span><span class="op">(</span><span class="va">cmpdbDir</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-<span class="op">}</span><span class="kw">else</span><span class="op">{</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span><span class="op">(</span><span class="va">cmpdbDir</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="va">db_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/createCompDb.html">createCompDb</a></span><span class="op">(</span><span class="va">cmps</span>, metadata <span class="op">=</span> <span class="va">metad</span>, msms_spectra <span class="op">=</span> <span class="va">spctr</span>,
-                        path <span class="op">=</span> <span class="va">cmpdbDir</span><span class="op">)</span>
-<span class="va">cmpdb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CompoundDb/man/CompDb.html">CompDb</a></span><span class="op">(</span><span class="va">db_file</span><span class="op">)</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://jmbadia.github.io/MS2ID/index.html">MS2ID</a></span><span class="op">)</span>
-<span class="va">MS2IDdirectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/createMS2ID.html">createMS2ID</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"MS2ID_annotVign"</span>, cmpdb <span class="op">=</span> <span class="va">cmpdb</span>,
-                              overwrite <span class="op">=</span> <span class="cn">TRUE</span>, path <span class="op">=</span> <span class="va">wrkDir</span><span class="op">)</span></code></pre></div>
-<p>The following example shows the basic usage of the function <code>annotate.</code> It takes advantage of tools developed in the <em><a href="https://bioconductor.org/packages/3.14/Spectra">Spectra</a></em> package <span class="citation">(Gatto, Rainer, and Gibb 2021)</span> to subset query spectra according to their retention time and MSLevel; please note that direct loading mzML files is also possible.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">utils</span>, <span class="va">Spectra</span>, <span class="va">MS2ID</span><span class="op">)</span>
-<span class="va">queryFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/Met1.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
-<span class="va">queryFolder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="va">wrkDir</span>, <span class="st">"QRYspectra"</span><span class="op">)</span>
+<code class="sourceCode R"><span class="co">## Decompress the MS2ID library that comes with MS2ID</span>
+<span class="va">MS2IDzipFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/MS2IDLibrary.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span>,
+                            mustWork <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">utils</span><span class="op">)</span>
+<span class="va">MS2IDdirectory</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html">dirname</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="va">MS2IDzipFile</span>, exdir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></code></pre></div>
+<p>The following example shows the basic usage of the function <code>annotate.</code>. Query spectra is provided pointing out the folder that contains the mzML files.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">utils</span><span class="op">)</span>
+<span class="va">queryFile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span><span class="op">(</span><span class="st">"extdata/QRYspectra.zip"</span>, package <span class="op">=</span> <span class="st">"MS2ID"</span><span class="op">)</span>
+<span class="va">queryFolder</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"QRYspectra"</span><span class="op">)</span>
 <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/unzip.html">unzip</a></span><span class="op">(</span><span class="va">queryFile</span>, exdir <span class="op">=</span> <span class="va">queryFolder</span><span class="op">)</span>
+<span class="co">#create the MS2ID object and annotate</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://jmbadia.github.io/MS2ID/index.html">MS2ID</a></span><span class="op">)</span>
+<span class="va">MS2IDobj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/MS2ID.html">MS2ID</a></span><span class="op">(</span><span class="va">MS2IDdirectory</span><span class="op">)</span>
+<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">queryFolder</span>, MS2ID <span class="op">=</span> <span class="va">MS2IDobj</span><span class="op">)</span></code></pre></div>
+<p>Optionally, query spectra can also be provided under the form of an spectra object <span class="citation">(Gatto, Rainer, and Gibb 2021)</span>. That facilitates the use of tools developed in the <em><a href="https://bioconductor.org/packages/3.14/Spectra">Spectra</a></em> package to subset query spectra according to their retention time and MSLevel.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/RforMassSpectrometry/Spectra">Spectra</a></span><span class="op">)</span>
 <span class="va">querySpectra</span> <span class="op">&lt;-</span> <span class="fu">Spectra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Spectra/man/Spectra.html">Spectra</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html">dir</a></span><span class="op">(</span><span class="va">queryFolder</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>
 <span class="va">querySpectra</span> <span class="op">&lt;-</span> <span class="va">querySpectra</span> <span class="op">%&gt;%</span>
   <span class="fu">Spectra</span><span class="fu">::</span><span class="fu">filterMsLevel</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">Spectra</span><span class="fu">::</span><span class="fu">filterRt</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">400</span><span class="op">)</span><span class="op">)</span>
-<span class="va">refLibrary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/MS2ID.html">MS2ID</a></span><span class="op">(</span><span class="va">MS2IDdirectory</span><span class="op">)</span>
-<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">querySpectra</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span><span class="op">)</span></code></pre></div>
+<span class="co">#annotate</span>
+<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu">MS2ID</span><span class="fu">::</span><span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">querySpectra</span>, MS2ID <span class="op">=</span> <span class="va">MS2IDobj</span><span class="op">)</span></code></pre></div>
 <p>The <code>annotate</code> function returns an <code>Annot</code> object.</p>
 </div>
 <div id="annot" class="section level2">
@@ -183,18 +166,18 @@ document.addEventListener("DOMContentLoaded", function() {
 </li>
 </ul>
 <p>In the example below, we use <em><a href="https://bioconductor.org/packages/3.14/Spectra">Spectra</a></em> tools to browse the annotation results, although it is more advisable to use the visual browsing provided by the <code>MS2IDgui</code> function.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">#merge hits and compound info</span>
 <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html">merge</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu">hits</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu">refCompound</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span>, 
                 by.x <span class="op">=</span> <span class="st">"idREFcomp"</span>, by.y <span class="op">=</span> <span class="st">"id"</span>, all.y <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></code></pre></div>
 <pre><code>##   idREFcomp    cosine idREFspect idQRYspect propAdduct cmnMasses ID_db
-## 1         1 0.9296013         32       1787        M+H         3  MoNA
-## 2         1 0.8735071         29       1829        M+H         3  MoNA
-## 3         1 0.9279620         29       1787        M+H         2  MoNA
-## 4         1 0.9712797         30       1858        M+H         3  MoNA
-## 5         1 0.8929630         33       1829        M+H         4  MoNA
-## 6         1 0.8742057         35       1829        M+H         3  MoNA
+## 1         1 0.9325190         32       2251        M+H         3  MoNA
+## 2         1 0.8549925         29       2298        M+H         3  MoNA
+## 3         1 0.9317047         29       2251        M+H         2  MoNA
+## 4         1 0.9681738         30       2330        M+H         3  MoNA
+## 5         1 0.9116125         33       2298        M+H         4  MoNA
+## 6         1 0.8966585         35       2298        M+H         3  MoNA
 ##        name    formula exactmass                    inchikey smiles
 ## 1 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
 ## 2 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
@@ -202,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function() {
 ## 4 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
 ## 5 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
 ## 6 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA</code></pre>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/RforMassSpectrometry/Spectra">Spectra</a></span><span class="op">)</span>
 <span class="co">#Subset spectra and metadata considering first hit query spectra</span>
 <span class="va">idQRYspect_1</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">idQRYspect</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>
@@ -216,7 +199,6 @@ document.addEventListener("DOMContentLoaded", function() {
 <span class="va">refSpct_draw</span><span class="op">$</span><span class="va">intensity</span> <span class="op">&lt;-</span> <span class="va">refSpct_draw</span><span class="op">$</span><span class="va">intensity</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">refSpct_draw</span><span class="op">$</span><span class="va">intensity</span><span class="op">)</span>
 <span class="va">qrySpct_1</span><span class="op">$</span><span class="va">intensity</span> <span class="op">&lt;-</span> <span class="va">qrySpct_1</span><span class="op">$</span><span class="va">intensity</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="va">qrySpct_1</span><span class="op">$</span><span class="va">intensity</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/Spectra/man/spectra-plotting.html">plotSpectraMirror</a></span><span class="op">(</span><span class="va">qrySpct_1</span>, <span class="va">refSpct_draw</span><span class="op">)</span></code></pre></div>
-<p><img src="annotate_files/figure-html/getters-1.png" width="700"></p>
 </div>
 <div id="consensus" class="section level2">
 <h2 class="hasAnchor">
@@ -240,57 +222,50 @@ The final <code>annot</code> object will contain not only the query spectra and 
 </li>
 </ul>
 <p>The algorithm will not annotate the spectra with rol=3.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">qrySpct</span> <span class="op">&lt;-</span> <span class="fu">qrySpectra</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span>
 <span class="co">#shor query data concerning consensus formation</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">spectraData</span><span class="op">(</span><span class="va">qrySpct</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"spectrumId_CONS"</span>, <span class="st">"rtime_CONS"</span>, <span class="st">"rol"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<pre><code>## DataFrame with 6 rows and 4 columns
-##          id        spectrumId_CONS             rtime_CONS       rol
-##   &lt;integer&gt;            &lt;character&gt;            &lt;character&gt; &lt;integer&gt;
-## 1      1775 scanId=339841, scanI.. 339.83299999998, 341..         4
-## 2      1787 scanId=101609, scanI.. 101.601, 103.3339999..         4
-## 3      1799 scanId=362352, scanI.. 362.34400000002, 364..         4
-## 4      1817 scanId=340041, scanI.. 340.03300000002, 341..         4
-## 5      1829 scanId=100071, scanI.. 100.06300000002, 101..         4
-## 6      1831 scanId=302432, scanI.. 302.424, 304.161, 30..         4</code></pre>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">Spectra</span><span class="fu">::</span><span class="fu">spectraData</span><span class="op">(</span><span class="va">qrySpct</span>, 
+                          <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"spectrumId_CONS"</span>, <span class="st">"rtime_CONS"</span>, <span class="st">"rol"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="subsetting-the-reference-library" class="section level2">
 <h2 class="hasAnchor">
 <a href="#subsetting-the-reference-library" class="anchor"></a>Subsetting the reference library</h2>
-<p>In annotation, subsetting the reference library not only reduces the computing time significantly -by taking advantage of the MS2ID backend and the fragments index: it also prunes the result and cuts off non-sense hits. For example, the <code>cmnFrags = (m, n)</code> argument limits the reference spectra so that reference spectra and query spectra have at least m peaks in common among their top n most intense peaks.<br>
-In addition, the <code>cmnPrecMass</code> argument limits the reference spectra to those with the same precursor mass as the query spectrum. On the other hand, <code>cmnNeutralMass</code> limits reference spectra to those with a neutral mass plausible with the query precursor (considering all possible adducts).</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>annotResult <span class="ot">&lt;-</span> <span class="fu">annotate</span>(<span class="at">QRYdir =</span> queryDir, <span class="at">MS2ID =</span> refLibrary, </span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">cmnFrags =</span> (<span class="dv">3</span>, <span class="dv">5</span>),</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">cmnPrecMass =</span> <span class="cn">TRUE</span>, <span class="at">cmnNeutralMass =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">cmnPolarity =</span> <span class="cn">TRUE</span>, <span class="at">nature =</span> <span class="st">"experimental"</span>)</span></code></pre></div>
-<p>Other arguments subset the reference spectra according to their polarization or experimental nature (<code>cmnPolarity</code> and <code>predicted</code>, respectively).</p>
+<p>In annotation, subsetting the reference library not only reduces the computing time significantly -by taking advantage of the MS2ID backend and the fragments index: it also prunes the result and cuts off non-sense hits. For example, the <code>cmnFrags = c(m, n)</code> argument limits the reference spectra so that reference spectra and query spectra have at least m peaks in common among their top n most intense peaks.<br>
+In addition, the <code>cmnPrecMass</code> argument limits the reference spectra to those with the precursor mass of the query spectrum. On the other hand, <code>cmnNeutralMass</code> limits reference spectra to those with a neutral mass plausible with the query precursor (considering all possible adducts).</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">queryFolder</span>, MS2ID <span class="op">=</span> <span class="va">MS2IDobj</span>, 
+                        cmnFrags <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">)</span>,
+                        cmnPrecMass <span class="op">=</span> <span class="cn">TRUE</span>, cmnNeutralMass <span class="op">=</span> <span class="cn">TRUE</span>, 
+                        cmnPolarity <span class="op">=</span> <span class="cn">TRUE</span>, predicted <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
+<p>Other arguments subset the reference spectra according its experimental nature or the query spectrum polarization (<code>predicted</code> and <code>cmnPolarity</code>, respectively).</p>
 </div>
 <div id="annotation-with-different-metrics" class="section level2">
 <h2 class="hasAnchor">
 <a href="#annotation-with-different-metrics" class="anchor"></a>Annotation with different metrics</h2>
 <p>As a default, the annotate function uses cosine similarity as a metric to compare two spectra; its default threshold value to beat to consider the comparison a hit is 0.8.<br>
-The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics exceeds its threshold value. <strong>Note that <em>to beat</em> a threshold value has a different meaning depending on the metric</strong>: <em>topsoe</em> and <em>squared_chord</em> metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value is lower than its threshold.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">querySpectra</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span>,
+The function also allows the simultaneous calculation of different metrics. In that case, a spectrum comparison is considered a hit when at least one of the metrics fulfills its threshold value. <strong>Note that <em>to fulfill</em> a threshold value has a different meaning depending on the metric</strong>: <em>topsoe</em> and <em>squared_chord</em> metrics return a lower number when the spectra are more similar so, unlike the rest, a hit will occur when the returned value is lower than its threshold.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">queryFolder</span>, MS2ID <span class="op">=</span> <span class="va">MS2IDobj</span>,
                         metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"fidelity"</span>, <span class="st">"cosine"</span>, <span class="st">"topsoe"</span><span class="op">)</span>,
                         metricsThresh <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">MS2ID</span><span class="fu">::</span><span class="fu">hits</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <pre><code>##         fidelity    cosine     topsoe idREFspect idQRYspect idREFcomp
-## 1775.1 0.6182551 0.2691026 0.68745142        170       1775        10
-## 1775.2 0.9486782 0.9867201 0.08079319        173       1775        10
-## 1775.3 0.9750072 0.9981363 0.03686771        174       1775        10
-## 1775.4 0.9849112 0.9994530 0.02179557        175       1775        10
-## 1775.5 0.9070347 0.9408979 0.16563675        176       1775        10
-## 1775.6 0.7294529 0.5787374 0.48779452        177       1775        10
+## 2236.1 0.6182551 0.2691026 0.68745142        170       2236        10
+## 2236.2 0.9486782 0.9867201 0.08079319        173       2236        10
+## 2236.3 0.9750072 0.9981363 0.03686771        174       2236        10
+## 2236.4 0.9849112 0.9994530 0.02179557        175       2236        10
+## 2236.5 0.9070347 0.9408979 0.16563675        176       2236        10
+## 2236.6 0.7294529 0.5787374 0.48779452        177       2236        10
 ##        propAdduct cmnMasses
-## 1775.1        M+H         6
-## 1775.2        M+H         4
-## 1775.3        M+H         3
-## 1775.4        M+H         5
-## 1775.5        M+H         5
-## 1775.6        M+H         5</code></pre>
+## 2236.1        M+H         6
+## 2236.2        M+H         4
+## 2236.3        M+H         3
+## 2236.4        M+H         5
+## 2236.5        M+H         5
+## 2236.6        M+H         5</code></pre>
 <p>Moreover, <strong>the user can define its own metric</strong> by declaring a function as an argument; in the following example, <code>foo</code> function uses cosine+1 as a distance metric.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">foo</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">finalMatrix</span><span class="op">)</span><span class="op">{</span>
   <span class="va">vector1</span> <span class="op">&lt;-</span> <span class="va">finalMatrix</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span>
   <span class="va">vector2</span> <span class="op">&lt;-</span> <span class="va">finalMatrix</span><span class="op">[</span><span class="fl">2</span>,<span class="op">]</span>
@@ -301,24 +276,24 @@ The function also allows the simultaneous calculation of different metrics. In t
   <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">CosplusOne</span><span class="op">)</span>
 <span class="op">}</span>
 
-<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">querySpectra</span>, MS2ID <span class="op">=</span> <span class="va">refLibrary</span>,
+<span class="va">annotResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/annotate.html">annotate</a></span><span class="op">(</span>QRYdata <span class="op">=</span> <span class="va">queryFolder</span>, MS2ID <span class="op">=</span> <span class="va">MS2IDobj</span>,
                         metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"cosine"</span><span class="op">)</span>, metricsThresh <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.8</span><span class="op">)</span>,
                         metricFUN <span class="op">=</span> <span class="va">foo</span>, metricFUNThresh <span class="op">=</span> <span class="fl">1.8</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">MS2ID</span><span class="fu">::</span><span class="fu">hits</span><span class="op">(</span><span class="va">annotResult</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <pre><code>##            cosine metricFunc.CosplusOne idREFspect idQRYspect idREFcomp
-## 1775.2  0.9867201              1.986720        173       1775        10
-## 1775.3  0.9981363              1.998136        174       1775        10
-## 1775.4  0.9994530              1.999453        175       1775        10
-## 1775.5  0.9408979              1.940898        176       1775        10
-## 1775.9  0.9972315              1.997231        180       1775        10
-## 1775.10 0.9994336              1.999434        181       1775        10
+## 2236.2  0.9867201              1.986720        173       2236        10
+## 2236.3  0.9981363              1.998136        174       2236        10
+## 2236.4  0.9994530              1.999453        175       2236        10
+## 2236.5  0.9408979              1.940898        176       2236        10
+## 2236.9  0.9972315              1.997231        180       2236        10
+## 2236.10 0.9994336              1.999434        181       2236        10
 ##         propAdduct cmnMasses
-## 1775.2         M+H         4
-## 1775.3         M+H         3
-## 1775.4         M+H         5
-## 1775.5         M+H         5
-## 1775.9         M+H         2
-## 1775.10        M+H         5</code></pre>
+## 2236.2         M+H         4
+## 2236.3         M+H         3
+## 2236.4         M+H         5
+## 2236.5         M+H         5
+## 2236.9         M+H         2
+## 2236.10        M+H         5</code></pre>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2 class="hasAnchor">

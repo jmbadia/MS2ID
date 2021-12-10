@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Annotate spectra against a MS2ID library — annotate • MS2ID</title>
+<title>Annotate MS/MS spectra against a reference library — annotate • MS2ID</title>
 
 
 <!-- jquery -->
@@ -39,11 +39,12 @@
 
 
 
-<meta property="og:title" content="Annotate spectra against a MS2ID library — annotate" />
-<meta property="og:description" content="annotate returns, for every query spectrum, a list of compound
-candidates from a reference library (MS2ID object). The
-criteria relies on compare every query spectrum with reference spectra using
-distance metrics." />
+<meta property="og:title" content="Annotate MS/MS spectra against a reference library — annotate" />
+<meta property="og:description" content="annotate is the MS2ID function that annotates MS/MS query spectra.
+Every query spectrum is compared with a reference library
+(MS2ID object) using as criteria different distance metrics;
+the function returns query and reference spectra (and their compounds) that
+beat a determined threshold." />
 
 
 
@@ -126,16 +127,17 @@ distance metrics." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Annotate spectra against a MS2ID library</h1>
+    <h1>Annotate MS/MS spectra against a reference library</h1>
     <small class="dont-index">Source: <a href='https://github.com/jmbadia/MS2ID/blob/master/R/annotate.R'><code>R/annotate.R</code></a></small>
     <div class="hidden name"><code>annotate.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p><code>annotate</code> returns, for every query spectrum, a list of compound
-candidates from a reference library (<a href='MS2ID.html'>MS2ID</a> object). The
-criteria relies on compare every query spectrum with reference spectra using
-distance metrics.</p>
+    <p><code>annotate</code> is the MS2ID function that annotates MS/MS query spectra.
+Every query spectrum is compared with a reference library
+(<a href='MS2ID.html'>MS2ID</a> object) using as criteria different distance metrics;
+the function returns query and reference spectra (and their compounds) that
+beat a determined threshold.</p>
     </div>
 
     <pre class="usage"><span class='fu'>annotate</span><span class='op'>(</span>
@@ -144,9 +146,9 @@ distance metrics.</p>
   <span class='va'>MS2ID</span>,
   metrics <span class='op'>=</span> <span class='st'>"cosine"</span>,
   metricsThresh <span class='op'>=</span> <span class='fl'>0.8</span>,
-  <span class='va'>metricFUN</span>,
-  <span class='va'>metricFUNThresh</span>,
-  massErrMs1 <span class='op'>=</span> <span class='fl'>30</span>,
+  metricFUN <span class='op'>=</span> <span class='cn'>NULL</span>,
+  metricFUNThresh <span class='op'>=</span> <span class='cn'>NULL</span>,
+  massErrMs1 <span class='op'>=</span> <span class='fl'>5</span>,
   massErrMsn <span class='op'>=</span> <span class='fl'>20</span>,
   noiseThresh <span class='op'>=</span> <span class='fl'>0.01</span>,
   cmnPrecMass <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -154,7 +156,7 @@ distance metrics.</p>
   cmnFrags <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>2</span>, <span class='fl'>5</span><span class='op'>)</span>,
   cmnPolarity <span class='op'>=</span> <span class='cn'>TRUE</span>,
   predicted <span class='op'>=</span> <span class='cn'>NULL</span>,
-  consens <span class='op'>=</span> <span class='cn'>T</span>,
+  consens <span class='op'>=</span> <span class='cn'>TRUE</span>,
   consCos <span class='op'>=</span> <span class='fl'>0.8</span>,
   consComm <span class='op'>=</span> <span class='fl'>2</span><span class='op'>/</span><span class='fl'>3</span>,
   <span class='va'>...</span>
@@ -165,7 +167,14 @@ distance metrics.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>QRYdata</th>
-      <td><p>character(n) defining either the directory containing the mzML files, or the files themselves.</p></td>
+      <td><p>Query spectra. <code><a href='https://rdrr.io/pkg/Spectra/man/Spectra.html'>Spectra</a></code>(1) object (see
+<a href='https://bioconductor.org/packages/3.14/Spectra'>Spectra</a> package) or
+character(1) with the directory name containing the mzML files.</p></td>
+    </tr>
+    <tr>
+      <th>QRYmsLevel</th>
+      <td><p>integer(1). This argument filters the query spectra loaded
+from mzML files according their msLevel.</p></td>
     </tr>
     <tr>
       <th>MS2ID</th>
@@ -174,107 +183,164 @@ the annotation.</p></td>
     </tr>
     <tr>
       <th>metrics</th>
-      <td><p>character(n) defining the n distance metrics to measure
-simultaneously between query and reference spectra. Values are restricted
-to 'cosine', 'topsoe', 'fidelity' and 'squared_chord'.</p></td>
+      <td><p>character(n) that defines which metrics use to compare query
+and reference spectra (<code>annotate</code> function trims the result according
+the <code>metricsThresh</code> parameter). Values are restricted to 'cosine',
+'topsoe', 'fidelity' and 'squared_chord'. See
+<code><a href='https://rdrr.io/pkg/philentropy/man/distance.html'>distance</a></code> function in philentropy package for
+more information.</p></td>
     </tr>
     <tr>
       <th>metricsThresh</th>
       <td><p>numeric(n) defining the n threshold values of the n
-metrics. A reference spectrum is considered a hit when at least one of the
-metrics measured fulfills its threshold. Recommended values to start with
-are cosine=0.8, topsoe=0.6, fidelity=0.6 and squared_chord=0.8.</p></td>
+metrics. A reference spectrum is considered a hit and listed in the return
+object when <strong>at least one of the metrics</strong> fulfills its threshold;
+note that to fulfill a threshold value has a different meaning depending on
+the metric: topsoe and squared_chord metrics return a lower number when the
+spectra are more similar so, unlike the rest, a hit will occur when the
+returned value is lower than its threshold. Recommended values to start
+with are cosine=0.8, topsoe=0.6, fidelity=0.6 and squared_chord=0.8.</p></td>
     </tr>
     <tr>
       <th>metricFUN</th>
-      <td><p>function(1) user-made defining a new metric for annotation.
-The function must have the two spectra to be compared as arguments. Each of
-these spectra must be a matrix with its mass-charge and intensity in rows
-respectively. Finally, the function must return a numeric(1).</p></td>
+      <td><p>function(1) defined by the user to be used as metric. This
+function must accept a two-row matrix as a parameter; each row must contain
+the intensity of a spectrum, and each column must refer to the same m/z
+value (considering the massErrMsn parameter as the mass error). Finally,
+the function must return a numeric(1). See example.</p></td>
     </tr>
     <tr>
       <th>metricFUNThresh</th>
-      <td><p>numeric(1) threshold value of the metric defined by
-the 'metricFUN' function.</p></td>
+      <td><p>numeric(1) with the threshold value of the metric
+defined by the <code>metricFUN</code> parameter. metricFUN / metricFUN are
+analogous to metrics / metricsThresh parameters.</p></td>
     </tr>
     <tr>
       <th>massErrMs1</th>
-      <td><p>numeric(1). Mass error to consider in operations with first spectrometer measures, e.g.  in consensus formation, grouping query spectra according its precursor mass or, in reference spectra prefiltering, evaluate its precursor or neutral masses</p></td>
+      <td><p>numeric(1). Mass error to consider in operations with first
+spectrometer measures (MS1), e.g. grouping spectra according its precursor
+mass (in consensus formation) or evaluating precursor and neutral masses
+similarities (in reference spectra prefiltering),</p></td>
     </tr>
     <tr>
       <th>massErrMsn</th>
-      <td><p>numeric(1) Mass error to consider in operations with non first spectrometer measures (typycally MS2). e.g. grouping fragments for consensus formation or distance similarity measures (tipically cosine)</p></td>
+      <td><p>numeric(1) Mass error to consider in operations with
+non-first spectrometer measures (typically MS2). e.g. matching fragments,
+for consensus formation or distance similarity measures.</p></td>
     </tr>
     <tr>
       <th>noiseThresh</th>
-      <td><p>A numeric defining the threshold used in the noise
-filtering of the query spectra, considered as % intensity relative to base
-peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of less than
-1% of the base peak.</p></td>
+      <td><p>numeric(1) defining the threshold used in the noise
+filtering of the query spectra. It is expressed as % intensity relative to
+base peak. e.g. noiseThresh=0.01 eliminates peaks with an intensity of less
+than 1% of the base peak.</p></td>
     </tr>
     <tr>
       <th>cmnPrecMass</th>
-      <td><p>-Reference spectra filter- Boolean, a TRUE value limits
-the reference spectra to those that have the same precursor mass as the
-query spectrum.</p></td>
-    </tr>
-    <tr>
-      <th>cmnNeutralMass</th>
-      <td><p>-Reference spectra filter- Boolean, a TRUE value limits
-the reference spectra to those that have a neutral mass that matches some
-of the plausible query neutral masses (considering the precursor query mass
-and all the possible adducts, TODO: see link).</p></td>
-    </tr>
-    <tr>
-      <th>cmnFrags</th>
-      <td><p>-Reference spectra filter- vector with 2 integers (m, n) limiting reference spectra. Reference spectra and query spectra must have at least m peaks in common among their top n most intense peaks</p></td>
-    </tr>
-    <tr>
-      <th>cmnPolarity</th>
-      <td><p>-Reference spectra filter- Boolean, a TRUE value limits
-the reference spectra to those with the same polarity as the query
+      <td><p>-Reference spectra filter- Boolean(1) that limits the
+reference spectra to those that have the precursor mass of the query
 spectrum.</p></td>
     </tr>
     <tr>
-      <th>predicted</th>
-      <td><p>-Reference spectra filter- Character filtering the reference
-spectra by the spectra nature. Default is no filtering</p></td>
+      <th>cmnNeutralMass</th>
+      <td><p>-Reference spectra filter- Boolean filtering the
+reference spectra to those with a neutral mass plausible with the query
+precursor (considering all possible adducts).</p></td>
     </tr>
     <tr>
-      <th>nsamples</th>
-      <td><p>integer(1) defines a subset of x random query spectra to work
-with. Useful for speeding up preliminary testing before definitive
-annotation.</p></td>
+      <th>cmnFrags</th>
+      <td><p>-Reference spectra filter- vector with two integers (m, n)
+limiting the reference spectra so that both query and reference spectra
+have at least m peaks in common among their top n most intense peaks.</p></td>
+    </tr>
+    <tr>
+      <th>cmnPolarity</th>
+      <td><p>-Reference spectra filter- Boolean(1) that limits the
+reference spectra to those with the same polarity than the query spectrum.</p></td>
+    </tr>
+    <tr>
+      <th>predicted</th>
+      <td><p>-Reference spectra filter- Boolean(1) filtering the
+reference spectra according its experimental nature (in-silico or
+predicted). A NULL value does not apply filter.</p></td>
+    </tr>
+    <tr>
+      <th>consens</th>
+      <td><p>boolean(1) indicating if the query spectra must be consensued
+or not.</p></td>
+    </tr>
+    <tr>
+      <th>consCos</th>
+      <td><p>numeric(1) with the minimum cosine similarity two
+contiguous spectra must have to consens a spectrum.</p></td>
+    </tr>
+    <tr>
+      <th>consComm</th>
+      <td><p>numeric(1) During the consensus formation, minimum presence of
+m/z in the query spectra in order to be part of the final consensus
+spectrum.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>other arguments passed to function</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>an <a href='Annot.html'>Annot</a> object with the results of the
-  annotation</p>
+    <p>an <a href='Annot.html'>Annot</a> object with the results of the annotation</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><a href='Annot.html'>Annot</a> class and the post annotation tools
+  <code><a href='MS2IDgui.html'>MS2IDgui</a></code> and <code><a href='export2xlsx.html'>export2xlsx</a></code>.</p></div>
+    <h2 class="hasAnchor" id="author"><a class="anchor" href="#author"></a>Author</h2>
+
+    <p>Josep M. Badia <a href='mailto:josepmaria.badia@urv.cat'>josepmaria.badia@urv.cat</a></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='va'>fooFunction</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>spectr1</span>, <span class='va'>spectr2</span><span class='op'>)</span><span class='op'>{</span>
-  <span class='va'>mz1</span> <span class='op'>&lt;-</span> <span class='va'>spectr1</span><span class='op'>[</span><span class='fl'>1</span>, <span class='op'>]</span>
-  <span class='va'>int1</span> <span class='op'>&lt;-</span> <span class='va'>spectr1</span><span class='op'>[</span><span class='fl'>2</span>, <span class='op'>]</span>
-  <span class='va'>mz2</span> <span class='op'>&lt;-</span> <span class='va'>spectr2</span><span class='op'>[</span><span class='fl'>1</span>, <span class='op'>]</span>
-  <span class='va'>int2</span> <span class='op'>&lt;-</span> <span class='va'>spectr2</span><span class='op'>[</span><span class='fl'>2</span>, <span class='op'>]</span>
-  <span class='va'>row1</span><span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='va'>mz2</span>, <span class='va'>mz1</span><span class='op'>)</span><span class='op'>)</span>
-  <span class='va'>row2</span> <span class='op'>&lt;-</span> <span class='va'>int2</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/match.html'>match</a></span><span class='op'>(</span><span class='va'>row1</span>, <span class='va'>mz2</span><span class='op'>)</span><span class='op'>]</span>
-  <span class='va'>row1</span> <span class='op'>&lt;-</span> <span class='va'>int1</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/match.html'>match</a></span><span class='op'>(</span><span class='va'>row1</span>, <span class='va'>mz1</span><span class='op'>)</span><span class='op'>]</span>
-  <span class='va'>row1</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/NA.html'>is.na</a></span><span class='op'>(</span><span class='va'>row1</span><span class='op'>)</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fl'>0</span>
-  <span class='va'>row2</span><span class='op'>[</span><span class='fu'><a href='https://rdrr.io/r/base/NA.html'>is.na</a></span><span class='op'>(</span><span class='va'>row2</span><span class='op'>)</span><span class='op'>]</span> <span class='op'>&lt;-</span> <span class='fl'>0</span>
-  <span class='va'>rowdf</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/cbind.html'>rbind</a></span><span class='op'>(</span><span class='va'>row1</span>, <span class='va'>row2</span><span class='op'>)</span>
-  <span class='va'>fooCos</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/message.html'>suppressMessages</a></span><span class='op'>(</span><span class='fu'>philentropy</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/philentropy/man/distance.html'>distance</a></span><span class='op'>(</span><span class='va'>rowdf</span>, method <span class='op'>=</span> <span class='st'>"cosine"</span><span class='op'>)</span><span class='op'>)</span>
-  <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>fooCos</span><span class='op'>+</span><span class='fl'>1</span><span class='op'>)</span>
+    <pre class="examples"><div class='input'>
+<span class='co'>## LOAD MS2ID LIBRARY ---</span>
+<span class='co'>## Decompress the MS2ID library that comes with MS2ID</span>
+<span class='va'>MS2IDzipFile</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span><span class='op'>(</span><span class='st'>"extdata/MS2IDLibrary.zip"</span>,
+                            package <span class='op'>=</span> <span class='st'>"MS2ID"</span>,
+                            mustWork <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>utils</span><span class='op'>)</span>
+<span class='va'>MS2IDFolder</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/basename.html'>dirname</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/utils/unzip.html'>unzip</a></span><span class='op'>(</span><span class='va'>MS2IDzipFile</span>,
+                             exdir <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/tempfile.html'>tempdir</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>]</span>
+
+<span class='co'>## SELECT QUERY SPECTRA ---</span>
+<span class='co'>## Decompress the query mzML files that come with MS2ID</span>
+<span class='va'>queryFile</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span><span class='op'>(</span><span class='st'>"extdata/QRYspectra.zip"</span>,
+                         package <span class='op'>=</span> <span class='st'>"MS2ID"</span>,
+                         mustWork <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='va'>queryFolder</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/tempfile.html'>tempdir</a></span><span class='op'>(</span><span class='op'>)</span>, <span class='st'>"QRYspectra"</span><span class='op'>)</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>utils</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/unzip.html'>unzip</a></span><span class='op'>(</span><span class='va'>queryFile</span>, exdir <span class='op'>=</span> <span class='va'>queryFolder</span><span class='op'>)</span>
+
+<span class='co'>## ANNOTATE ---</span>
+<span class='co'>## 3.1 Simple annotation</span>
+<span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://jmbadia.github.io/MS2ID/index.html'>MS2ID</a></span><span class='op'>)</span>
+<span class='va'>MS2IDlib</span> <span class='op'>&lt;-</span> <span class='fu'><a href='MS2ID.html'>MS2ID</a></span><span class='op'>(</span><span class='va'>MS2IDFolder</span><span class='op'>)</span>
+<span class='va'>annotResult</span> <span class='op'>&lt;-</span> <span class='fu'>annotate</span><span class='op'>(</span>QRYdata <span class='op'>=</span> <span class='va'>queryFolder</span>,
+                        MS2ID <span class='op'>=</span> <span class='va'>MS2IDlib</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>Loading query spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Obtaining consensus spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Solving distance metrics between query and reference spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Processing results obtained ...</span></div><div class='input'><span class='co'>## 3.2 Annotation with different metrics</span>
+<span class='co'>## external function to annotate</span>
+<span class='va'>foo</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>finalMatrix</span><span class='op'>)</span><span class='op'>{</span>
+  <span class='va'>vector1</span> <span class='op'>&lt;-</span> <span class='va'>finalMatrix</span><span class='op'>[</span><span class='fl'>1</span>, <span class='op'>]</span>
+  <span class='va'>vector2</span> <span class='op'>&lt;-</span> <span class='va'>finalMatrix</span><span class='op'>[</span><span class='fl'>2</span>, <span class='op'>]</span>
+  <span class='va'>CosplusOne</span> <span class='op'>&lt;-</span> <span class='fl'>1</span> <span class='op'>+</span> <span class='fu'><a href='https://rdrr.io/r/base/message.html'>suppressMessages</a></span><span class='op'>(</span>
+    <span class='fu'>philentropy</span><span class='fu'>::</span><span class='fu'><a href='https://rdrr.io/pkg/philentropy/man/distance.html'>distance</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/cbind.html'>rbind</a></span><span class='op'>(</span><span class='va'>vector1</span>, <span class='va'>vector2</span><span class='op'>)</span>,
+                          method <span class='op'>=</span> <span class='st'>"cosine"</span><span class='op'>)</span>
+  <span class='op'>)</span>
+  <span class='fu'><a href='https://rdrr.io/r/base/names.html'>names</a></span><span class='op'>(</span><span class='va'>CosplusOne</span><span class='op'>)</span> <span class='op'>&lt;-</span> <span class='st'>"CosplusOne"</span>
+  <span class='kw'><a href='https://rdrr.io/r/base/function.html'>return</a></span><span class='op'>(</span><span class='va'>CosplusOne</span><span class='op'>)</span>
 <span class='op'>}</span>
-<span class='va'>result</span> <span class='op'>&lt;-</span> <span class='fu'>annotate</span><span class='op'>(</span>QRYdata <span class='op'>=</span> <span class='va'>q</span>, MS2ID <span class='op'>=</span> <span class='va'>ms2idObject</span>, nsamples<span class='op'>=</span><span class='fl'>10</span>,
-         metrics <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"fidelity"</span>, <span class='st'>"cosine"</span>, <span class='st'>"topsoe"</span><span class='op'>)</span>,
-         metricsThresh <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.6</span>, <span class='fl'>0.8</span>, <span class='fl'>0.6</span><span class='op'>)</span>,
-         metricFUN <span class='op'>=</span> <span class='va'>fooFunction</span>, metricFUNThresh <span class='op'>=</span> <span class='fl'>1.8</span><span class='op'>)</span>
-<span class='op'>}</span>
-</div></pre>
+<span class='va'>annotResult</span> <span class='op'>&lt;-</span> <span class='fu'>annotate</span><span class='op'>(</span>
+  QRYdata <span class='op'>=</span> <span class='va'>queryFolder</span>, MS2ID <span class='op'>=</span> <span class='va'>MS2IDlib</span>,
+  metrics <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"cosine"</span>, <span class='st'>"fidelity"</span>, <span class='st'>"topsoe"</span><span class='op'>)</span>,
+  metricsThresh <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.8</span>, <span class='fl'>0.6</span>, <span class='fl'>0.6</span><span class='op'>)</span>,
+  metricFUN <span class='op'>=</span> <span class='va'>foo</span>, metricFUNThresh <span class='op'>=</span> <span class='fl'>1.8</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>Loading query spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Obtaining consensus spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Solving distance metrics between query and reference spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Processing results obtained ...</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

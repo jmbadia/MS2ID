@@ -48,13 +48,13 @@ also contains the distance metrics and other variables that may define a hit
 (e.g. adduct assumed on the query spectrum).
 An Annot object is created internally by the annotate
 function, but its content can be accessed externally by using:
-MS2IDgui function: A GUI interface that browses visually
-the Annot content.
-export2xlsx function: Export all the
-data to an xlsx file.
+MS2IDgui
+function: A GUI interface that browses visually the Annot content.
+export2xlsx function: Export all the data to an xlsx file.
 
 
-More info in the corresponding vignette." />
+More info in the corresponding
+vignette." />
 
 
 
@@ -151,28 +151,54 @@ also contains the distance metrics and other variables that may define a hit
 (e.g. adduct assumed on the query spectrum).</p>
 <p>An <code>Annot</code> object is created internally by the <code><a href='annotate.html'>annotate</a></code>
 function, but its content can be accessed externally by using:</p><ul>
-<li><p><code><a href='MS2IDgui.html'>MS2IDgui</a></code> function: A GUI interface that browses visually
-the Annot content.</p></li>
-<li><p><code><a href='export2xlsx.html'>export2xlsx</a></code> function: Export all the
-data to an xlsx file.</p></li>
+<li><p><code><a href='MS2IDgui.html'>MS2IDgui</a></code>
+function: A GUI interface that browses visually the Annot content.</p></li>
+<li><p><code><a href='export2xlsx.html'>export2xlsx</a></code> function: Export all the data to an xlsx file.</p></li>
 </ul>
 
-<p>More info in the corresponding <a href='https://jmbadia.github.io/MS2ID/articles/annotate.html#annot-object'>vignette</a>.</p>
+<p>More info in the corresponding
+<a href='https://jmbadia.github.io/MS2ID/articles/annotate.html#annot-object'>vignette</a>.</p>
     </div>
 
     <pre class="usage"><span class='co'># S4 method for Annot</span>
+<span class='fu'>refCompound</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
+<span class='co'># S4 method for Annot</span>
+<span class='fu'>qrySpectra</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
+<span class='co'># S4 method for Annot</span>
+<span class='fu'>refSpectra</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
+<span class='co'># S4 method for Annot</span>
+<span class='fu'>hits</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
+<span class='co'># S4 method for Annot</span>
+<span class='fu'>infoAnnotation</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+
+<span class='co'># S4 method for Annot</span>
 <span class='fu'>show</span><span class='op'>(</span><span class='va'>object</span><span class='op'>)</span></pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>x</th>
+      <td><p>character: signature supported</p></td>
+    </tr>
+    <tr>
+      <th>object</th>
+      <td><p>character: signature supported</p></td>
+    </tr>
+    </table>
 
     <h2 class="hasAnchor" id="getters"><a class="anchor" href="#getters"></a>Getters</h2>
 
     <p>To obtain the content of any Annot's slot, please use the
   following methods</p><ul>
-<li><p>hits(object): returns a cross-reference
-  dataframe containing the hits along with their proposed adducts and common
-  masses.</p></li>
-<li><p>qrySpectra(object): returns a <code><a href='https://rdrr.io/pkg/Spectra/man/Spectra.html'>Spectra</a></code>
-  object <code>CompDb</code> object (Gatto et al. 2021)
+<li><p>hits: returns a cross-reference dataframe
+  containing the hits along with their proposed adducts and common masses.</p></li>
+<li><p>qrySpectra(object): returns a <code><a href='https://rdrr.io/pkg/Spectra/man/Spectra.html'>Spectra</a></code> object
+  (Gatto et al. 2021)
  containing the query spectra with hits.</p></li>
 <li><p>refSpectra(object): returns a <code><a href='https://rdrr.io/pkg/Spectra/man/Spectra.html'>Spectra</a></code> object with
   successful reference spectra.</p></li>
@@ -215,7 +241,6 @@ R package version 1.3.4, <a href='https://github.com/RforMassSpectrometry/Spectr
 <span class='va'>queryFolder</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/file.path.html'>file.path</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/tempfile.html'>tempdir</a></span><span class='op'>(</span><span class='op'>)</span>, <span class='st'>"QRYspectra"</span><span class='op'>)</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>utils</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/unzip.html'>unzip</a></span><span class='op'>(</span><span class='va'>queryFile</span>, exdir <span class='op'>=</span> <span class='va'>queryFolder</span><span class='op'>)</span>
-
 <span class='co'>## ANNOTATION ---</span>
 <span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://jmbadia.github.io/MS2ID/index.html'>MS2ID</a></span><span class='op'>)</span>
 <span class='va'>MS2IDlib</span> <span class='op'>&lt;-</span> <span class='fu'><a href='MS2ID.html'>MS2ID</a></span><span class='op'>(</span><span class='va'>MS2IDFolder</span><span class='op'>)</span>

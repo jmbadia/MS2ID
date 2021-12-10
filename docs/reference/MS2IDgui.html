@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Export an annotation object to an xlsx file — export2xlsx • MS2ID</title>
+<title>Browse visually an Annot object — MS2IDgui • MS2ID</title>
 
 
 <!-- jquery -->
@@ -39,9 +39,8 @@
 
 
 
-<meta property="og:title" content="Export an annotation object to an xlsx file — export2xlsx" />
-<meta property="og:description" content="export2xlsx function exports the data contained in an
-Annot object to a xlsx file." />
+<meta property="og:title" content="Browse visually an Annot object — MS2IDgui" />
+<meta property="og:description" content="MS2IDgui is a Shiny app that visually browses the annotation results stored in an Annot object. The Annot object can be loaded as an argument or directly from the user interface." />
 
 
 
@@ -124,58 +123,57 @@ Annot object to a xlsx file." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Export an annotation object to an xlsx file</h1>
-    <small class="dont-index">Source: <a href='https://github.com/jmbadia/MS2ID/blob/master/R/export2xlsx.R'><code>R/export2xlsx.R</code></a></small>
-    <div class="hidden name"><code>export2xlsx.Rd</code></div>
+    <h1>Browse visually an Annot object</h1>
+    <small class="dont-index">Source: <a href='https://github.com/jmbadia/MS2ID/blob/master/R/app.R'><code>R/app.R</code></a></small>
+    <div class="hidden name"><code>MS2IDgui.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p><code>export2xlsx</code> function exports the data contained in an
-<a href='Annot.html'>Annot</a> object to a xlsx file.</p>
+    <p><code>MS2IDgui</code> is a Shiny app that visually browses the annotation results stored in an <a href='Annot.html'>Annot</a> object. The <a href='Annot.html'>Annot</a> object can be loaded as an argument or directly from the user interface.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>export2xlsx</span><span class='op'>(</span><span class='va'>anRslt</span>, summarizeHits <span class='op'>=</span> <span class='cn'>TRUE</span>, file <span class='op'>=</span> <span class='cn'>NULL</span>, overwrite <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>MS2IDgui</span><span class='op'>(</span><span class='va'>annot</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>anRslt</th>
-      <td><p><a href='Annot.html'>Annot</a> object with the results to export.</p></td>
-    </tr>
-    <tr>
-      <th>summarizeHits</th>
-      <td><p>boolean(1). A TRUE value summarizes the resulting excel,
-keeping only, for every query spectrum, the best annotation per compound.</p></td>
-    </tr>
-    <tr>
-      <th>file</th>
-      <td><p>char(1) name of the resulting xlsx file</p></td>
-    </tr>
-    <tr>
-      <th>overwrite</th>
-      <td><p>boolean(1) If TRUE, overwrite any existing file.</p></td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td><p>other arguments passed to function</p></td>
+      <th>annot</th>
+      <td><p><a href='Annot.html'>Annot</a> object with the results to be browsed. By
+default (no argument), the function opens the browser with no data and the
+<a href='Annot.html'>Annot</a> object can be loaded using the user interface.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p><code>export2xlsx</code> function distributes the annotation results among
-different worksheets of an xlsx file, one per query file, and every row
-corresponds to an annotation. Annotations of the same query spectrum have
-identical row colours. Contiguous annotations with equal query precursor mass
-have similar row colours (e.g. variations of orange); the best distance
-metric and the most common compound name among those contiguous annotations
-are bolded in red and black. Moreover:</p><ul>
+    <p>The user interface has two panels. The <strong>right panel</strong> lists the loaded
+annotations as rows in a table; when one of them is clicked, the <strong>left
+panel</strong> responds by displaying the figures related to the selection:</p><ul>
+<li><p>Tab Cons.: If the annotation has a
+consensual query spectrum, this sub-panel displays a figure with the query
+spectra that form it..</p></li>
+</ul><p>The <strong>left panel</strong> also has two more tabs with general features:</p><ul>
+<li><p>Tab Info: Lists the arguments used in the
+<code><a href='annotate.html'>annotate</a></code> function that resulted in the present
+<a href='Annot.html'>Annot</a> object.</p></li>
+</ul><p>Concerning the <strong>right panel</strong>, it must be noted:
+The</p><ul>
+<li><p>Every row corresponds to an annotation in
+the table, and different annotations of the same spectrum have identical row
+colours.</p></li>
+<li><p>Column names that contain QRY, REF or CONS refer to query,
+reference or consensus entities, respectively. e.g. <code>QRYprecursorMz</code>
+contains the precursor M/z of the query spectra, <code>REFadduct</code> the adducts
+of the reference spectra and <code>QRYrtime_CONS</code> the retention times of the
+query spectra that conform every consensus spectrum.</p></li>
 <li><p>The column
-<code>massNum.QRY_CMN_REF</code> (e.g. 7/4/5) shows the number of fragments of the
-query and reference spectra, and the number of fragments they have in common.</p></li>
-<li><p><code>REFinchikey</code> contains the inchikey of the reference compound and
-a link to a Pubchem's page listing compounds with that inchikey.</p></li>
+<code>massNum</code> refers to the number of fragments of the query spectrum
+(green), the reference spectrum (red) and the number of fragments in common
+(black). Similarly, the column <code>collisionEnergy</code> shows the collision
+energy of the query (green) and reference (red) spectra.</p></li>
+<li><p><code>REFinchikey</code> shows the inchikey of the reference compound and links to
+a Pubchem's page with a list of compounds that shares that inchikey.</p></li>
 <li><p><code>ppmPrecMass</code> refers to the difference, in ppm, between query and
 reference precursor masses.</p></li>
 </ul>
@@ -212,9 +210,11 @@ reference precursor masses.</p></li>
 <span class='va'>MS2IDlib</span> <span class='op'>&lt;-</span> <span class='fu'><a href='MS2ID.html'>MS2ID</a></span><span class='op'>(</span><span class='va'>MS2IDFolder</span><span class='op'>)</span>
 <span class='va'>annotResult</span> <span class='op'>&lt;-</span> <span class='fu'><a href='annotate.html'>annotate</a></span><span class='op'>(</span>QRYdata <span class='op'>=</span> <span class='va'>queryFolder</span>, MS2ID <span class='op'>=</span> <span class='va'>MS2IDlib</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; <span class='message'>Loading query spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Obtaining consensus spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Solving distance metrics between query and reference spectra ...</span></div><div class='output co'>#&gt; <span class='message'>Processing results obtained ...</span></div><div class='input'>
-<span class='co'>## EXPORT TO XLSX FILE---</span>
-<span class='fu'>export2xlsx</span><span class='op'>(</span>anRslt <span class='op'>=</span> <span class='va'>annotResult</span>, file <span class='op'>=</span> <span class='st'>"sample"</span>,
-            summarizeHits <span class='op'>=</span> <span class='cn'>FALSE</span>, overwrite<span class='op'>=</span><span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='co'>## Browse visually the results---</span>
+<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='fu'>MS2IDgui</span><span class='op'>(</span><span class='va'>annotResult</span><span class='op'>)</span>
+<span class='op'>}</span>
+
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

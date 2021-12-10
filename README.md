@@ -8,7 +8,7 @@ You can download the development version from GitHub with:
 ``` r
 if(!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
-devtools::install_github("jmbadia/MS2ID", build_vignettes = TRUE, force=T)
+devtools::install_github("jmbadia/MS2ID", force=T)
 ```
 
 ## Introduction
@@ -20,7 +20,7 @@ The creation of such database from (mostly publicly) available resources
 package developed by J. Stanstrup and J. Rainer.
 
 For more information visit the package
-[website](https://jmbadia.github.io/MS2ID/articles/MS2ID_intro.html) or
+[website](https://jmbadia.github.io/MS2ID/articles/MS2ID.html) or
 [vignette.](https://github.com/jmbadia/MS2ID/tree/master/vignettes)
 
 Discussions and suggestions are welcome:
