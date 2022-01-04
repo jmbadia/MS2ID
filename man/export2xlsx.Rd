@@ -4,15 +4,15 @@
 \alias{export2xlsx}
 \title{Export an annotation object to an xlsx file}
 \usage{
-export2xlsx(anRslt, summarizeHits = TRUE, file = NULL, overwrite = FALSE, ...)
+export2xlsx(anRslt, file = NULL, summarizeHits = TRUE, overwrite = FALSE, ...)
 }
 \arguments{
 \item{anRslt}{\linkS4class{Annot} object with the results to export.}
 
+\item{file}{char(1) name of the resulting xlsx file}
+
 \item{summarizeHits}{boolean(1). A TRUE value summarizes the resulting excel,
 keeping only, for every query spectrum, the best annotation per compound.}
-
-\item{file}{char(1) name of the resulting xlsx file}
 
 \item{overwrite}{boolean(1) If TRUE, overwrite any existing file.}
 
