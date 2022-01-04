@@ -227,10 +227,9 @@ MS2IDgui <- function(annot){
             dt$mtdt <- .mergeCONS(dt$mtdt, fontsize = 1)
             #ORDER & SUBSET VISIBLE columns
             visiblVar <- c(
-                # "idQRYspect", "idREFspect","idREFcomp",
                 "QRYrtime", "ppmPrecMass", INCRMETRIC, DECRMETRIC, "massNum",
-                "propAdduct", "REFname", "REFformula", "collisionEnergy",
-                "REFpredicted", "REFadduct", "REFID_db.spectra"
+                "propAdduct", "REFname", "REFformula", "REFadduct",
+                "collisionEnergy", "REFpredicted", "REFID_db.spectra"
             )
             dt$mtdt <- dt$mtdt %>%
                 select(-QRYmassNum, -cmnMasses, -REFmassNum, -QRYpolarity,
