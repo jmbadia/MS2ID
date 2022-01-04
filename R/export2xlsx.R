@@ -20,8 +20,8 @@
 #' query and reference spectra, and the number of fragments they have in common.
 #' \item \code{REFinchikey} contains the inchikey of the reference compound and
 #' a link to a Pubchem's page listing compounds with that inchikey. \item
-#' \code{ppmPrecMass} refers to the difference, in ppm, between query and
-#' reference precursor masses.}
+#' \code{ppmPrecMass} refers to the absolute difference value in ppm between
+#' query and reference precursor masses.}
 #'
 #' @param anRslt \linkS4class{Annot} object with the results to export.
 #' @param summarizeHits boolean(1). A TRUE value summarizes the resulting excel,

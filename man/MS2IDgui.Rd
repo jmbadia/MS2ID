@@ -49,8 +49,8 @@ query spectra that conform every consensus spectrum. \item The column
 energy of the query (green) and reference (red) spectra. \item
 \code{REFinchikey} shows the inchikey of the reference compound and links to
 a Pubchem's page with a list of compounds that shares that inchikey. \item
-\code{ppmPrecMass} refers to the difference, in ppm, between query and
-reference precursor masses.}
+\code{ppmPrecMass} refers to the absolute difference value in ppm
+between query and reference precursor masses.}
 }
 \examples{
 

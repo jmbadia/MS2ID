@@ -65,7 +65,7 @@
                REFpredicted = replace(REFpredicted, REFpredicted == 1,
                                       "insilico")
                )
-    ppmPrecMass <- (anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
+    ppmPrecMass <- abs(anRslt$QRYprecursorMz - anRslt$REFprecursorMz) /
         anRslt$QRYprecursorMz * 1e6
     if(!all(is.na(ppmPrecMass)))
         anRslt$ppmPrecMass <- round(ppmPrecMass, 1)
