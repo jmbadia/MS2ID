@@ -213,7 +213,7 @@ MS2IDgui <- function(annot){
                 )
             dt$mtdt$collisionEnergy <- paste0(
                 .customColor(dt$mtdt$QRYcollisionEnergy, "qry"), '/',
-                .customColor(dt$mtdt$REFcollisionEnergy_txt, "ref")
+                .customColor(dt$mtdt$REFcollisionEnergy, "ref")
             )
             if(!"QRYacquisitionNum" %in% names(dt$mtdt)){
                 dt$mtdt$QRYacquisitionNum <- NA

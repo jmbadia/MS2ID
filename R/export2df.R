@@ -69,18 +69,28 @@
         anRslt$QRYprecursorMz * 1e6
     if(!all(is.na(ppmPrecMass)))
         anRslt$ppmPrecMass <- round(ppmPrecMass, 1)
+    if(!is.null(anRslt$QRYcollisionEnergy_txt)){
+        anRslt$QRYcollisionEnergy <- anRslt$QRYcollisionEnergy_txt
+        anRslt$QRYcollisionEnergy_txt <- NULL
+    }
+    if(!is.null(anRslt$REFcollisionEnergy_txt)){
+        anRslt$REFcollisionEnergy <- anRslt$REFcollisionEnergy_txt
+        anRslt$REFcollisionEnergy_txt <- NULL
+    }
     #sort columns
-    mainVar <- c("QRYprecursorMz","idQRYspect", "idREFspect", "idREFcomp",
-                 INCRMETRIC, DECRMETRIC, "QRYmassNum", "cmnMasses",
-                 "REFmassNum", "propAdduct", "REFname","REFformula",
-                 "REFinchikey", "ppmPrecMass", "QRYcollisionEnergy_txt",
-                 "REFcollisionEnergy", "REFexactmass","REFprecursorMz",
-                 "REFadduct","REFpredicted", "REFinstrument",
-                 "REFinstrumentType","REFID_db.comp", "REFID_db.spectra",
-                 "QRYrtime", "QRYacquisitionNum", "QRYacquisitionNum_CONS",
-                 "REFCASRN","QRYpolarity", "REFpolarity",
-                 "QRYprecursorCharge","QRYprecursorIntensity",
-                 "REFionSource", "QRYmsLevel",  "QRYdataOrigin")
+    mainVar <- c("QRYprecursorMz","QRYrtime", "QRYrtime_CONS",
+                 "ppmPrecMass", INCRMETRIC, DECRMETRIC,
+                 "QRYmassNum", "cmnMasses", "REFmassNum",
+                 "propAdduct", "REFname", "REFformula", "REFinchikey",
+                 "REFadduct","REFexactmass","REFprecursorMz",
+                 "QRYcollisionEnergy", "REFcollisionEnergy",
+                 "REFpredicted", "REFID_db.comp",
+                 "REFID_db.spectra", "REFinstrument","REFinstrumentType",
+                 "REFCASRN","QRYpolarity", "REFpolarity", "QRYprecursorCharge",
+                 "QRYprecursorIntensity", "REFionSource", "QRYmsLevel",
+                 "QRYdataOrigin", "idQRYspect", "idREFspect", "idREFcomp",
+                 "QRYacquisitionNum", "QRYacquisitionNum_CONS"
+                 )
     anRslt <- select(anRslt, c(mainVar[mainVar %in% names(anRslt)],
                                names(anRslt)[!names(anRslt) %in% mainVar]))
     #sort rows
