@@ -6,17 +6,18 @@
 #' Then subgroup contiguous spectra that have good (cosine) similarity. Each
 #' subgroup will form a consensus spectrum.
 #'
-#' First, all spectra is separated to diffrenet tables with the same Collision
+#' First, all spectra is separated to different tables with the same Collision
 #Energy, polarity, data file and precursor mass. For the last consideration
 #first a representative precursor mass is chosen (corresponding to the most
 #intense and not already selected precursor); then it is grouped along with all
 #its similar precursor mass (considering mass error) For every table we repeat
 #the same algorithm. It is selected the most intense precursor 'apex'; its MS2
 #spectrum is compared (using cosine similarity method) with the next (forward in
-#time) spectrum in time. If they are similar enough it is selected for this
-#consensus apex group; if not then the loop stops and the same process is
-#repeated but backwards in time. Once done, we apply the loop again to the next
-#'apex' found, until no spectrum remains in the table.
+#time) MS2 spectrum X. If they are similar enough and also they are not
+#separated more than diffRTmax seconds (typically 20 seconds), X is selected for
+#this consensus apex group and the loop starts again; if not the loop stops and
+#the same process is repeated but backwards in time. Once done, we apply the
+#loop again to the next 'apex' found, until no spectrum remains in the table.
 #
 #' @param s list with spectra and metadata
 #' @param consCosThres numeric(1) with the minimum cosine similarity two contiguous spectra must have to consens a spectrum.
@@ -33,6 +34,7 @@
 
 .cluster2Consens <- function(s, consCosThres = 0.8, massErrMs1, massErrMsn){
    minScans <- 2 #min number of scans to form a consensus spectra
+   diffRTmax <- 20 #max abs. diff. between the apex and any scan of its cluster
    # group spectra by mzprecuros
    mdataSplited <- s$Metadata
    mdataSplited$precGroup <- .groupmz(mdataSplited$precursorMZ,
@@ -51,7 +53,7 @@
       while(any(x$still)){
          idAp <- x$idSpectra[x$still][which.max(
             x$precursorIntensity[x$still])[1]]
-         apex <- which(x$idSpectra==idAp)#position of the most intense precursor
+         apex <- which(x$idSpectra == idAp)#position of the most intense precur.
          keepid <- idAp
          for(i in c(-1, 1)){#backards and then forwards
             cos <- 1
@@ -59,10 +61,11 @@
             while(cos > consCosThres){# check adjacent similarity
                n <- n + 1
                adj <- apex + i *n
+               diffRT <- abs(x$retentionTime[apex]-x$retentionTime[adj])
                if(adj < 1 | adj > nrow(x)) {
                   break
                }
-               if(!x$still[adj]) {
+               if(!x$still[adj] | diffRT > diffRTmax) {
                   break
                }
                idAdj <- x$idSpectra[adj]

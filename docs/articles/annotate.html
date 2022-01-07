@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (links[i].hostname != window.location.hostname)
       links[i].target = '_blank';
 });
-</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-12-03 16:51:03<br><strong>Compiled</strong>: Fri Dec 10 14:21:24 2021</p>
+</script><p><strong>Authors</strong>: Josep M. Badia [aut, cre] (<a href="https://orcid.org/0000-0002-5704-1124" class="uri">https://orcid.org/0000-0002-5704-1124</a>)<br><strong>Last modified:</strong> 2021-12-03 16:51:03<br><strong>Compiled</strong>: Fri Jan 7 20:40:41 2022</p>
 <p>*This vignette describe in detail the <code>annotate</code> function. It is advised a previous reading of the <a href="MS2ID.html">MS2ID introduction</a>.</p>
 <div id="introduction" class="section level2">
 <h2 class="hasAnchor">
@@ -172,12 +172,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 by.x <span class="op">=</span> <span class="st">"idREFcomp"</span>, by.y <span class="op">=</span> <span class="st">"id"</span>, all.y <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></code></pre></div>
 <pre><code>##   idREFcomp    cosine idREFspect idQRYspect propAdduct cmnMasses ID_db
-## 1         1 0.9325190         32       2251        M+H         3  MoNA
-## 2         1 0.8549925         29       2298        M+H         3  MoNA
-## 3         1 0.9317047         29       2251        M+H         2  MoNA
-## 4         1 0.9681738         30       2330        M+H         3  MoNA
-## 5         1 0.9116125         33       2298        M+H         4  MoNA
-## 6         1 0.8966585         35       2298        M+H         3  MoNA
+## 1         1 0.9318017         32       2253        M+H         2  MoNA
+## 2         1 0.9198663         29       2254        M+H         2  MoNA
+## 3         1 0.9330611         29       2253        M+H         2  MoNA
+## 4         1 0.9563727         30       2341        M+H         2  MoNA
+## 5         1 0.9526843         33       2341        M+H         2  MoNA
+## 6         1 0.9233419         32       2254        M+H         3  MoNA
 ##        name    formula exactmass                    inchikey smiles
 ## 1 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
 ## 2 Bilirubin C33H36N4O6  584.2635 BPYKTIZUTYGOLE-IFADSCNNSA-N     NA
@@ -204,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <h2 class="hasAnchor">
 <a href="#consensus" class="anchor"></a>Consensus spectra</h2>
 <p>As a default, <code>annotate</code> function tries to summarize adjacent MS/MS spectra into consensus spectra: the resulting consensus spectra will be annotated instead of the query spectra that summarizes (along with the query spectra non able to be consensued). This strategy diminishes artifacts and noise and reduce significantly the annotation time.<br>
-A group of <strong>adjacent</strong> query spectra is considered <em>source</em> for a consensus spectrum when all of them have the same precursor mass, collision energy and polarity. Also, every query spectrum must be similar (cosine &gt; <code>consCos</code> argument) to the apex spectrum of the group. The resulting consensus spectrum will be formed by the fragments present in the majority of the source query spectra (ratio determined by the <code>consComm</code> argument).<br>
+A group of <strong>adjacent</strong> query spectra is considered <em>source</em> for a consensus spectrum when all of them have the same precursor mass, collision energy and polarity. Also, every spectrum must be similar (cosine &gt; <code>consCos</code> argument) to the apex spectrum of the group and not too far away from it (less than 20 seconds). The resulting consensus spectrum will be formed by the fragments present in the majority of the source query spectra (ratio determined by the <code>consComm</code> argument).<br>
 The final <code>annot</code> object will contain not only the query spectra and the consensus spectra that succeeded in the annotation (i.e. with hits), but also the query spectra used to form the successful consensus spectra. Although it is recommended to use the MS2IDgui feature to elucidate the nature of the query spectra, it is also possible to check it by analyzing some of the variables contained in the <code>annot</code> object.</p>
 <ul>
 <li>When the spectrum is a consensus spectrum, <em>spectrumId_CONS</em> and <em>rtime_CONS</em> variables show the id and the retention time of its source query spectra.</li>
