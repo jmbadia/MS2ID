@@ -44,7 +44,7 @@
 #' export2xlsx(anRslt = annotResult, file = "sample",
 #'             summarizeHits = FALSE, overwrite=TRUE)
 #' @export
-export2xlsx <- function(anRslt, file = NULL, summarizeHits = TRUE,
+export2xlsx <- function(anRslt = NULL, file = NULL, summarizeHits = TRUE,
                         overwrite = FALSE, ...){
     argmnts <- c(as.list(environment()), list(...))
     reqClasses <- c(anRslt = "Annot", summarizeHits = "logical",
