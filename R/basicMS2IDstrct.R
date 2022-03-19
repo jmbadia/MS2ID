@@ -1,14 +1,21 @@
 #' Adapt the metadata to the MS2ID structure
 #'
-#' @param metadata dataframe containing spectra & metabolite metadata (variable = columns). No id variables must be included (ID_spectra, ID_compound, ID_db)
-#' @param fragm list where each item is a MS2 spectra. Row order must match with metadata row order
-#' @param varsToParse dataframe with the MS2ID variable names as rownames, the BD original names and the type. Must match with the columns of the metadata
+#' @param metadata dataframe containing spectra & metabolite metadata (variable
+#'   = columns). No id variables must be included (ID_spectra, ID_compound,
+#'   ID_db)
+#' @param fragm list where each item is a MS2 spectra. Row order must match with
+#'   metadata row order
+#' @param varsToParse dataframe with the MS2ID variable names as rownames, the
+#'   BD original names and the type. Must match with the columns of the metadata
 #' @param nameDB char(1) with the name we want for the DB we are parsing
 #' @param numCmp int(1) number of compounds in the original DB
 #' @param numMs int(1) number of spectra in the original DB
+#' @param removeRedCompounds boolean(1) eliminate redundant compounds based
+#' on the inchikeys
 #' @noRd
-.basicMS2IDstrct <- function(metadata, fragm, varsToParse, nameDB,
-                             numCmp, numMs)
+.basicMS2IDstrct <- function(metadata, fragm, varsToParse,
+                             nameDB="unknown", numCmp, numMs,
+                             removeRedCompounds = FALSE)
   {
   #rename variables with MS2ID names
   MS2IDname <- match(colnames(metadata), varsToParse$originalNames)
@@ -71,24 +78,36 @@ message(paste("NA presence on every variable:\n", .print_and_capture(showNA)))
 
 message("\n-------- 2/n. REDUNDANT DATA --------")
 #1.Obtain ID_compound-------------------
-message("\nRedundant metabolites------")
-# IF INCHIKEY!=NA every unique inchikey means a different ID_compound
-#ELSE for every metabolite a different ID_compound
 
 #remove non valid inchikeys
-metadata[(is.na(metadata$inchikey) | metadata$inchikey=="" | metadata$inchikey=="000000-00-0"),"inchikey"] <- NA_character_
+notValidInchikeys <- is.na(metadata$inchikey) | nchar(metadata$inchikey) < 10
+metadata[notValidInchikeys, "inchikey"] <- NA_character_
 
-# "IT HAS inchikey" CASE
-inchies_fact <- as.factor(metadata$inchikey)
-metadata$ID_compound[!is.na(metadata$inchikey)] <- as.numeric(inchies_fact[!is.na(metadata$inchikey)])
+if(removeRedCompounds){
+  message("\nRedundant metabolites------")
+  # IF INCHIKEY!=NA every unique inchikey means a different ID_compound
+  #ELSE for every metabolite a different ID_compound
 
-#"IT HAS NOT inchikey" CASE
-metadata$ID_compound[is.na(metadata$inchikey)] <- max(metadata$ID_compound, na.rm = TRUE)+seq_len(sum(is.na(metadata$inchikey)))
-metadata$ID_compound <- as.integer(metadata$ID_compound)
-message(glue::glue("
+  comparableInchikeys <- nchar(metadata$inchikey) == 27 & !is.na(metadata$inchikey)
+  # "IT HAS inchikey" CASE
+  # inchies_fact <- as.factor(metadata$inchikey)
+  # metadata$ID_compound[!is.na(metadata$inchikey)] <- as.numeric(inchies_fact[!is.na(metadata$inchikey)])
+  inchies_fact <- as.factor(metadata$inchikey[comparableInchikeys])
+  metadata$ID_compound[comparableInchikeys] <- as.numeric(inchies_fact)
+
+  #"IT HAS NOT inchikey" CASE
+  metadata$ID_compound[!comparableInchikeys] <- max(metadata$ID_compound, na.rm = TRUE) + seq_len(sum(!comparableInchikeys))
+  metadata$ID_compound <- as.integer(metadata$ID_compound)
+  message(glue::glue("
 {numCmp - length(unique(metadata$ID_compound))} out of {numCmp} \\
 metabolites are redundant and will be eliminated
                    "))
+}else{
+  metadata$ID_compound <- as.integer(seq_len(nrow(metadata)))
+}
+
+
+
 #2. Identify repeated spectra----------------
 message("\nRedundant spectra------")
 metadata$ID_spectra <- NA

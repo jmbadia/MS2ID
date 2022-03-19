@@ -21,7 +21,8 @@
 #'   \code{\link[enviPat]{check_chemform}} function.
 #' @param overwrite boolean(1) indicating if the function can overwrite
 #'   results.
-#'
+#' @param removeRedComp boolean(1) indicating if elimiate redundant
+#'  compounds (based on the inchikey information).
 #' @return \code{createMS2ID} returns a character(1) with the MS2ID backend
 #'   location. This value must be used as \code{ms2idFolder} parameter in the
 #'   \code{MS2ID} constructor.
@@ -30,13 +31,13 @@
 #' @rdname MS2ID
 #' @export
 createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
-                        calcSplash = TRUE, calcMmi = TRUE, overwrite = FALSE)
+                        calcSplash = TRUE, calcMmi = TRUE, overwrite = FALSE,
+                        removeRedComp = FALSE)
     {
     if(missing(cmpdb))
         stop("Argument 'cmpdb' is required")
     if(!is(cmpdb, "CompDb"))
         stop("Argument 'cmpdb' must be a CompDb object (CompoundDb package)")
-
     MS2IDdir <- file.path(path, name)
     if(dir.exists(MS2IDdir)){
         if(overwrite){
@@ -56,7 +57,6 @@ createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
     msms_tbl <- tbl(src, "msms_spectrum")
     pks_tbl <- tbl(src, "msms_spectrum_peak")
     #syns_tbl <- tbl(src, "synonym")# don't use it now
-
     ##convert compound & spectrum metadata to real tbl (no sql connection)
     cmp_tbl <- cmp_tbl %>% collect()
     numCmp <- nrow(cmp_tbl)
@@ -90,13 +90,19 @@ createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
     fragm_spctrID <- vapply(pks_tbl, function(spctr){
         unique(spctr$spectrum_id)
     }, FUN.VALUE = 1)
-
     varsToParse <- VARS2PARSE
     varsToParse$originalNames <- varsToParse$CompoundDBname
     #order metadata according spectra order
     mrg <- mrg[match(fragm_spctrID, mrg$spectrum_id),]
+    if("originalSpectrumDb" %in% names(mrg)){
+        nameDB = mrg$originalSpectrumDb
+        mrg$originalSpectrumDb <- NULL
+    }else{
+        nameDB="unknown"
+    }
     DB <- .basicMS2IDstrct(metadata = mrg, fragm = fragm_CompDB,
-                      varsToParse = varsToParse, nameDB = "MoNA",
+                      varsToParse = varsToParse, nameDB = nameDB,
+                      removeRedCompounds = removeRedComp,
                       numCmp = numCmp, numMs = numMs)
 
     ###TEMPORARILY. we do not comtemplate DB union (check 10 to implement HERE)
@@ -132,7 +138,7 @@ createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
         if("enviPat" %in% installed.packages()[, "Package"]){
             noFormula <- is.na(DB$compounds$formula) |
                 DB$compounds$formula == ""
-            if(any(noFormula)){
+            if(!all(noFormula)){
                 utils::data(isotopes, package = "enviPat")
                 ept <- enviPat::check_chemform(isotopes,
                                                DB$compounds$formula[!noFormula])
