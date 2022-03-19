@@ -27,7 +27,8 @@ db_file <- createCompDb(cmps, metadata = metad,
 cmpdb <- CompDb(db_file)
 ## Create the MS2ID backend
 library(MS2ID)
-MS2IDdirectory <- createMS2ID(cmpdb = cmpdb,
+MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, calcSplash = FALSE,
                               overwrite = TRUE, path = tempdir())
 ## Obtain the MS2ID object
 MS2IDlib <- MS2ID(MS2IDdirectory)
+
