@@ -39,12 +39,13 @@
                          "fragmentMode", "character",
                          "instrumentType", "character",
                          "instrument", "character",
-                         "resolution",  "character"
+                         "resolution",  "character",
+                         "originalSpectrumDb", "character"
                          )
     spctraVar_CompoundDB <- c(
         "original_spectrum_id", "splash", "adduct", "precursor_mz", "-",
         "collision_energy", "polarity", "ms_level", "predicted", "-", "-",
-        "instrument_type", "instrument", "-")
+        "instrument_type", "instrument", "-", "originalSpectrumDb")
     vars2parse <- data.frame(
         MS2IDname = c(mtbolVar_MS2ID, spctraVar_MS2ID)[c(TRUE, FALSE)],
         CompoundDBname = c(mtbolVar_CompoundDB, spctraVar_CompoundDB),
