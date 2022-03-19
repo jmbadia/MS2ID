@@ -124,9 +124,14 @@
         QRYspect$collisionEnergy <- as.numeric(QRYspect$collisionEnergy)
     else
         QRYspect$collisionEnergy <- NA_real_
-    REFspect$collisionEnergy_txt <-  REFspect$collisionEnergy
-    REFspect$collisionEnergy <- suppressWarnings(
-        as.numeric(REFspect$collisionEnergy))
+
+    if("collisionEnergy" %in% names(REFspect)){
+        REFspect$collisionEnergy_txt <- REFspect$collisionEnergy
+        REFspect$collisionEnergy <- suppressWarnings(
+            as.numeric(REFspect$collisionEnergy))
+    }else
+        REFspect$collisionEnergy_txt <- REFspect$collisionEnergy <- NA_real_
+
     #Convert to spectra object
     QRYspect <- Spectra::Spectra(QRYspect)
     REFspect <- Spectra::Spectra(REFspect)
