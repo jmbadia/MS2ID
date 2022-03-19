@@ -239,7 +239,7 @@ MS2IDgui <- function(annot){
                 select(propAdduct |
                            where(~ !(all(is.na(.)) | all(. == "")))) %>%
                 select(sort(names(.))) %>%
-                relocate(visiblVar[visiblVar %in% names(dt$mtdt)])
+                relocate(visiblVar[visiblVar %in% names(.)])
             #set columns visibility default
             colVisibles <<- names(dt$mtdt) %in% visiblVar
             return(dt)
