@@ -49,8 +49,7 @@ export2xlsx <- function(anRslt = NULL, file = NULL, summarizeHits = TRUE,
     argmnts <- c(as.list(environment()), list(...))
     reqClasses <- c(anRslt = "Annot", summarizeHits = "logical",
                     file = "character", overwrite = "logical")
-    reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
-    .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
+    .checkTypes(argmnts, reqClasses)
     if(missing(anRslt))
             stop("'anRslt' argument is mandatory")
     dfRslt <- .export2df(anRslt, summarizeHits = summarizeHits, ...)
@@ -63,8 +62,7 @@ export2xlsx <- function(anRslt = NULL, file = NULL, summarizeHits = TRUE,
     argmnts <- c(as.list(environment()), list(...))
     reqClasses <- c(data = "dataframe", metric = "character",
                     file="character")
-    reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
-    .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
+    .checkTypes(argmnts, reqClasses)
     if(is.null(data))
         stop("'data' argument is mandatory")
     if(is.null(file))
@@ -173,17 +171,20 @@ export2xlsx <- function(anRslt = NULL, file = NULL, summarizeHits = TRUE,
                  stack = TRUE)
 
         #add link
-        cellInch <- tmp$REFinchikey
-        noInch <- is.na(cellInch)
-        names(cellInch) <- cellInch
-        names(cellInch)[noInch] <- ""
-        cellInch[noInch] <- ""
-        baselink <- 'https://www.ncbi.nlm.nih.gov/pccompound?term=%22'
-        cellInch[!noInch] <- paste0(baselink, cellInch[!noInch],
-                                    '%22[InChIKey]')
-        class(cellInch) <- "hyperlink"
-        openxlsx::writeData(wb, sheet = idFile, x = cellInch, startRow = 2,
-                  startCol = inchikeyCol)
+        if("REFinchikey" %in% names(tmp)){
+            cellInch <- tmp$REFinchikey
+            noInch <- is.na(cellInch)
+            names(cellInch) <- cellInch
+            names(cellInch)[noInch] <- ""
+            cellInch[noInch] <- ""
+            baselink <- 'https://www.ncbi.nlm.nih.gov/pccompound?term=%22'
+            cellInch[!noInch] <- paste0(baselink, cellInch[!noInch],
+                                        '%22[InChIKey]')
+            class(cellInch) <- "hyperlink"
+            openxlsx::writeData(wb, sheet = idFile, x = cellInch, startRow = 2,
+                                startCol = inchikeyCol)
+        }
+
     }
     #add xlsx extension if missing
     ex <- strsplit(basename(file), split="\\.")[[1]]

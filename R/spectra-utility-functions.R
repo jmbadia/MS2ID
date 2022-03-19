@@ -64,7 +64,7 @@
 .binSpectra <- function(spectraList, decimals2bin){
     #check argument types
     reqClasses <- c(decimals2bin = "integer")
-    .checkTypes(as.list(match.call(expand.dots=FALSE))[-1], reqClasses)
+    .checkTypes(c(as.list(environment())), reqClasses)
     if (decimals2bin < 0)
       stop("'decimals2bin' is expected to be a natural number")
 

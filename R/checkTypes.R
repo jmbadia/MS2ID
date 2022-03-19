@@ -10,9 +10,15 @@
 #' @noRd
 
 .checkTypes <- function(values, types){
+    # argmnts <- c(as.list(environment()))
+    # reqClasses <- c(anRslt = "Annot", summarizeHits = "logical",
+    #                 metric = "character", metricThresh = "numeric")
+    # reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
+    # .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
     notPresent <- vapply(values, is.null, FUN.VALUE = TRUE) | is.na(values)
     values <- values[!notPresent]
-    types <- types[match(names(values), names(types))]
+    types <- types[names(types) %in% names(values)]
+    values <- values[match(names(types), names(values))]
     for(i in seq_along(values)){
         .checkType(values[[i]], types[i])
     }

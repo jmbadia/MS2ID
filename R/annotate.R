@@ -81,7 +81,7 @@
 annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metrics="cosine", metricsThresh= 0.8,
                      metricFUN = NULL, metricFUNThresh = NULL,
-                     massErrMs1 = 5, massErrMsn = 20,
+                     massErrMs1 = 10, massErrMsn = 20,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
                      cmnPolarity = TRUE, predicted = NULL,
@@ -105,15 +105,14 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     stop("'cmnFrags' argument is expected to be a vector of 2 integers")
 
     #check argument types
-  reqClasses <- c(MS2ID="MS2ID", QRYmsLevel = "integer",
-                  metricsThresh="numeric",
-                  metricFUN = "function", metricFUNThresh="numeric",
-                  noiseThresh="numeric", predicted="logical",
-                  cmnPolarity= "logical", cmnPrecMass= "logical",
-                  cmnNeutralMass="logical",
-                  massErrMs1="numeric", massErrMsn="numeric")
-    reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
-    .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
+  reqClasses <- c(MS2ID = "MS2ID", QRYmsLevel = "integer",
+                  metricsThresh = "numeric",
+                  metricFUN = "function", metricFUNThresh = "numeric",
+                  noiseThresh = "numeric", predicted = "logical",
+                  cmnPolarity = "logical", cmnPrecMass= "logical",
+                  cmnNeutralMass = "logical",
+                  massErrMs1 = "numeric", massErrMsn = "numeric")
+  .checkTypes(argmnts, reqClasses)
 
     #type of metric (incrm. or decremental)
     decrMet <- metrics %in% DECRMETRIC
@@ -162,7 +161,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
       if(!all(QRY$Metadata$polarity %in% c(0, 1)))
         stop(glue::glue("
             cmnPolarity = TRUE can not be applied because some query spectra \\
-            have unknown polarity (neither 1 (positive) nor 0 (negative))
+            have unknown polarity (neither 1 (positive) nor 0 (negative)). \\
+            Please, use cmnPolarity = FALSE when query spectra have no  \\
+            polarity information.
                             "))
     }
     if(cmnPrecMass)
@@ -337,8 +338,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
   matchnecCols <- necMetadata %in% names(metadata)
   if(!all(matchnecCols) | anyNA(metadata[, necMetadata[matchnecCols]]))
     stop(glue::glue("
-      '{argument}' can NOT be applied: query spectra have incomplete some of \\
-      the following required metadata: \\
-      {glue::glue_collapse(necMetadata, ', ', last = ' or ')}
+      '{argument}' argument can NOT be applied because query spectra have \\
+      incomplete some of the following required metadata: \\
+      {glue::glue_collapse(necMetadata, ', ', last = ' or ')}. Please, try \\
+      again with the '{argument}' argument disabled.
                       "))
 }

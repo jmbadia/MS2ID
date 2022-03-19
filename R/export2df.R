@@ -16,8 +16,8 @@
     argmnts <- c(as.list(environment()))
     reqClasses <- c(anRslt = "Annot", summarizeHits = "logical",
                     metric = "character", metricThresh = "numeric")
-    reqClasses <- reqClasses[names(reqClasses) %in% names(argmnts)]
-    .checkTypes(argmnts[match(names(reqClasses), names(argmnts))], reqClasses)
+    .checkTypes(argmnts, reqClasses)
+
     if(missing(anRslt))
         stop("'anRslt' argument is mandatory")
     if(length(metric)!=1){
