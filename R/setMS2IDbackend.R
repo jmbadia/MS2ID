@@ -18,7 +18,7 @@
             }
         }
     }else{
-        dir.create(MS2IDdir)
+        dir.create(MS2IDdir, recursive=TRUE)
     }
 
     #ORDER COLUMNS--------------------
