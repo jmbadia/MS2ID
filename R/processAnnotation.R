@@ -55,14 +55,13 @@
             stop("No query spectrum meets the cmnNtMass condition")
         hits <- hits[cmnNM,]
     }
-
     #QRYspect
     idCONShits <- unique(hits$idQRYspect)
     idSRCShits <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits,
                                "sourceSpect"]
     idSRCShits <- unique(unlist(idSRCShits))
     QRYspect <- qry$Metadata[qry$Metadata$idSpectra %in% idCONShits, ]
-    orderSpectra <- match(QRYspect$id, names(qry$Spectra))
+    orderSpectra <- match(as.character(QRYspect$id), names(qry$Spectra))
     QRYspect$mz <- lapply(orderSpectra, function(x)
         qry$Spectra[[x]]['mass-charge',])
     QRYspect$intensity <- lapply(orderSpectra, function(x)
@@ -78,12 +77,13 @@
 
         QRYspect <- rbind(QRYspect, LFTspect)
     }
+    # old_id = 'id',
+    lookup <- c(id = 'idSpectra', dataOrigin = 'file',
+                precScanNum = "precursorScanNum", precursorMz ="precursorMZ",
+                isolationWindowTargetMz = "isolationWindowTargetMZ")
     QRYspect <- QRYspect %>%
-        rename_with(~ gsub("retentionTime", "rtime", .x)) %>%
-        rename(id = 'idSpectra', dataOrigin = 'file',
-               #rtime = 'retentionTime',# CE = "collisionEnergy",
-               precScanNum = "precursorScanNum", precursorMz ="precursorMZ",
-               isolationWindowTargetMz = "isolationWindowTargetMZ")
+        dplyr::rename_with(~ gsub("retentionTime", "rtime", .x)) %>%
+        dplyr::rename(any_of(lookup))
 
     #REFspect
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
@@ -102,7 +102,6 @@
 
     #REFcomp
     REFcomp <- REFcomp[REFcomp$id %in% hits$idREFcomp, ]
-
     #obtain which query fragments corresponds to each reference fragment
     hits$cmnMasses <- vapply(seq_len(nrow(hits)), function(x) {
         tmpqry <- QRYspect$mz[match(hits$idQRYspect[x], QRYspect$id)] %>%
