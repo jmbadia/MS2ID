@@ -199,6 +199,7 @@ MS2IDgui <- function(annot){
                 qrySpctr = qrySpectra(lot),
                 infoAnnot = infoAnnotation(lot)
                 )
+            dt$mtdt$QRYprecursorMz <- as.character(dt$mtdt$QRYprecursorMz)
             dt$mtdt <- dt$mtdt %>%
                 tidyr::replace_na(list(QRYdataOrigin="unknown",
                                        QRYprecursorMz="unknown"))
