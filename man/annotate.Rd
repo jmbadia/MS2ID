@@ -12,7 +12,7 @@ annotate(
   metricsThresh = 0.8,
   metricFUN = NULL,
   metricFUNThresh = NULL,
-  massErrMs1 = 5,
+  massErrMs1 = 10,
   massErrMsn = 20,
   noiseThresh = 0.01,
   cmnPrecMass = FALSE,

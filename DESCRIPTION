@@ -50,6 +50,7 @@ Collate:
     'Annot.R'
     'Annot-methods.R'
     'MS2ID.R'
+    'NLscore.R'
     'SQL-utility-tools.R'
     'adduct-utility-functions.R'
     'annotate.R'

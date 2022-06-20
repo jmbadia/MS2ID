@@ -4,7 +4,13 @@
 \alias{export2xlsx}
 \title{Export an annotation object to an xlsx file}
 \usage{
-export2xlsx(anRslt, file = NULL, summarizeHits = TRUE, overwrite = FALSE, ...)
+export2xlsx(
+  anRslt = NULL,
+  file = NULL,
+  summarizeHits = TRUE,
+  overwrite = FALSE,
+  ...
+)
 }
 \arguments{
 \item{anRslt}{\linkS4class{Annot} object with the results to export.}

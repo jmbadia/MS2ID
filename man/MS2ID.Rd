@@ -18,7 +18,8 @@ createMS2ID(
   noiseThresh = 0.01,
   calcSplash = TRUE,
   calcMmi = TRUE,
-  overwrite = FALSE
+  overwrite = FALSE,
+  removeRedComp = FALSE
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ be calculated using the \code{\link[splashR]{getSplash}} function.}
 
 \item{overwrite}{boolean(1) indicating if the function can overwrite
 results.}
+
+\item{removeRedComp}{boolean(1) indicating if elimiate redundant
+compounds (based on the inchikey information).}
 }
 \value{
 \code{createMS2ID} returns a character(1) with the MS2ID backend
@@ -110,10 +114,11 @@ db_file <- createCompDb(cmps, metadata = metad,
 cmpdb <- CompDb(db_file)
 ## Create the MS2ID backend
 library(MS2ID)
-MS2IDdirectory <- createMS2ID(cmpdb = cmpdb,
+MS2IDdirectory <- createMS2ID(cmpdb = cmpdb, calcSplash = FALSE,
                               overwrite = TRUE, path = tempdir())
 ## Obtain the MS2ID object
 MS2IDlib <- MS2ID(MS2IDdirectory)
+
 }
 \references{
 \insertRef{CompoundDB}{MS2ID}
