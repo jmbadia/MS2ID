@@ -188,12 +188,11 @@
 
 #' match Fragments
 #'
-#' To compare 2 spectra (i. e. cosine), mz fragments on both spectrum must be considered equal/not equal considering massError
+# To compare 2 spectra (i. e. cosine), mz fragments on both spectrum must be considered equal/not equal considering massError
 #'
 #' @param spectr1 dataframe with mz and intensity as rows, Optionally, if massErrorFrag is missing, spectr1 has also a row with the massError calculated for every mz and a row to alocate spectra 2 intensities
 #' @param spectr2 dataframe with mz and intensity as rows
 #' @param massErrorFrag in ppm.
-#'
 #' @return dataframe with 2 rows, spectr1 & spectr2 intensities. Both in the same column when the mz has been considered equal
 #' @noRd
 .matchFrag <- function(spectr1, spectr2, massErrorFrag){
@@ -204,16 +203,16 @@
    }else{
       spectr1["intSpectr2", ] <- 0
    }
-   for(idxrmz in seq_len(ncol(spectr2))){
+   for(idxrmz in seq_len(ncol(spectr2))){#add int of every fragment from spectr2 to its homolgous fragment in spectr1 (row intSpectr2)
       mzfragm <- spectr2["mass-charge", idxrmz]
-      qnear <- which.min(abs(spectr1["mass-charge", ] - mzfragm))
-      near <- spectr1["error", qnear] >= abs(spectr1["mass-charge",
-                                                     qnear] - mzfragm)
+      diffMass <- abs(spectr1["mass-charge", ] - mzfragm)
+      qnear <- which.min(diffMass)
+      near <- spectr1["error", qnear] >= diffMass[qnear]
       if(near){
          spectr1["intSpectr2", qnear] <- spectr1["intSpectr2", qnear] +
             spectr2["intensity", idxrmz]
       }else{
-         spectr2["mass-charge", idxrmz] <- NA
+         spectr2["mass-charge", idxrmz] <- NA #mark as unmatched
       }
    }
    isnaSpect2 <- is.na(spectr2["mass-charge",])
