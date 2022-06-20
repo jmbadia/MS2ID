@@ -30,6 +30,8 @@
         if(length(condition)!=2) stop("2 conditions are required")
         rsltString <- paste(base, "BETWEEN", condition[1], "AND",
                             condition[2])
+    } else if(mode == "LITERAL"){
+        rsltString <- base
     } else stop("The 'mode' choosed is not contemplated")
 
     if(missing(whereVector)) whereVector <- vector()
