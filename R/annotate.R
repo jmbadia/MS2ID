@@ -103,7 +103,6 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                       "))
   }else
     stop("'cmnFrags' argument is expected to be a vector of 2 integers")
-
     #check argument types
   reqClasses <- c(MS2ID = "MS2ID", QRYmsLevel = "integer",
                   metricsThresh = "numeric",
@@ -117,7 +116,7 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     #type of metric (incrm. or decremental)
     decrMet <- metrics %in% DECRMETRIC
 
-    metOK <- c(INCRMETRIC,DECRMETRIC)[c(INCRMETRIC,DECRMETRIC)!='metricFunc']
+    metOK <- c(INCRMETRIC,DECRMETRIC)[c(INCRMETRIC, DECRMETRIC)!='metricFunc']
     #check values
     if(!all(metrics %in% metOK))
       stop(paste("'metrics' is expected to be one of the following:",
@@ -125,6 +124,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     if(length(metrics) != length(metricsThresh))
       stop("'metricsThresh' must contain a value for every metric included
              in the argument 'metrics'")
+    isNLscore <- metrics %in% "NLscore"
+    directmetrics <- metrics[!isNLscore]
+    metricsThresh <- c(metricsThresh[isNLscore], metricsThresh[!isNLscore])
     if(!is.null(metricFUN)){
       if(is.null(metricFUNThresh))
         stop(glue::glue("A numeric is expected in 'metricFUNThresh' when  \\
@@ -244,6 +246,30 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                                             mode="BETWEEN",
                                             whereVector=SQLwhereIndv)
         }
+      if(any(isNLscore)){
+        #FIND compounds with smiles and Mmi
+        subSQL_IdComp <- .appendSQLwhere("ID_spectra", idRef,
+                                         mode="IN")
+        idRef2 <- .getSQLrecords(MS2ID, select="ID_compound, ID_spectra",
+                                 from = "crossRef_SpectrComp",
+                                 where = subSQL_IdComp)
+        subSQLwh <- .appendSQLwhere("ID_compound",
+                                    unique(idRef2$ID_compound),
+                                    mode="IN")
+        subSQLwh <- .appendSQLwhere("smiles is NOT NULL", mode="LITERAL",
+                                    whereVector = subSQLwh)
+        subSQLwh <- .appendSQLwhere("formula is NOT NULL", mode="LITERAL",
+                                    whereVector = subSQLwh)
+        idRefComp <- .getSQLrecords(MS2ID,
+                                   select="ID_compound",
+                                   from="metaCompound",
+                                   where = subSQLwh) |>
+          unlist()
+        if(length(idRefComp) == 0) return(NA)
+        idRef <- idRef2$ID_spectra[idRef2$ID_compound %in% idRefComp]
+      }
+
+
         if(cmnNeutralMass){
           QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
                               QRY$Metadata$polarity[posMetadata])
@@ -279,27 +305,42 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
 
         SQLwhereIndv <- .appendSQLwhere("ID_spectra", idRef, mode="IN",
                                         whereVector = SQLwhereIndv)
-        idRef <- .getSQLrecords(MS2ID, "ID_spectra", "metaSpectrum",
+        idRef <- .getSQLrecords(MS2ID, "ID_spectra, precursorMz", "metaSpectrum",
                                 c(SQLwhereGen, SQLwhereIndv))
-
         #return if query spectrum has no targeted db spectra
         if(nrow(idRef) == 0) return(NA)
 
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
         distance <- lapply(seq_along(refSpectra$ptr$id), function(x) {
-          struct <- .matchFrag(Qspct, .getSpectrum(refSpectra, x))
+          #A. Usual MS2 spectra similarity metrics
+          Rspct <- .getSpectrum(refSpectra, x)
+          struct <- .matchFrag(Qspct, Rspct)
           #normalize intensities and add 1e-12 (2 avoid problems with log(0))
           rowdf <- rbind(struct[1,]/sum(struct[1,]),
                          struct[2,]/sum(struct[2,])) + 1e-12
-          rsltM <- vapply(metrics, function(iM){
+          rsltM <- vapply(directmetrics, function(iM){
             suppressMessages(philentropy::distance(rowdf, method = iM))
           }, FUN.VALUE = 3.2)
           if(metFun){
             rsltM <- c(rsltM, metricFunc = metricFUN(rowdf))
           }
+          #B. MS2 & NL similarity metric
+          if(any(isNLscore)){
+            diffPrecMass <- idRef$precursorMz[x] -
+            QRY$Metadata$precursorMZ[posMetadata]
+            if(!is.na(diffPrecMass) & ncol(Rspct) < 1000){#to not overload the function
+              NLscore <- .NLCosSim(Qspct[1:2,,drop=FALSE],
+                                  Rspct, diffPrecMass = diffPrecMass,
+                                  massErrorFrag = massErrMsn)
+            }else{
+              NLscore <- NA_real_
+            }
+            rsltM <- c(NLscore = NLscore, rsltM)
+          }
           return(rsltM)
         })
+
         distance <- data.frame(do.call(rbind, distance))
         hits <- lapply(seq_len(ncol(distance)), function(im){
           if(decrMet[im]) distance[, im] <= metricsThresh[im]
@@ -307,9 +348,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         })
         hits <- do.call(cbind, hits)
         hits <- apply(hits, MARGIN = 1, any)
-        if(any(hits)){
-          distance <- distance[hits, , drop = F]
-          distance$idREFspect <- refSpectra$ptr$id[hits]
+        if(any(hits, na.rm = T)){
+          distance <- distance[which(hits), , drop = F]
+          distance$idREFspect <- refSpectra$ptr$id[which(hits)]
           return(distance)
         } else {return(NA)}
     })

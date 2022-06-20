@@ -223,6 +223,8 @@ MS2IDgui <- function(annot){
                 dt$mtdt$QRYacquisitionNum <- dt$mtdt$QRYacquisitionNum_CONS
                 }
             #round value to match with input select
+            if("NLscore" %in% names(dt$mtdt))
+                dt$mtdt$NLscore <- round(dt$mtdt$NLscore, 3)
             dt$mtdt$cosine <- round(dt$mtdt$cosine, 3)
             dt$mtdt <- .mergeCONS(dt$mtdt, fontsize = 1)
             #ORDER & SUBSET VISIBLE columns

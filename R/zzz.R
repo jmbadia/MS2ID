@@ -6,7 +6,7 @@
     #type of metric (incrm. or decremental)
     decrMetric <- c("topsoe", "squared_chord")
     assign("DECRMETRIC", decrMetric, envir = asNamespace(pkgname))
-    incrMetric <- c("cosine", "fidelity", "metricFunc")
+    incrMetric <- c("cosine", "NLscore", "fidelity", "metricFunc")
     assign("INCRMETRIC", incrMetric, envir = asNamespace(pkgname))
 
     #Variables to parse and its name in MS2ID or CompoundDB DB ---
