@@ -81,7 +81,7 @@
 annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metrics="cosine", metricsThresh= 0.8,
                      metricFUN = NULL, metricFUNThresh = NULL,
-                     massErrMs1 = 10, massErrMsn = 20,
+                     massErrMs1 = 15, massErrMsn = 30,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
                      cmnPolarity = TRUE, predicted = NULL,
