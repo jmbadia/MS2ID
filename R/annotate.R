@@ -177,10 +177,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     #remove invalid spectra
     QRY <- .validateSpectra(QRY)
 
-    # Clean spectra. Remove fragments with intensity < 1% base peak
-    # (considering noiseThresh=0.01)
+    #Clean QRY spectra
     QRY$Spectra <- lapply(QRY$Spectra, function(x) {
-        x[,x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
+        # Remove noise: fragments with intensity < 1% base peak
+        x[, x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
     })
 
     LFT <- NA
@@ -220,7 +220,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
-      Qspct <- QRY$Spectra[[idQspctr]]
+      Qspct <- QRY$Spectra[[idQspctr]] |>
+          .binSpectrum(massError = massErrMsn)# bin fragments
+
       idRef <- .queryMzIndex(QRYspct = Qspct, ms2idObj = MS2ID,
                              cmnFrags = cmnFrags)
       #return if query spectrum has no targeted db spectra
@@ -313,8 +315,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
         distance <- lapply(seq_along(refSpectra$ptr$id), function(x) {
+          Rspct <- .getSpectrum(refSpectra, x) |>
+              .binSpectrum(massError = massErrMsn)
           #A. Usual MS2 spectra similarity metrics
-          Rspct <- .getSpectrum(refSpectra, x)
           struct <- .matchFrag(Qspct, Rspct)
           #normalize intensities and add 1e-12 (2 avoid problems with log(0))
           rowdf <- rbind(struct[1,]/sum(struct[1,]),
@@ -354,10 +357,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
           return(distance)
         } else {return(NA)}
     })
-
     names(distances) <- names(QRY$Spectra)
     #remove query spectra with no hits
     distances <- distances[!is.na(distances)]
+
     if("rawSpectra" %in% names(QRY)){
       QRY$Spectra <- QRY$rawSpectra
       QRY$rawSpectra <- NULL
