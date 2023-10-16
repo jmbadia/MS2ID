@@ -89,7 +89,8 @@ setValidity("MS2ID", function(object) {
 #'
 #' @rdname MS2ID
 #' @importFrom DBI dbDriver
-#' @importFrom RSQLite dbConnect
+#' @importFrom RSQLite dbConnect dbSendQuery dbClearResult
+#' @importFrom bigmemory attach.big.matrix
 #' @export
 MS2ID <- function(ms2idFolder) {
     if (missing(ms2idFolder))
@@ -105,8 +106,10 @@ MS2ID <- function(ms2idFolder) {
         {glue::glue_collapse(dbFiles, ', ', last = ' and ')}
                         "))
 
-    SQLx <- dbConnect(dbDriver("SQLite"),
+    SQLx <- RSQLite::dbConnect(DBI::dbDriver("SQLite"),
                       dbname = file.path(ms2idFolder, "MS2ID.db"))
+    RSQLite::dbClearResult(RSQLite::dbSendQuery(SQLx, "PRAGMA busy_timeout=5000;"));
+
     bigM_mzI <- bigmemory::attach.big.matrix("mzIndex_body.desc",
                                              backingpath = ms2idFolder)
     bigM_s <- bigmemory::attach.big.matrix("spectra_body.desc",
@@ -114,7 +117,7 @@ MS2ID <- function(ms2idFolder) {
     res <- .validMS2ID(db=SQLx, mzI=bigM_mzI, spctr=bigM_s)
     if (is.character(res))
         stop(res)
-    ms2idObj <- .MS2ID(dbcon=SQLx, spectracon= bigM_s, mzIndexcon= bigM_mzI)
+    ms2idObj <- new("MS2ID", dbcon=SQLx, spectracon= bigM_s, mzIndexcon= bigM_mzI)
     return(ms2idObj)
 }
 
