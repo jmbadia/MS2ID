@@ -27,6 +27,7 @@ Imports:
     DBI,
     RSQLite,
     mzR,
+    BiocParallel,
     pbapply,
     stats,
     Spectra,
