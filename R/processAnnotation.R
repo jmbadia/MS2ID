@@ -78,13 +78,12 @@
         QRYspect <- rbind(QRYspect, LFTspect)
     }
     # old_id = 'id',
-    lookup <- c(id = 'idSpectra', dataOrigin = 'file',
+    lookup <- c(idOld = 'id', id = 'idSpectra', dataOrigin = 'file',
                 precScanNum = "precursorScanNum", precursorMz ="precursorMZ",
                 isolationWindowTargetMz = "isolationWindowTargetMZ")
     QRYspect <- QRYspect %>%
         dplyr::rename_with(~ gsub("retentionTime", "rtime", .x)) %>%
         dplyr::rename(any_of(lookup))
-
     #REFspect
     SQLwhere <- .appendSQLwhere("ID_spectra", unique(hits$idREFspect),
                                 mode="IN")

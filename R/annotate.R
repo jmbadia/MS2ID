@@ -81,7 +81,7 @@
 annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                      metrics="cosine", metricsThresh= 0.8,
                      metricFUN = NULL, metricFUNThresh = NULL,
-                     massErrMs1 = 10, massErrMsn = 20,
+                     massErrMs1 = 15, massErrMsn = 30,
                      noiseThresh = 0.01,  cmnPrecMass = FALSE,
                      cmnNeutralMass = TRUE, cmnFrags = c(2,5),
                      cmnPolarity = TRUE, predicted = NULL,
@@ -112,7 +112,6 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
                   cmnNeutralMass = "logical",
                   massErrMs1 = "numeric", massErrMsn = "numeric")
   .checkTypes(argmnts, reqClasses)
-
     #type of metric (incrm. or decremental)
     decrMet <- metrics %in% DECRMETRIC
 
@@ -177,10 +176,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
     #remove invalid spectra
     QRY <- .validateSpectra(QRY)
 
-    # Clean spectra. Remove fragments with intensity < 1% base peak
-    # (considering noiseThresh=0.01)
+    #Clean QRY spectra
     QRY$Spectra <- lapply(QRY$Spectra, function(x) {
-        x[,x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
+        # Remove noise: fragments with intensity < 1% base peak
+        x[, x["intensity",] > noiseThresh * max(x["intensity", ]), drop = F]
     })
 
     LFT <- NA
@@ -216,11 +215,14 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
       SQLwhereGen <- .appendSQLwhere("predicted", predicted,
                                      whereVector = SQLwhereGen)
     }
+
     message("Solving distance metrics between query and reference spectra ...")
     distances <- pbapply::pblapply(seq_along(QRY$Spectra), function(idQspctr){
       posMetadata <- which(QRY$Metadata$idSpectra ==
                              names(QRY$Spectra[idQspctr]))
-      Qspct <- QRY$Spectra[[idQspctr]]
+      Qspct <- QRY$Spectra[[idQspctr]] |>
+          .binSpectrum(massError = massErrMsn)# bin fragments
+
       idRef <- .queryMzIndex(QRYspct = Qspct, ms2idObj = MS2ID,
                              cmnFrags = cmnFrags)
       #return if query spectrum has no targeted db spectra
@@ -273,8 +275,8 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         if(cmnNeutralMass){
           QRYMmi <- .propQMmi(QRY$Metadata$precursorMZ[posMetadata],
                               QRY$Metadata$polarity[posMetadata])
-          QRYMmi_min <- QRYMmi * (1 - massErrMsn/1e6)
-          QRYMmi_max <- QRYMmi * (1 + massErrMsn/1e6)
+          QRYMmi_min <- QRYMmi * (1 - massErrMs1/1e6)
+          QRYMmi_max <- QRYMmi * (1 + massErrMs1/1e6)
           #FIND compounds with spectra=IDref
           subSQL_IdComp <- .appendSQLwhere("ID_spectra", idRef,
                                             mode="IN")
@@ -313,8 +315,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         #get spectra from big memory
         refSpectra <- .bufferSpectra(MS2ID, idRef$ID_spectra)
         distance <- lapply(seq_along(refSpectra$ptr$id), function(x) {
+          Rspct <- .getSpectrum(refSpectra, x) |>
+              .binSpectrum(massError = massErrMsn)
           #A. Usual MS2 spectra similarity metrics
-          Rspct <- .getSpectrum(refSpectra, x)
           struct <- .matchFrag(Qspct, Rspct)
           #normalize intensities and add 1e-12 (2 avoid problems with log(0))
           rowdf <- rbind(struct[1,]/sum(struct[1,]),
@@ -322,6 +325,9 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
           rsltM <- vapply(directmetrics, function(iM){
             suppressMessages(philentropy::distance(rowdf, method = iM))
           }, FUN.VALUE = 3.2)
+
+          #add num Fragm of QRY, REF and common spectra
+          rsltM <- c(rsltM, getNumberOfFragments(rowdf))
           if(metFun){
             rsltM <- c(rsltM, metricFunc = metricFUN(rowdf))
           }
@@ -340,9 +346,10 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
           }
           return(rsltM)
         })
-
         distance <- data.frame(do.call(rbind, distance))
-        hits <- lapply(seq_len(ncol(distance)), function(im){
+        colWithFragm <- names(distance) %in% c("numQRYfragm", "numREFfragm",
+                                               "numCmnfragm")
+        hits <- lapply(which(!colWithFragm), function(im){
           if(decrMet[im]) distance[, im] <= metricsThresh[im]
           else  distance[, im] >= metricsThresh[im]
         })
@@ -350,14 +357,15 @@ annotate <- function(QRYdata, QRYmsLevel = 2L, MS2ID,
         hits <- apply(hits, MARGIN = 1, any)
         if(any(hits, na.rm = T)){
           distance <- distance[which(hits), , drop = F]
+          distance[, colWithFragm] <- apply(distance[, colWithFragm], 2, as.integer)
           distance$idREFspect <- refSpectra$ptr$id[which(hits)]
           return(distance)
         } else {return(NA)}
     })
-
     names(distances) <- names(QRY$Spectra)
     #remove query spectra with no hits
     distances <- distances[!is.na(distances)]
+
     if("rawSpectra" %in% names(QRY)){
       QRY$Spectra <- QRY$rawSpectra
       QRY$rawSpectra <- NULL

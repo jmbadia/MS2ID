@@ -1,7 +1,7 @@
 Package: MS2ID
 Type: Package
 Title: High-throughput MS/MS annotation using an unique in house database
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: 
     person(given = "Josep M.",
            family = "Badia",

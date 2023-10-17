@@ -24,6 +24,7 @@
         if(is.character(condition)) condition <- paste0("'", condition, "'")
         rsltString <- paste(base, "=", condition)
     } else if(mode == "IN"){
+        if(is.character(condition)) condition <- paste0("'", condition, "'")
         condition <- paste(condition, collapse = ", ")
         rsltString <- paste(base, "IN (", condition,")")
     } else if(mode == "BETWEEN"){
