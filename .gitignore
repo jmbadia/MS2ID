@@ -2,7 +2,6 @@
 #directori invisible per Git (arxius de proves que vols conservar)
 invisible2Git
 .Rbuildignore
-
 ## CODI DEL TEMPLATE PER R-----------------------------------------------------
 # History files
 .Rhistory
@@ -33,3 +32,4 @@ inst/doc
 /doc/
 /Meta/
 .~lock.esborra.xlsx#
+invisible2git
