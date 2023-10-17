@@ -146,6 +146,26 @@
   }
 }
 
-
+#' Obtain num. of fragments of query and reference spectrum and their common
+#' fragments
+#'
+#' convert the matrix (2 intensity rows) returned by the MS2ID function
+#' .matchFragm to a numeric vector with the number of fragments of the query
+#' spectrum, ref spectrum and common fragments between them
+#'
+#' @param intensityMatrix matrix containing two rows with the intensities of
+#'   query and ref spectra. Each column indicates the same fragment
+#'
+#' @return vector with 3 numeric items: num. of fragments of query and reference
+#'   spectrum and their common fragments
+#' @noRd
+getNumberOfFragments <- function(intensityMatrix) {
+    intensityMatrix <- intensityMatrix > 1e-10 #only frags with i > 1e-12 are considered
+    nfrgms <- apply(intensityMatrix, 1, sum)# vector with the num of fragms on both spectra
+    cmnfrgms <- sum(apply(intensityMatrix, 2, sum) == 2)# num of commmon fragsc
+    nfrgms <- c(nfrgms, cmnfrgms)
+    names(nfrgms) <- c("numQRYfragm", "numREFfragm", "numCmnfragm")
+    return(nfrgms)
+}
 
 
