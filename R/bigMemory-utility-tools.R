@@ -19,6 +19,8 @@
     readPos <- unlist(lapply(seq_len(nrow(spectraPTR)), function(x)
         seq_len(spectraPTR$numItems[x]) + spectraPTR$startPos[x]))
     spectra <- MS2ID@spectracon[, readPos, drop=FALSE]
+    #rename row "mass-charge" in case library is old version
+    rownames(spectra)[rownames(spectra)=="mass-charge"] <- "mz"
 
     #recalculate startPos considering spectra is a subset
     spectraPTR$startPos <- c(0, cumsum(utils::head(spectraPTR$numItems,-1)))
