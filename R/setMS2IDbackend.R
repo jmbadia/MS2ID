@@ -35,7 +35,6 @@
     DB$compounds <- DB$compounds %>%
         relocate(intersect(orderCompounds, names(.)))
 
-
     ## SECTION 1: Create RSQL database in disk file MS2ID.db keeping peakslit apart with ffData
     #SQL database for metadata
     con <- DBI::dbConnect(RSQLite::SQLite(),

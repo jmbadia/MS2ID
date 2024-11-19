@@ -11,7 +11,8 @@
 
     #Variables to parse and its name in MS2ID or CompoundDB DB ---
     # ROW ORDER will determine COL ORDER in the final MS2ID DB
-    mtbolVar_MS2ID <- c("originalCompoundId", "character",
+    mtbolVar_MS2ID <- c("ID_compound", "integer",
+                        "originalCompoundId", "character",
                         "name", "character",
                         "formula", "character",
                         "exactmass", "numeric",
@@ -24,9 +25,10 @@
                         "cas", "character",
                         "smiles", "character")
     #https://github.com/EuracBiomedicalResearch/CompoundDb/issues/62
-    mtbolVar_CompoundDB <- c("-", "name", "formula", "exactmass", "-",
+    mtbolVar_CompoundDB <- c("compound_id","-", "name", "formula", "exactmass", "-",
                              "inchikey", "-", "-", "-", "-", "cas", "smiles")
-    spctraVar_MS2ID <- c("originalSpectrumId", "character",
+    spctraVar_MS2ID <- c("ID_spectra", "integer",
+                         "originalSpectrumId", "character",
                          "splash", "character",
                          "adduct", "character",
                          "precursorMz", "numeric",
@@ -42,7 +44,7 @@
                          "resolution",  "character",
                          "originalSpectrumDb", "character"
                          )
-    spctraVar_CompoundDB <- c(
+    spctraVar_CompoundDB <- c("spectrum_id",
         "original_spectrum_id", "splash", "adduct", "precursor_mz", "-",
         "collision_energy", "polarity", "ms_level", "predicted", "-", "-",
         "instrument_type", "instrument", "-", "originalSpectrumDb")

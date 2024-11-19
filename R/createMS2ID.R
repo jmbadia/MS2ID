@@ -21,8 +21,8 @@
 #'   \code{\link[enviPat]{check_chemform}} function.
 #' @param overwrite boolean(1) indicating if the function can overwrite
 #'   results.
-#' @param removeRedComp boolean(1) indicating if elimiate redundant
-#'  compounds (based on the inchikey information).
+#' @param removeRedundant character(1) eliminate redundant compounds and/or
+#'  spectra. Available options: "compounds", "spectra" or "both".
 #' @return \code{createMS2ID} returns a character(1) with the MS2ID backend
 #'   location. This value must be used as \code{ms2idFolder} parameter in the
 #'   \code{MS2ID} constructor.
@@ -32,7 +32,7 @@
 #' @export
 createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
                         calcSplash = TRUE, calcMmi = TRUE, overwrite = FALSE,
-                        removeRedComp = FALSE)
+                        removeRedundant = "compounds")
     {
     if(missing(cmpdb))
         stop("Argument 'cmpdb' is required")
@@ -102,9 +102,8 @@ createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
     }
     DB <- .basicMS2IDstrct(metadata = mrg, fragm = fragm_CompDB,
                       varsToParse = varsToParse, nameDB = nameDB,
-                      removeRedCompounds = removeRedComp,
+                      removeRedundant = removeRedundant,
                       numCmp = numCmp, numMs = numMs)
-
     ###TEMPORARILY. we do not comtemplate DB union (check 10 to implement HERE)
     # ALSO elimina metabolits (amb funcio .removeRedundantCompounds()) i spectra duplicats. Només necesari quan juntem diferents
 
