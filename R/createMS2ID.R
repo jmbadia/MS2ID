@@ -22,7 +22,12 @@
 #' @param overwrite boolean(1) indicating if the function can overwrite
 #'   results.
 #' @param removeRedundant character(1) eliminate redundant compounds and/or
-#'  spectra. Available options: "compounds", "spectra" or "both".
+#'   spectra. Expected options: "compounds", "spectra", "both" or "none".
+#'   Redundant compounds are removed by comparing their InChIKeys. Redundant
+#'   spectra are removed by comparing the spectrum and specific metadata
+#'   variables, which include: "collisionEnergy", "polarity", "predicted",
+#'   "instrumentType", and "precursorMz". If the metadata is incomplete or lacks
+#'   the necessary fields, redundant spectra will not be removed.
 #' @return \code{createMS2ID} returns a character(1) with the MS2ID backend
 #'   location. This value must be used as \code{ms2idFolder} parameter in the
 #'   \code{MS2ID} constructor.
@@ -32,12 +37,20 @@
 #' @export
 createMS2ID <- function(name = "MS2ID", path = ".", cmpdb, noiseThresh = 0.01,
                         calcSplash = TRUE, calcMmi = TRUE, overwrite = FALSE,
-                        removeRedundant = "compounds")
-    {
+                        removeRedundant = "compounds"){
     if(missing(cmpdb))
-        stop("Argument 'cmpdb' is required")
+        stop("Argument 'cmpdb' required")
+
+    validArgs <- c("compounds", "spectra", "both", "none")
+    if(!removeRedundant %in% validArgs)
+        paste("Invalid argument for removeRedundant: %s.\n",
+              "Expected one of: %s") |>
+        sprintf(removeRedundant, paste(validArgs, collapse = ", ")) |>
+             stop()
+
     if(!is(cmpdb, "CompDb"))
         stop("Argument 'cmpdb' must be a CompDb object (CompoundDb package)")
+
     MS2IDdir <- file.path(path, name)
     if(dir.exists(MS2IDdir)){
         if(overwrite){

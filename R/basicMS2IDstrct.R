@@ -170,6 +170,14 @@ if(removeRedundant %in% c("spectra", "both")){
       #La funcio considera_varespdist() funciona amb ID_spectras i aqui encara no els tenim. Fem servir les posicions com a pseudo ID_spectras
       #substituim posicions pels seus ID_spectras (pq encara no els hem posat)
       message("Analyzing distinctive spectral variables")
+      missingVar <- DISTSPECTRALVARS[!DISTSPECTRALVARS %in% colnames(metadata)]
+      if(length(missingVar) != 0)
+          paste("To remove redundant spectra column/s '%s' must be",
+          "present in their metadata in order to differentiate them. Please",
+          "add the necessary information or disable the removing spectra",
+          "option (i.e. argument removeRedundant to 'compounds' or 'none')") |>
+          sprintf(missingVar) |>
+          stop()
 
       list_posEspectresduplicats_VED <- .applyDistintVars(
         listidespectre_EspDupli = list_posEspectresduplicats,

@@ -33,7 +33,7 @@
 \code{\link{annotate}} function. It contains reference spectra (with
 metadata) along with their reference compound metadata, the query spectra
 (with metadata), and a hits table linking all three items; the hits table
-also contains the distance metrics and other variables that may define a hit
+also contains the distance metrics and other Variables that may define a hit
 (e.g. adduct assumed on the query spectrum).
 
 An \code{Annot} object is created internally by the \code{\link{annotate}}

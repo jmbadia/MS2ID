@@ -20,7 +20,7 @@ URL: https://jmbadia.github.io/MS2ID/index.html
 BugReports: https://github.com/jmbadia/MS2ID/issues
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Depends:
     R (>= 3.5.0)
 Imports: 

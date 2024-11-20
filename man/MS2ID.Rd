@@ -19,7 +19,7 @@ createMS2ID(
   calcSplash = TRUE,
   calcMmi = TRUE,
   overwrite = FALSE,
-  removeRedComp = FALSE
+  removeRedundant = "compounds"
 )
 }
 \arguments{
@@ -49,8 +49,13 @@ be calculated using the \code{\link[splashR]{getSplash}} function.}
 \item{overwrite}{boolean(1) indicating if the function can overwrite
 results.}
 
-\item{removeRedComp}{boolean(1) indicating if elimiate redundant
-compounds (based on the inchikey information).}
+\item{removeRedundant}{character(1) eliminate redundant compounds and/or
+spectra. Expected options: "compounds", "spectra", "both" or "none".
+Redundant compounds are removed by comparing their InChIKeys. Redundant
+spectra are removed by comparing the spectrum and specific metadata
+variables, which include: "collisionEnergy", "polarity", "predicted",
+"instrumentType", and "precursorMz". If the metadata is incomplete or lacks
+the necessary fields, redundant spectra will not be removed.}
 }
 \value{
 \code{createMS2ID} returns a character(1) with the MS2ID backend
@@ -129,7 +134,5 @@ MS2IDlib <- MS2ID(MS2IDdirectory)
 \linkS4class{MS2ID} class.
 }
 \author{
-Josep M. Badia \email{josepmaria.badia@urv.cat}
-
 Josep M. Badia \email{josepmaria.badia@urv.cat}
 }

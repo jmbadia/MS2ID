@@ -62,6 +62,6 @@
     assign("VARS2PARSE", vars2parse, envir = asNamespace(pkgname))
     #Variables espectrals distintives: Eliminem els espectres identics  sempre i quan tinguin les V.E.D. (q definim aqui) iguals. PQ? Exemple:Si un espectre esta repetit amb E=20v i E=30v i eliminem el de 30v quan  cerca espectral per E=30v no sortira
     distSpectralVars <- c("collisionEnergy", "polarity", "predicted",
-                              "fragmentMode")
+                              "instrumentType", "precursorMz")
     assign("DISTSPECTRALVARS", distSpectralVars, envir = asNamespace(pkgname))
 }
