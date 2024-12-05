@@ -134,7 +134,7 @@
 #' @param s list with spectra and metadata
 #' @param minComm numeric(1) minimum ratio of mz presence in order to be present in the final consensus spectrum
 #'
-#' @return
+#' @return the consensus spectra
 #' @noRd
 .consens <- function(s, minComm = 2/3, ...){
    #consensus spectra to be calculated
@@ -249,7 +249,7 @@
 #' @param minComm integer(1) rfering to minimum iterations of a mz in primal spectra in order to be present in the cosensus spectrum. Only considered in interSpectra mode
 #' @param mode 'innerSpectra' or 'interSpectra'. The former is to bin (sum up) close mz in a spectrum. The last finds common mz inter spectra.
 #'
-#' @return
+#' @return the spectra consensued
 #' @noRd
 .consensFragm <- function(spct, minComm, mode, ...){
    groups <- .groupmz(spct[1,], spct[2,], ...)

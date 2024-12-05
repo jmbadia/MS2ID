@@ -6,7 +6,7 @@
 #' @param types character vector with variable types. names(types) must contain
 #' the variable names.
 #'
-#' @return
+#' @return No return value, called for its side effects.
 #' @noRd
 
 .checkTypes <- function(values, types){
@@ -32,7 +32,7 @@
 #' @param type character defining the variable type. name(type) must be the
 #'  name of the variable.
 #'
-#' @return
+#' @return No return value, called for its side effects.
 #' @noRd
 
 .checkType <- function(value, type){

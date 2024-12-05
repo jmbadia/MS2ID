@@ -15,6 +15,7 @@
 #'   \item{Formula_ded}{Adduct chemical formula to be subtracted}
 #'   \item{Multi}{Factor to multiply chemical formula with}
 #' }
+#' @keywords internal
 #' @source \url{https://cran.r-project.org/package=enviPat}
 #' @noRd
 "adducts"
